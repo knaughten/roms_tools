@@ -196,7 +196,7 @@ swflux = -ssflux*100.0/ref_salt;
 if year_avg
     time = [0.5:11.5]*365.25/12;
 else
-    time = [0.5:12*(max_year-min_year)-0.5]*365.25/12;
+    time = [0.5:12*(max_year-min_year+1)-0.5]*365.25/12;
 end
 
 % Save results in NetCDF file
