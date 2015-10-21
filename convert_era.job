@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -N convert_era
+#PBS -P gh8
+#PBS -q normal
+#PBS -l walltime=3:00:00,ncpus=1,mem=31gb
+#PBS -j oe
+#PBS -v YEAR,COUNT
+
+# Call romscice_atm_subdaily.py for the given year, and self-submit enough times
+# to process the entire ECCO2 file for that year (the python script only
+# processes 100 6-hour timesteps at once, otherwise memory overflows).
+
+# To get it started for eg 1992, type
+# qsub -v YEAR=1992,COUNT=0 convert_era.job
+
+echo "YEAR = $YEAR"
+echo "COUNT = $COUNT"
+cd $PBS_O_WORKDIR
+python -c "import romscice_atm_subdaily; romscice_atm_subdaily.convert_file($YEAR, $COUNT)"
+
+if [ $COUNT -lt 1500 ]; then
+    qsub -v YEAR=$YEAR,COUNT=$(($COUNT+100)) convert_era.job
+fi
+
