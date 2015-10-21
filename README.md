@@ -7,6 +7,7 @@ romscice_atm_subdaily.py is designed to be run through a self-submitting batch s
 romscice_ini.py also needs file paths hard-coded, but you can run it normally (in ipython, type "run romscice_ini".
 
 To run any other Python script file.py: open ipython, then type "run file". You will be prompted to type in file paths and parameters at the command line.
+
 To run Matlab script function.m: open Matlab, then type "function()". File paths and parameters will need to be hard-coded into the file. NB: Use the 2008 version of Matlab on katabatic. These scripts depend on existing ROMS Matlab tools which are stored on katabatic and don't work with the newer versions of Matlab.
 
 
