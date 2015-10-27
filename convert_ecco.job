@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -N convert_ecco
+#PBS -P gh8
+#PBS -q normal
+#PBS -l walltime=3:00:00,ncpus=1,mem=31gb
+#PBS -j oe
+#PBS -v YEAR
+
+# Call romscice_nbc.py for the given year.
+# To run for eg 1992, type
+# qsub -v YEAR=1992 convert_ecco.job
+
+module unload python/2.7.3
+module unload python/2.7.3-matplotlib
+module load python/2.7.6
+module load python/2.7.6-matplotlib
+
+echo "YEAR = $YEAR"
+cd $PBS_O_WORKDIR
+python -c "import romscice_nbc; romscice_nbc.convert_file($YEAR)"

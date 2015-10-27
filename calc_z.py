@@ -6,7 +6,10 @@ from numpy import *
 # Input (all straight out of grid file and *.in file):
 # h, zice, lon_rho, lat_rho = 2D arrays containing values for bathymetry,
 #                             ice shelf draft, longitude, and latitude. All
-#                             have dimension latitude x longitude.
+#                             have dimension latitude x longitude. You can
+#                             also pass latitude and longitude from the u or
+#                             v grids, but make sure h and zice have been
+#                             interpolated to have the same size.
 # theta_s, theta_b, hc, N = scalar parameters
 # Output:
 # z = 3D array containing negative z-coordinate values for depth on the rho 

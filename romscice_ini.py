@@ -19,8 +19,8 @@ from calc_z import *
 # Given an array on the ECCO2 grid, fill in the land mask with constant values,
 # and then interpolate to the ROMS grid.
 # Input:
-# A = array of size nxmxo containing values on the ECCO2 grid (first dimension
-#     longitude, second dimension latitude, third dimension depth)
+# A = array of size nxmxo containing values on the ECCO2 grid (dimension
+#     longitude x latitude x depth)
 # lon_ecco = array of length n containing ECCO2 longitude values (must have
 #            first and last indices repeated  mod 360 to cover the gap 
 #            180W=180E, as shown below in the main script)
@@ -38,8 +38,8 @@ from calc_z import *
 #              splines don't freak out (suggest -0.5 for temperature and 34.5
 #              for salinity)
 # Output:
-# B = array of size pxqxr containing values on the ROMS grid (first dimension
-#     depth, second dimension latitude, third dimension longitude)
+# B = array of size pxqxr containing values on the ROMS grid (dimension depth x
+#     latitude x longitude)
 def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, fill_value):
 
     # Calculate N based on size of ROMS grid
@@ -54,7 +54,6 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3
     Afill = A
     Afill[A.mask] = fill_value
 
-    print 'Interpolating to ROMS grid'
     # Build a function for linear interpolation of Afill
     interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), Afill)
     B = zeros(shape(lon_roms_3d))
@@ -78,22 +77,25 @@ salt_file = '../data/ECCO2/SALT.1440x720x50.199201.nc'
 output_file = '../data/caisom001_ini_1992.nc'
 
 # Grid parameters; check grid_file and *.in file to make sure these are correct
-Tcline = 20
-theta_s = 5
-theta_b = 0.4
-hc = 20
+Tcline = 40
+theta_s = 0.9
+theta_b = 4
+hc = 40
 N = 31
+
+# Northernmost index of ECCO2 grid to read (1-based)
+nbdry_ecco = 161
 
 # Read ECCO2 data and grid
 print 'Reading ECCO2 data'
 theta_fid = Dataset(theta_file, 'r')
 lon_ecco_raw = theta_fid.variables['LONGITUDE_T'][:]
-lat_ecco = theta_fid.variables['LATITUDE_T'][:]
+lat_ecco = theta_fid.variables['LATITUDE_T'][0:nbdry_ecco]
 depth_ecco_raw = theta_fid.variables['DEPTH_T'][:]
-theta_raw = transpose(theta_fid.variables['THETA'][0,:,:,:])
+theta_raw = transpose(theta_fid.variables['THETA'][0,:,0:nbdry_ecco,:])
 theta_fid.close()
 salt_fid = Dataset(salt_file, 'r')
-salt_raw = transpose(salt_fid.variables['SALT'][0,:,:,:])
+salt_raw = transpose(salt_fid.variables['SALT'][0,:,0:nbdry_ecco,:])
 salt_fid.close()
 
 # The ECCO2 longitude axis doesn't wrap around; there is a gap between
@@ -184,20 +186,25 @@ out_fid.variables['tend'].units = 'day'
 out_fid.variables['tend'][:] = 0.0
 out_fid.createVariable('theta_s', 'f8', ('one'))
 out_fid.variables['theta_s'].long_name = 'S-coordinate surface control parameter'
+out_fid.variables['theta_s'][:] = theta_s
 out_fid.createVariable('theta_b', 'f8', ('one'))
 out_fid.variables['theta_b'].long_name = 'S-coordinate bottom control parameter'
 out_fid.variables['theta_b'].units = 'nondimensional'
+out_fid.variables['theta_b'][:] = theta_b
 out_fid.createVariable('Tcline', 'f8', ('one'))
 out_fid.variables['Tcline'].long_name = 'S-coordinate surface/bottom layer width'
 out_fid.variables['Tcline'].units = 'meter'
+out_fid.variables['Tcline'][:] = Tcline
 out_fid.createVariable('hc', 'f8', ('one'))
 out_fid.variables['hc'].long_name = 'S-coordinate parameter, critical depth'
 out_fid.variables['hc'].units = 'meter'
+out_fid.variables['hc'][:] = hc
 out_fid.createVariable('Cs_r', 'f8', ('s_rho'))
 out_fid.variables['Cs_r'].long_name = 'S-coordinate stretching curves at RHO-points'
 out_fid.variables['Cs_r'].units = 'nondimensional'
 out_fid.variables['Cs_r'].valid_min = -1
 out_fid.variables['Cs_r'].valid_max = 0
+out_fid.variables['Cs_r'][:] = Cs_r
 out_fid.createVariable('ocean_time', 'f8', ('ocean_time'))
 out_fid.variables['ocean_time'].long_name = 'time since initialization'
 out_fid.variables['ocean_time'].units = 'seconds'

@@ -15,9 +15,16 @@ from scipy.interpolate import LinearNDInterpolator, RectBivariateSpline
 #                   cloud fraction (cloud), and winds (Uwind, Vwind)
 # FC_yyyy_unlim.nc: one year of 12-hour measurements for rainfall (rain)
 # Input: year = integer containing the year to process
+#        count = time record in the given year to start with
+
+# This script only processes 100 6-hour timesteps (50 12-hour timesteps) at
+# once to prevent memory overflow, and is designed to be called by a self-
+# submitting batch script. See convert_era.job for an example.
 
 def convert_file (year, count):
 
+    # Make sure input arguments are integers (sometimes the batch script likes
+    # to pass them as strings)
     year = int(year)
     count = int(count)
 
@@ -50,10 +57,9 @@ def convert_file (year, count):
 
     # Open input AN file and read time values
     iatm_fid = Dataset(input_atm_file, 'r')
-    atm_time = iatm_fid.variables['time'][:]
     atm_time = iatm_fid.variables['time'][:] # hours since 1900-01-01 00:00:0.0
     # Convert time units
-    atm_time = atm_time/24 # days since 1900-01-01 00:00:0.0
+    atm_time = atm_time/24.0 # days since 1900-01-01 00:00:0.0
     atm_time = atm_time - 70*365 - 17 # days since 1970-01-01 00:00:0.0; note that there were 17 leap years between 1900 and 1970
     # Also read ERA-Interim latitude and longitude
     lon_era = iatm_fid.variables['longitude'][:]
@@ -81,7 +87,7 @@ def convert_file (year, count):
         oatm_fid.variables['lat_rho'].units = 'degree_north'
         oatm_fid.variables['lat_rho'][:,:] = lat_roms
         oatm_fid.createVariable('time', 'f8', ('time'))
-        oatm_fid.variables['time'].units = 'hours since 1900-01-01 00:00:0.0'
+        oatm_fid.variables['time'].units = 'days since 1970-01-01 00:00:0.0'
         oatm_fid.createVariable('Pair', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oatm_fid.variables['Pair'].long_name = 'surface air pressure'
         oatm_fid.variables['Pair'].units = 'Pascal'
@@ -108,7 +114,7 @@ def convert_file (year, count):
 
     # Process one timestep at a time to minimise memory use
     for t in range(count, count+100):
-        if count >= size(atm_time):
+        if t >= size(atm_time):
             break
         oatm_fid = Dataset(output_atm_file, 'a')
         log = open(logfile, 'a')
@@ -146,7 +152,7 @@ def convert_file (year, count):
     ippt_fid = Dataset(input_ppt_file, 'r')
     ppt_time = ippt_fid.variables['time'][:] # hours since 1900-01-01 00:00:0.0
     # Convert time units
-    ppt_time = ppt_time/24 # days since 1900-01-01 00:00:0.0
+    ppt_time = ppt_time/24.0 # days since 1900-01-01 00:00:0.0
     ppt_time = ppt_time - 70*365 - 17 # days since 1970-01-01 00:00:0.0; note that there were 17 leap years between 1900 and 1970
     ippt_fid.close()
 
@@ -173,7 +179,7 @@ def convert_file (year, count):
         oppt_fid.variables['time'].units = 'days since 1970-01-01 00:00:0.0'
         oppt_fid.createVariable('rain', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oppt_fid.variables['rain'].long_name = 'rain fall rate'
-        oppt_fid.variables['rain'].units = 'm per 12 hours'
+        oppt_fid.variables['rain'].units = 'm_per_12hr'
         oppt_fid.close()
 
     log = open(logfile, 'a')
@@ -195,6 +201,8 @@ def convert_file (year, count):
         ippt_fid.close()
         # Interpolate to ROMS grid and write to output FC file
         rain = interp_era2roms(tp, lon_era, lat_era, lon_roms, lat_roms)
+        # Make sure there are no negative values
+        rain[rain < 0] = 0.0
         oppt_fid.variables['rain'][t,:,:] = rain
         oppt_fid.close()
 
@@ -206,15 +214,15 @@ def convert_file (year, count):
 # Given an array on the ERA-Interim grid, interpolate any missing values, and
 # then interpolate to the ROMS grid.
 # Input:
-# A = array of size nxm containing values on the ERA-Interim grid (first
-#     dimension longitude, second dimension latitude)
+# A = array of size nxm containing values on the ERA-Interim grid (dimension
+#     longitude x latitude)
 # lon_era = array of length n containing ERA-Interim longitude values
 # lat_era = array of length m containing ERA-Interim latitude values
 # lon_roms = array of size pxq containing ROMS longitude values
 # lat_roms = array of size pxq containing ROMS latitude values
 # Output:
-# B = array of size pxq containing values on the ROMS grid (first dimension
-#     latitude, second dimension longitude)
+# B = array of size pxq containing values on the ROMS grid (dimension latitude x
+#     longitude)
 def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
 
     # Save the sizes of ROMS axes
@@ -234,6 +242,8 @@ def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
     values = A[valid_mask]
     fill_function = LinearNDInterpolator(coords, values)
     Afill = fill_function(list(ndindex(A.shape))).reshape(A.shape)
+    # Fill any still-missing values with the mean
+    Afill[isnan(Afill)] = nanmean(Afill)
 
     # Now interpolate from ERA-Interim grid to ROMS grid
     # First build a function to approximate A with 2D splines
