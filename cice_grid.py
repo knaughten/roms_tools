@@ -1,20 +1,30 @@
 from netCDF4 import Dataset
 from numpy import *
 
+# Convert a ROMS grid file to CICE grid and kmt files.
+# Input:
+# roms_grid_name = path to existing ROMS grid file
+# cice_grid_name = path to desired CICE grid file
+# cice_kmt_name = path to desired CICE kmt file
+
 def cice_grid (roms_grid_name, cice_grid_name, cice_kmt_name):
 
+    # Open files
     roms = Dataset(roms_grid_name, 'r')
     cice_grid = Dataset(cice_grid_name, 'w')
     cice_kmt = Dataset(cice_kmt_name, 'w')
 
+    # Read variables
     ulon = roms.variables['lon_rho'][:,:]
     ulat = roms.variables['lat_rho'][:,:]
     angle = roms.variables['angle'][:]
+    # Mask out ice shelf cavities for sea ice
     kmt = roms.variables['mask_rho'][:,:] - roms.variables['mask_zice'][:,:]
 
     i = arange(angle.shape[1])
     j = arange(angle.shape[0])
 
+    # Write variables
     cice_grid.createDimension('i', size(i))
     cice_grid.createDimension('j', size(j))
 
@@ -41,7 +51,8 @@ def cice_grid (roms_grid_name, cice_grid_name, cice_kmt_name):
     cice_grid.close()
     cice_kmt.close()
 
-    
+
+# Command-line interface    
 if __name__ == "__main__":
 
     roms_grid_name = raw_input("Path to existing ROMS grid file: ")

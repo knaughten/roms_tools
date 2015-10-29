@@ -60,7 +60,7 @@ def convert_file (year, count):
     atm_time = iatm_fid.variables['time'][:] # hours since 1900-01-01 00:00:0.0
     # Convert time units
     atm_time = atm_time/24.0 # days since 1900-01-01 00:00:0.0
-    atm_time = atm_time - 70*365 - 17 # days since 1970-01-01 00:00:0.0; note that there were 17 leap years between 1900 and 1970
+    atm_time = atm_time - 92*365 - 22 # days since 1992-01-01 00:00:0.0; note that there were 22 leap years between 1900 and 1992
     # Also read ERA-Interim latitude and longitude
     lon_era = iatm_fid.variables['longitude'][:]
     lat_era = iatm_fid.variables['latitude'][:]
@@ -87,13 +87,13 @@ def convert_file (year, count):
         oatm_fid.variables['lat_rho'].units = 'degree_north'
         oatm_fid.variables['lat_rho'][:,:] = lat_roms
         oatm_fid.createVariable('time', 'f8', ('time'))
-        oatm_fid.variables['time'].units = 'days since 1970-01-01 00:00:0.0'
+        oatm_fid.variables['time'].units = 'days since 1992-01-01 00:00:0.0'
         oatm_fid.createVariable('Pair', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oatm_fid.variables['Pair'].long_name = 'surface air pressure'
         oatm_fid.variables['Pair'].units = 'Pascal'
         oatm_fid.createVariable('Tair', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oatm_fid.variables['Tair'].long_name = 'surface air temperature'
-        oatm_fid.variables['Tair'].units = 'K'
+        oatm_fid.variables['Tair'].units = 'Celsius'
         oatm_fid.createVariable('Qair', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oatm_fid.variables['Qair'].long_name = 'surface relative humidity'
         oatm_fid.variables['Qair'].units = 'kg/kg'
@@ -137,7 +137,7 @@ def convert_file (year, count):
         pair = interp_era2roms(sp, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Pair'][t,:,:] = pair
         tair = interp_era2roms(t2m, lon_era, lat_era, lon_roms, lat_roms)
-        oatm_fid.variables['Tair'][t,:,:] = tair
+        oatm_fid.variables['Tair'][t,:,:] = tair-273.15
         qair = interp_era2roms(rh, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Qair'][t,:,:] = qair
         cloud = interp_era2roms(tcc, lon_era, lat_era, lon_roms, lat_roms)
@@ -153,7 +153,7 @@ def convert_file (year, count):
     ppt_time = ippt_fid.variables['time'][:] # hours since 1900-01-01 00:00:0.0
     # Convert time units
     ppt_time = ppt_time/24.0 # days since 1900-01-01 00:00:0.0
-    ppt_time = ppt_time - 70*365 - 17 # days since 1970-01-01 00:00:0.0; note that there were 17 leap years between 1900 and 1970
+    ppt_time = ppt_time - 92*365 - 22 # days since 1992-01-01 00:00:0.0; note that there were 22 leap years between 1900 and 1992
     ippt_fid.close()
 
     if count == 0:
@@ -176,7 +176,7 @@ def convert_file (year, count):
         oppt_fid.variables['lat_rho'].units = 'degree_north'
         oppt_fid.variables['lat_rho'][:,:] = lat_roms
         oppt_fid.createVariable('time', 'f8', ('time'))
-        oppt_fid.variables['time'].units = 'days since 1970-01-01 00:00:0.0'
+        oppt_fid.variables['time'].units = 'days since 1992-01-01 00:00:0.0'
         oppt_fid.createVariable('rain', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oppt_fid.variables['rain'].long_name = 'rain fall rate'
         oppt_fid.variables['rain'].units = 'm_per_12hr'

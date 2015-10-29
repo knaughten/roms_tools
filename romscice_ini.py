@@ -202,8 +202,8 @@ out_fid.variables['hc'][:] = hc
 out_fid.createVariable('Cs_r', 'f8', ('s_rho'))
 out_fid.variables['Cs_r'].long_name = 'S-coordinate stretching curves at RHO-points'
 out_fid.variables['Cs_r'].units = 'nondimensional'
-out_fid.variables['Cs_r'].valid_min = -1
-out_fid.variables['Cs_r'].valid_max = 0
+out_fid.variables['Cs_r'].valid_min = -1.0
+out_fid.variables['Cs_r'].valid_max = 0.0
 out_fid.variables['Cs_r'][:] = Cs_r
 out_fid.createVariable('ocean_time', 'f8', ('ocean_time'))
 out_fid.variables['ocean_time'].long_name = 'time since initialization'
@@ -240,8 +240,8 @@ out_fid.variables['salt'][0,:,:,:] = salt
 out_fid.createVariable('sc_r', 'f8', ('s_rho'))
 out_fid.variables['sc_r'].long_name = 'S-coordinate at rho-points'
 out_fid.variables['sc_r'].units = 'nondimensional'
-out_fid.variables['sc_r'].valid_min = -1
-out_fid.variables['sc_r'].valid_max = 0
+out_fid.variables['sc_r'].valid_min = -1.0
+out_fid.variables['sc_r'].valid_max = 0.0
 out_fid.variables['sc_r'][:] = sc_r
 out_fid.close()
 
