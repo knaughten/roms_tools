@@ -71,10 +71,10 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3
 # Path to ROMS grid file
 grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
 # Path to ECCO2 files for temperature and salinity in January 1992
-theta_file = '../data/ECCO2/THETA.1440x720x50.199201.nc'
-salt_file = '../data/ECCO2/SALT.1440x720x50.199201.nc'
+theta_file = '../data/ECCO2/THETA.1440x720x50.199501.nc'
+salt_file = '../data/ECCO2/SALT.1440x720x50.199501.nc'
 # Path to desired output file
-output_file = '../data/caisom001_ini_1992.nc'
+output_file = '../data/caisom001_ini_1995.nc'
 
 # Grid parameters; check grid_file and *.in file to make sure these are correct
 Tcline = 40
@@ -109,23 +109,27 @@ lon_ecco[-1] = lon_ecco_raw[0]+360
 
 # The shallowest ECCO2 depth value is 5 m, but ROMS needs 0 m. So add the
 # index depth = 0 m to the beginning. Later we will just copy the 5 m values
-# for theta and salt into this index.
-depth_ecco = zeros(size(depth_ecco_raw)+1)
+# for theta and salt into this index. Similarly, add the index depth = 6000 m
+# to the end.
+depth_ecco = zeros(size(depth_ecco_raw)+2)
 depth_ecco[0] = 0.0
-depth_ecco[1:] = depth_ecco_raw
+depth_ecco[1:-1] = depth_ecco_raw
+depth_ecco[-1] = 6000.0
 
 # Copy the theta and salt values to the new longitude and depth indices,
 # making sure to preserve the mask.
 theta = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-theta[1:-1,:,1:] = ma.copy(theta_raw)
-theta[0,:,1:] = ma.copy(theta_raw[-1,:,:])
-theta[-1,:,1:] = ma.copy(theta_raw[0,:,:])
+theta[1:-1,:,1:-1] = ma.copy(theta_raw)
+theta[0,:,1:-1] = ma.copy(theta_raw[-1,:,:])
+theta[-1,:,1:-1] = ma.copy(theta_raw[0,:,:])
 theta[:,:,0] = ma.copy(theta[:,:,1])
+theta[:,:,-1] = ma.copy(theta[:,:,-2])
 salt = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-salt[1:-1,:,1:] = ma.copy(salt_raw)
-salt[0,:,1:] = ma.copy(salt_raw[-1,:,:])
-salt[-1,:,1:] = ma.copy(salt_raw[0,:,:])
+salt[1:-1,:,1:-1] = ma.copy(salt_raw)
+salt[0,:,1:-1] = ma.copy(salt_raw[-1,:,:])
+salt[-1,:,1:-1] = ma.copy(salt_raw[0,:,:])
 salt[:,:,0] = ma.copy(salt[:,:,1])
+salt[:,:,-1] = ma.copy(salt[:,:,-2])
 
 # Read ROMS grid
 print 'Reading ROMS grid'

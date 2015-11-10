@@ -141,8 +141,9 @@ def convert_file (year, count):
         qair = interp_era2roms(rh, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Qair'][t,:,:] = qair
         cloud = interp_era2roms(tcc, lon_era, lat_era, lon_roms, lat_roms)
-        # Make sure there are no negative values
+        # Constrain cloud fractions to be between 0 and 1
         cloud[cloud < 0] = 0.0
+        cloud[cloud > 1] = 1.0
         oatm_fid.variables['cloud'][t,:,:] = cloud
         uwind = interp_era2roms(u10, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Uwind'][t,:,:] = uwind

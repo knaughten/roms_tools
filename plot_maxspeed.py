@@ -53,11 +53,10 @@ def maxspeed (file_path):
 
 # Read the kinetic energy values from any number of ocean.log files (designed
 # for a long simulation split up into several runs) and plot them against time
-def plot_maxspeed (files, dt):
+def plot_maxspeed (files, dt, freq):
 
     maxv_all = []
     seconds_per_year = 365.0*24.0*60.0*60.0
-    output_interval = 12
 
     # Extract the kinetic energy values for each ocean.log file
     for filename in files:
@@ -69,7 +68,7 @@ def plot_maxspeed (files, dt):
     # Remove singleton dimension
     maxv_all = squeeze(maxv_all)
     # Calculate time array in years
-    time = arange(size(maxv_all))*dt/seconds_per_year*output_interval
+    time = arange(size(maxv_all))*dt/seconds_per_year*freq
 
     # Plot the results
     clf()
@@ -92,6 +91,6 @@ if __name__ == "__main__":
         files.append(filename)
 
     dt = double(raw_input("Timestep in seconds: "))
+    freq = double(raw_input("Output frequency in timesteps: "))
 
-    plot_maxspeed(files, dt)
-        
+    plot_maxspeed(files, dt, freq)

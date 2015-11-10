@@ -47,7 +47,7 @@ def kinetic_energy (file_path):
 
 # Read the kinetic energy values from any number of ocean.log files (designed
 # for a long simulation split up into several runs) and plot them against time
-def plot_kinetic_energy (files, dt):
+def plot_kinetic_energy (files, dt, freq):
 
     ke_all = []
     seconds_per_year = 365.0*24.0*60.0*60.0
@@ -62,7 +62,7 @@ def plot_kinetic_energy (files, dt):
     # Remove singleton dimension
     ke_all = squeeze(ke_all)
     # Calculate time array in years
-    time = arange(size(ke_all))*dt/seconds_per_year
+    time = arange(size(ke_all))*dt/seconds_per_year*freq
 
     # Plot the results
     clf()
@@ -85,6 +85,7 @@ if __name__ == "__main__":
         files.append(filename)
 
     dt = double(raw_input("Timestep in seconds: "))
+    freq = double(raw_input("Output frequency in timesteps: "))
 
-    plot_kinetic_energy(files, dt)
+    plot_kinetic_energy(files, dt, freq)
         

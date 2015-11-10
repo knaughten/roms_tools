@@ -34,11 +34,13 @@ def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N):
     weight = (s+1)**alpha*(1 + alpha/beta)*(1 - (s+1)**beta)
     C = weight*Csur + (1-weight)*Cbot
 
+    h = h - abs(zice)
+
     num_lon = size(lon_rho, 1)
     num_lat = size(lon_rho, 0)
     z = zeros((N, num_lat, num_lon))
     for k in range(N):
         z0 = (h*C[k] + hc*s[k])/(h + hc)
-        z[k,:,:] = zice + (zice + h)*z0
+        z[k,:,:] = h*z0 - abs(zice)
 
     return z, s, C

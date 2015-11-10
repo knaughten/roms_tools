@@ -49,7 +49,7 @@ def volume (file_path):
 # Read the volume values from any number of ocean.log files (designed
 # for a long simulation split up into several runs) and plot the percent
 # anomalies (with respect to the initial value) against time.
-def plot_volume (files, dt):
+def plot_volume (files, dt, freq):
 
     vol_all = []
     seconds_per_year = 365.0*24.0*60.0*60.0
@@ -66,7 +66,7 @@ def plot_volume (files, dt):
     # Calculate percent anomalies
     vol_all = 100*(vol_all - vol_all[0])/vol_all[0]
     # Calculate time array in years
-    time = arange(size(vol_all))*dt/seconds_per_year
+    time = arange(size(vol_all))*dt/seconds_per_year*freq
 
     # Plot the results
     clf()
@@ -91,6 +91,7 @@ if __name__ == "__main__":
         
 
     dt = double(raw_input("Timestep in seconds: "))
+    freq = double(raw_input("Output frequency in timesteps: "))
 
-    plot_volume(files, dt)
+    plot_volume(files, dt, freq)
         
