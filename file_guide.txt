@@ -82,7 +82,7 @@ calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
 	           scripts. 
 
 
-***MODIFYING FORCING FILES***
+***MODIFYING INPUT FILES***
 
 fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
                 missing timesteps. This script interpolates the missing
@@ -126,6 +126,18 @@ repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
 		           (paths to forcing files, years, variable names, etc)
 			   then open python or ipython and type "run
 			   repeat_forcing.py".
+
+romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
+                          (eg created with romscice_ini.py), overwrite the
+			  salinity in ice shelf cavities (which aren't in ECCO2)
+			  with salinity from Ben's original initial conditions
+			  file (not really sure where this data is from, but
+			  it's more realistic than filling the cavities with
+			  constant salinity, and certainly more stable).
+			  To run: Edit the user parameters (paths to 3 files)
+			          near the top of the script, then open python
+				  or ipython and type "run
+				  romscice_ini_iceshelf.py".
 
 
 ***POST-PROCESSING DIAGNOSTICS***
