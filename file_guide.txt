@@ -100,7 +100,7 @@ roms_cice_atm_smooth.py: At the beginning of spinups, when the ocean is
 			 immediately forced with sub-daily atmospheric forcing
 			 due to the strong but transient storms. To counteract
 			 this problem, this script smooths the given forcing
-			 files using a simple moving average (currently 10 days,
+			 files using a simple moving average (currently 5 days,
 			 but can be easily changed).
 			 To run: Edit the user parameters near the bottom of the
 			         file (paths to forcing files, variable names,
