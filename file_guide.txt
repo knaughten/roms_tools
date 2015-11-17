@@ -35,13 +35,32 @@ romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
 romscice_ini.py: Builds a ROMS initialisation file using ECCO2 data for
                  temperature and salinity; starts with a motionless ocean and
 		 zero sea surface height. Depends on calc_z.py.
-		 To run: First edit user parameters (mainly just file paths)
-		         partway through the file (after the function
-			 interp_ecco2roms). Then make sure that you have scipy
-			 version 0.14 or higher (on raijin, this means switching
-			 to python/2.7.6; instructions at the top of the file).
-			 Then open python/ipython and type "run
-			 romscice_ini.py".
+		 To run: First edit user parameters (file paths and grid
+		         parameters) partway through the file (after the
+			 function interp_ecco2roms). Then make sure that you
+			 have scipy version 0.14 or higher (on raijin, this
+			 means switching to python/2.7.6; instructions at the
+			 top of the file). Then open python/ipython and type
+			 "run romscice_ini.py".
+
+woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
+               text file (FESOM input format) to NetCDF.
+	       To run: First edit user parameters (file paths) near the top of
+	               the file. Then open python/ipython and type "run
+		       woa_netcdf.py".
+
+romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
+                     data for temperature and salinity; starts with a motionless
+		     ocean and zero sea surface height. Depends on calc_z.py,
+		     and uses WOA data assumed to be converted from FESOM input
+		     using woa_netcdf.py
+		     To run: First edit user parameters (file paths and grid
+		             parameters) partway through the file (after the
+			     function interp_woa2roms). Then make sure that you
+			     have scipy version 0.14 or higher (on raijin, this
+			     means switching to python/2.7.6; instructions at
+			     the top of the file). Then open python/ipython and
+			     type "run romscice_ini_woa.py".
 
 convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
                   northern lateral bounday conditions for ROMS. Depends on

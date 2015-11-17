@@ -1,5 +1,5 @@
-# Build a 1992 initialisation file for ROMS from the ECCO2 temperature and 
-# salinity reanalysis of January 1992. Set initial velocities and sea surface
+# Build a 1995 initialisation file for ROMS from the ECCO2 temperature and 
+# salinity reanalysis of January 1995. Set initial velocities and sea surface
 # height to zero.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
 # the interp_ecco2roms function to find where these filenames are defined.
@@ -70,7 +70,7 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3
 # File paths to edit here:
 # Path to ROMS grid file
 grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
-# Path to ECCO2 files for temperature and salinity in January 1992
+# Path to ECCO2 files for temperature and salinity in January 1995
 theta_file = '../data/ECCO2/THETA.1440x720x50.199501.nc'
 salt_file = '../data/ECCO2/SALT.1440x720x50.199501.nc'
 # Path to desired output file
