@@ -15,6 +15,139 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.spatial import KDTree
 from calc_z import *
 
+
+# Main routine
+def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_woa):
+
+    # Read WOA data and grid
+    print 'Reading World Ocean Atlas data'
+    woa_id = Dataset(woa_file, 'r')
+    lon_woa = woa_id.variables['longitude'][:]
+    lat_woa = woa_id.variables['latitude'][:nbdry_woa]
+    depth_woa = woa_id.variables['depth'][:]
+    temp_woa = transpose(woa_id.variables['temp'][:,:nbdry_woa,:])
+    salt_woa = transpose(woa_id.variables['salt'][:,:nbdry_woa,:])
+    woa_id.close()
+
+    # Read ROMS grid
+    print 'Reading ROMS grid'
+    grid_id = Dataset(grid_file, 'r')
+    lon_roms = grid_id.variables['lon_rho'][:,:]
+    lat_roms = grid_id.variables['lat_rho'][:,:]
+    h = grid_id.variables['h'][:,:]
+    zice = grid_id.variables['zice'][:,:]
+    mask_rho = grid_id.variables['mask_rho'][:,:]
+    mask_zice = grid_id.variables['mask_zice'][:,:]
+    grid_id.close()
+    num_lon = size(lon_roms, 1)
+    num_lat = size(lon_roms, 0)
+    # Mask h and zice with zeros
+    h = h*mask_rho
+    zice = zice*mask_zice
+
+    # Get 3D array of ROMS z-coordinates, as well as 1D arrays of s-coordinates
+    # and stretching curves
+    z_roms_3d, sc_r, Cs_r = calc_z(h, zice, lon_roms, lat_roms, theta_s, theta_b, hc, N)
+    # Copy the latitude and longitude values into 3D arrays of the same shape
+    lon_roms_3d = tile(lon_roms, (N,1,1))
+    lat_roms_3d = tile(lat_roms, (N,1,1))
+
+    # Regridding happens here
+    print 'Interpolating temperature'
+    temp = interp_woa2roms(temp_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
+    print 'Interpolating salinity'
+    salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
+
+    # Set initial velocities and sea surface height to zero
+    u = zeros((N, num_lat, num_lon-1))
+    v = zeros((N, num_lat-1, num_lon))
+    ubar = zeros((num_lat, num_lon-1))
+    vbar = zeros((num_lat-1, num_lon))
+    zeta = zeros((num_lat, num_lon))
+
+    print 'Writing to NetCDF file'
+    out_id = Dataset(output_file, 'w')
+    # Define dimensions
+    out_id.createDimension('xi_u', num_lon-1)
+    out_id.createDimension('xi_v', num_lon)
+    out_id.createDimension('xi_rho', num_lon)
+    out_id.createDimension('eta_u', num_lat)
+    out_id.createDimension('eta_v', num_lat-1)
+    out_id.createDimension('eta_rho', num_lat)
+    out_id.createDimension('s_rho', N)
+    out_id.createDimension('ocean_time', None)
+    out_id.createDimension('one', 1);
+    # Define variables and assign values
+    out_id.createVariable('tstart', 'f8', ('one'))
+    out_id.variables['tstart'].long_name = 'start processing day'
+    out_id.variables['tstart'].units = 'day'
+    out_id.variables['tstart'][:] = 0.0
+    out_id.createVariable('tend', 'f8', ('one'))
+    out_id.variables['tend'].long_name = 'end processing day'
+    out_id.variables['tend'].units = 'day'
+    out_id.variables['tend'][:] = 0.0
+    out_id.createVariable('theta_s', 'f8', ('one'))
+    out_id.variables['theta_s'].long_name = 'S-coordinate surface control parameter'
+    out_id.variables['theta_s'][:] = theta_s
+    out_id.createVariable('theta_b', 'f8', ('one'))
+    out_id.variables['theta_b'].long_name = 'S-coordinate bottom control parameter'
+    out_id.variables['theta_b'].units = 'nondimensional'
+    out_id.variables['theta_b'][:] = theta_b
+    out_id.createVariable('Tcline', 'f8', ('one'))
+    out_id.variables['Tcline'].long_name = 'S-coordinate surface/bottom layer width'
+    out_id.variables['Tcline'].units = 'meter'
+    out_id.variables['Tcline'][:] = Tcline
+    out_id.createVariable('hc', 'f8', ('one'))
+    out_id.variables['hc'].long_name = 'S-coordinate parameter, critical depth'
+    out_id.variables['hc'].units = 'meter'
+    out_id.variables['hc'][:] = hc
+    out_id.createVariable('Cs_r', 'f8', ('s_rho'))
+    out_id.variables['Cs_r'].long_name = 'S-coordinate stretching curves at RHO-points'
+    out_id.variables['Cs_r'].units = 'nondimensional'
+    out_id.variables['Cs_r'].valid_min = -1.0
+    out_id.variables['Cs_r'].valid_max = 0.0
+    out_id.variables['Cs_r'][:] = Cs_r
+    out_id.createVariable('ocean_time', 'f8', ('ocean_time'))
+    out_id.variables['ocean_time'].long_name = 'time since initialization'
+    out_id.variables['ocean_time'].units = 'seconds'
+    out_id.variables['ocean_time'][0] = 0.0
+    out_id.createVariable('u', 'f8', ('ocean_time', 's_rho', 'eta_u', 'xi_u'))
+    out_id.variables['u'].long_name = 'u-momentum component'
+    out_id.variables['u'].units = 'meter second-1'
+    out_id.variables['u'][0,:,:,:] = u
+    out_id.createVariable('v', 'f8', ('ocean_time', 's_rho', 'eta_v', 'xi_v'))
+    out_id.variables['v'].long_name = 'v-momentum component'
+    out_id.variables['v'].units = 'meter second-1'
+    out_id.variables['v'][0,:,:,:] = v
+    out_id.createVariable('ubar', 'f8', ('ocean_time', 'eta_u', 'xi_u'))
+    out_id.variables['ubar'].long_name = 'vertically integrated u-momentum component'
+    out_id.variables['ubar'].units = 'meter second-1'
+    out_id.variables['ubar'][0,:,:] = ubar
+    out_id.createVariable('vbar', 'f8', ('ocean_time', 'eta_v', 'xi_v'))
+    out_id.variables['vbar'].long_name = 'vertically integrated v-momentum component'
+    out_id.variables['vbar'].units = 'meter second-1'
+    out_id.variables['vbar'][0,:,:] = vbar
+    out_id.createVariable('zeta', 'f8', ('ocean_time', 'eta_rho', 'xi_rho'))
+    out_id.variables['zeta'].long_name = 'free-surface'
+    out_id.variables['zeta'].units = 'meter'
+    out_id.variables['zeta'][0,:,:] = zeta
+    out_id.createVariable('temp', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'))
+    out_id.variables['temp'].long_name = 'potential temperature'
+    out_id.variables['temp'].units = 'Celsius'
+    out_id.variables['temp'][0,:,:,:] = temp
+    out_id.createVariable('salt', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'))
+    out_id.variables['salt'].long_name = 'salinity'
+    out_id.variables['salt'].units = 'PSU'
+    out_id.variables['salt'][0,:,:,:] = salt
+    out_id.createVariable('sc_r', 'f8', ('s_rho'))
+    out_id.variables['sc_r'].long_name = 'S-coordinate at rho-points'
+    out_id.variables['sc_r'].units = 'nondimensional'
+    out_id.variables['sc_r'].valid_min = -1.0
+    out_id.variables['sc_r'].valid_max = 0.0
+    out_id.variables['sc_r'][:] = sc_r
+    out_id.close()
+
+
 # Given an array on the World Ocean Atlas grid, interpolate onto the ROMS grid,
 # fill the ice shelf cavities with nearest-neighbour values from the same depth
 # level, and fill the land mask with constant values.
@@ -78,150 +211,28 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
     return B
 
 
-# File paths to edit here:
-# Path to ROMS grid file
-grid_file = '../apps/common/grid/caisom001_OneQuartergrd.nc'
-# Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
-# woa_netcdf.py)
-woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
-# Path to desired output file
-output_file = '../data/caisom001_ini.nc'
+# User parameters
+if __name__ == "__main__":
 
-# Grid parameters: check grid_file and *.in file to make sure these are correct
-Tcline = 40
-theta_s = 0.9
-theta_b = 4
-hc = 40
-N = 31
+    # Path to ROMS grid file
+    grid_file = '../apps/common/grid/caisom001_OneQuartergrd.nc'
+    # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
+    # woa_netcdf.py)
+    woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
+    # Path to desired output file
+    output_file = '../data/caisom001_ini.nc'
 
-# Northernmost index of WOA grid to read (1-based)
-nbdry_woa = 32
+    # Grid parameters: check grid_file and *.in file to make sure these are correct
+    Tcline = 40
+    theta_s = 0.9
+    theta_b = 4
+    hc = 40
+    N = 31
 
-# Read WOA data and grid
-print 'Reading World Ocean Atlas data'
-woa_id = Dataset(woa_file, 'r')
-lon_woa = woa_id.variables['longitude'][:]
-lat_woa = woa_id.variables['latitude'][:nbdry_woa]
-depth_woa = woa_id.variables['depth'][:]
-temp_woa = transpose(woa_id.variables['temp'][:,:nbdry_woa,:])
-salt_woa = transpose(woa_id.variables['salt'][:,:nbdry_woa,:])
-woa_id.close()
+    # Northernmost index of WOA grid to read (1-based)
+    nbdry_woa = 32
 
-# Read ROMS grid
-print 'Reading ROMS grid'
-grid_id = Dataset(grid_file, 'r')
-lon_roms = grid_id.variables['lon_rho'][:,:]
-lat_roms = grid_id.variables['lat_rho'][:,:]
-h = grid_id.variables['h'][:,:]
-zice = grid_id.variables['zice'][:,:]
-mask_rho = grid_id.variables['mask_rho'][:,:]
-mask_zice = grid_id.variables['mask_zice'][:,:]
-grid_id.close()
-num_lon = size(lon_roms, 1)
-num_lat = size(lon_roms, 0)
-# Mask h and zice with zeros
-h = h*mask_rho
-zice = zice*mask_zice
+    run(grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_woa)
 
-# Get 3D array of ROMS z-coordinates, as well as 1D arrays of s-coordinates
-# and stretching curves
-z_roms_3d, sc_r, Cs_r = calc_z(h, zice, lon_roms, lat_roms, theta_s, theta_b, hc, N)
-# Copy the latitude and longitude values into 3D arrays of the same shape
-lon_roms_3d = tile(lon_roms, (N,1,1))
-lat_roms_3d = tile(lat_roms, (N,1,1))
-
-# Regridding happens here
-print 'Interpolating temperature'
-temp = interp_woa2roms(temp_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
-print 'Interpolating salinity'
-salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
-
-# Set initial velocities and sea surface height to zero
-u = zeros((N, num_lat, num_lon-1))
-v = zeros((N, num_lat-1, num_lon))
-ubar = zeros((num_lat, num_lon-1))
-vbar = zeros((num_lat-1, num_lon))
-zeta = zeros((num_lat, num_lon))
-
-print 'Writing to NetCDF file'
-out_id = Dataset(output_file, 'w')
-# Define dimensions
-out_id.createDimension('xi_u', num_lon-1)
-out_id.createDimension('xi_v', num_lon)
-out_id.createDimension('xi_rho', num_lon)
-out_id.createDimension('eta_u', num_lat)
-out_id.createDimension('eta_v', num_lat-1)
-out_id.createDimension('eta_rho', num_lat)
-out_id.createDimension('s_rho', N)
-out_id.createDimension('ocean_time', None)
-out_id.createDimension('one', 1);
-# Define variables and assign values
-out_id.createVariable('tstart', 'f8', ('one'))
-out_id.variables['tstart'].long_name = 'start processing day'
-out_id.variables['tstart'].units = 'day'
-out_id.variables['tstart'][:] = 0.0
-out_id.createVariable('tend', 'f8', ('one'))
-out_id.variables['tend'].long_name = 'end processing day'
-out_id.variables['tend'].units = 'day'
-out_id.variables['tend'][:] = 0.0
-out_id.createVariable('theta_s', 'f8', ('one'))
-out_id.variables['theta_s'].long_name = 'S-coordinate surface control parameter'
-out_id.variables['theta_s'][:] = theta_s
-out_id.createVariable('theta_b', 'f8', ('one'))
-out_id.variables['theta_b'].long_name = 'S-coordinate bottom control parameter'
-out_id.variables['theta_b'].units = 'nondimensional'
-out_id.variables['theta_b'][:] = theta_b
-out_id.createVariable('Tcline', 'f8', ('one'))
-out_id.variables['Tcline'].long_name = 'S-coordinate surface/bottom layer width'
-out_id.variables['Tcline'].units = 'meter'
-out_id.variables['Tcline'][:] = Tcline
-out_id.createVariable('hc', 'f8', ('one'))
-out_id.variables['hc'].long_name = 'S-coordinate parameter, critical depth'
-out_id.variables['hc'].units = 'meter'
-out_id.variables['hc'][:] = hc
-out_id.createVariable('Cs_r', 'f8', ('s_rho'))
-out_id.variables['Cs_r'].long_name = 'S-coordinate stretching curves at RHO-points'
-out_id.variables['Cs_r'].units = 'nondimensional'
-out_id.variables['Cs_r'].valid_min = -1.0
-out_id.variables['Cs_r'].valid_max = 0.0
-out_id.variables['Cs_r'][:] = Cs_r
-out_id.createVariable('ocean_time', 'f8', ('ocean_time'))
-out_id.variables['ocean_time'].long_name = 'time since initialization'
-out_id.variables['ocean_time'].units = 'seconds'
-out_id.variables['ocean_time'][0] = 0.0
-out_id.createVariable('u', 'f8', ('ocean_time', 's_rho', 'eta_u', 'xi_u'))
-out_id.variables['u'].long_name = 'u-momentum component'
-out_id.variables['u'].units = 'meter second-1'
-out_id.variables['u'][0,:,:,:] = u
-out_id.createVariable('v', 'f8', ('ocean_time', 's_rho', 'eta_v', 'xi_v'))
-out_id.variables['v'].long_name = 'v-momentum component'
-out_id.variables['v'].units = 'meter second-1'
-out_id.variables['v'][0,:,:,:] = v
-out_id.createVariable('ubar', 'f8', ('ocean_time', 'eta_u', 'xi_u'))
-out_id.variables['ubar'].long_name = 'vertically integrated u-momentum component'
-out_id.variables['ubar'].units = 'meter second-1'
-out_id.variables['ubar'][0,:,:] = ubar
-out_id.createVariable('vbar', 'f8', ('ocean_time', 'eta_v', 'xi_v'))
-out_id.variables['vbar'].long_name = 'vertically integrated v-momentum component'
-out_id.variables['vbar'].units = 'meter second-1'
-out_id.variables['vbar'][0,:,:] = vbar
-out_id.createVariable('zeta', 'f8', ('ocean_time', 'eta_rho', 'xi_rho'))
-out_id.variables['zeta'].long_name = 'free-surface'
-out_id.variables['zeta'].units = 'meter'
-out_id.variables['zeta'][0,:,:] = zeta
-out_id.createVariable('temp', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'))
-out_id.variables['temp'].long_name = 'potential temperature'
-out_id.variables['temp'].units = 'Celsius'
-out_id.variables['temp'][0,:,:,:] = temp
-out_id.createVariable('salt', 'f8', ('ocean_time', 's_rho', 'eta_rho', 'xi_rho'))
-out_id.variables['salt'].long_name = 'salinity'
-out_id.variables['salt'].units = 'PSU'
-out_id.variables['salt'][0,:,:,:] = salt
-out_id.createVariable('sc_r', 'f8', ('s_rho'))
-out_id.variables['sc_r'].long_name = 'S-coordinate at rho-points'
-out_id.variables['sc_r'].units = 'nondimensional'
-out_id.variables['sc_r'].valid_min = -1.0
-out_id.variables['sc_r'].valid_max = 0.0
-out_id.variables['sc_r'][:] = sc_r
-out_id.close()
+    
 
