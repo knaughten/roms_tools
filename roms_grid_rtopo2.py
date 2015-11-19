@@ -1,7 +1,6 @@
 from netCDF4 import Dataset
 from numpy import *
 from scipy.interpolate import RegularGridInterpolator
-from scipy.ndimage.filters import gaussian_filter
 
 # Interpolate RTopo-2 data to an existing ROMS grid, and do some smoothing. 
 # Then overwrite the bathymetry, ice shelf draft, and masks in the ROMS grid
@@ -15,7 +14,7 @@ from scipy.ndimage.filters import gaussian_filter
 # module load python/2.7.6-matplotlib
 
 # Main routine
-def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zice_smooth):
+def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1, filter_h2, filter_zice):
 
     # Read RTopo-2 data
     print 'Reading RTopo-2 data'
@@ -123,12 +122,22 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zic
     h[h < min_h] = min_h
     h[h > max_h] = max_h    
     zice[-zice < min_zice] = -min_zice
+    wct_bad = h - abs(zice) < hc
+    h[wct_bad] = hc + abs(zice)
 
     # Smooth h and zice
-    print 'Smoothing h'
-    h = gaussian_filter(h, h_smooth, mode='nearest')
-    print 'Smoothing zice'
-    zice = gaussian_filter(zice, zice_smooth, mode='nearest')
+    print 'Smoothing bathymetry in open ocean'
+    h = smooth(h, mask_rho-mask_zice, filter_h1)
+    print 'Smoothing bathymetry under ice shelves'
+    h = smooth(h, mask_zice, filter_h2)
+    print 'Smoothing ice shelf draft'
+    zice = smooth(zice, mask_zice, filter_zice)
+
+    # Find grid cells where the water column thickness (bathymetry minus
+    # ice shelf draft) is less than minimum water column thickness hc,
+    # and modify bathymetry in these cells to fix this
+    wct_bad = h - abs(zice) < hc
+    h[wct_bad] = hc + abs(zice)
 
     # Overwrite h, zice, and masks in the ROMS grid file
     print 'Writing to ROMS grid file'
@@ -165,6 +174,53 @@ def interp_rtopo2roms (A, lon_rtopo, lat_rtopo, lon_roms, lat_roms):
     return B
 
 
+# Given an array and a mask, run a uniform filter (2D moving average) of the
+# given size over the unmasked area (mask=1).
+# Input:
+# A = array of size nxm containing some data
+# mask = array of size nxm containing 1s and 0s; the indices with 1s will be
+#        smoothed in A
+# filter_size = size of square array which will be used as the uniform filter.
+#               filter_size = 5 means each point will be replaced with the
+#               average of unmasked grid cells in a 5x5 array centered on that
+#               point. A higher value for filter_size means more smoothing.
+def smooth (A, mask, filter_size):
+
+    num_j = size(A, 0)
+    num_i = size(A, 1)
+    r = (filter_size-1)/2
+
+    # I know this is 4 nested loops. It's disgusting. I'm sorry.
+    # There might be a way to vectorise it, but it's not like this script
+    # will be run very many times!
+
+    # Loop over each cell in A
+    for j in range(num_j):
+        for i in range(num_i):
+            # Only continue if this cell is unmasked (mask=1)
+            if abs(mask[j,i]-1) < 0.1:
+                # Make a list of unmasked values within the filter
+                values = []
+                for jj in range(j-r,j+r+1):
+                    for ii in range(i-r,i+r+1):
+                        # Allow ii to wrap around; negative values will
+                        # automatically wrap around, but positive values above
+                        # num_i will thow an IndexError. So take mod num_i
+                        # in that case.
+                        if ii >= num_i:
+                            ii = ii-num_i
+                        # Don't let jj wrap around; only continue if jj is
+                        # inside the domain. Also, only continue if the point
+                        # [jj,ii] is unmasked.
+                        if jj >= 0 and jj < num_j and abs(mask[jj,ii]-1) < 0.1:
+                            # All conditions are met; add to list
+                            values.append(A[jj,ii])
+                # Average over this filter
+                A[j,i] = mean(values)
+
+    return A  
+
+
 # User parameters
 if __name__ == "__main__":
 
@@ -179,12 +235,16 @@ if __name__ == "__main__":
     max_h = 6000.0
     # Minimum ice shelf draft
     min_zice = 50.0
-    # Standard deviations of Gaussian filters for smoothing bathymetry (h)
-    # and ice shelf draft (zice); higher values mean more smoothing
-    h_smooth = 0.6
-    zice_smooth = 0.5
+    # Minimum water column thickness
+    hc = 40.0
+    # Uniform filter sizes for smoothing bathymetry in open ocean, bathymetry
+    # under ice shelves, and ice shelf draft. A higher value means more
+    # smoothing.
+    filter_h1 = 5
+    filter_h2 = 3
+    filter_zice = 3
 
-    run(rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zice_smooth)
+    run(rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1, filter_h2, filter_zice)
 
 
 
