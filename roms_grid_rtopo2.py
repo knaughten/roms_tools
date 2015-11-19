@@ -123,7 +123,7 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     h[h > max_h] = max_h    
     zice[-zice < min_zice] = -min_zice
     wct_bad = h - abs(zice) < hc
-    h[wct_bad] = hc + abs(zice)
+    h[wct_bad] = abs(zice[wct_bad]) + hc
 
     # Smooth h and zice
     print 'Smoothing bathymetry in open ocean'
