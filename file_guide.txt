@@ -5,7 +5,10 @@ roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
 		     draft, and masks in the ROMS grid with the new RTopo-2
 		     values.
 		     To run: Modify the user parameters near the bottom of
-		             the file. Then open python/ipython and type
+		             the file. Then make sure that you have scipy
+			     version 0.14 or higher (on raijin, this means
+			     switching to python/2.7.6; instructions at the top
+			     of the file).Then open python/ipython and type
 			     "run roms_grid_rtopo2.py".
 
 cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt

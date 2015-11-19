@@ -7,10 +7,18 @@ from scipy.ndimage.filters import gaussian_filter
 # Then overwrite the bathymetry, ice shelf draft, and masks in the ROMS grid
 # file with the new RTopo-2 values.
 
+# NB for raijin users: RegularGridInterpolator needs python/2.7.6 but the
+# default is 2.7.3. Before running this script, switch them as follows:
+# module unload python/2.7.3
+# module unload python/2.7.3-matplotlib
+# module load python/2.7.6
+# module load python/2.7.6-matplotlib
+
 # Main routine
 def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zice_smooth):
 
     # Read RTopo-2 data
+    print 'Reading RTopo-2 data'
     id = Dataset(rtopo_data, 'r')
     lon_rtopo = id.variables['lon'][:]
     lat_rtopo = id.variables['lat'][:]
@@ -20,6 +28,7 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zic
     id.close()
 
     # Read RTopo-2 mask
+    print 'Reading RTopo-2 mask'
     id = Dataset(rtopo_aux, 'r')
     mask = transpose(id.variables['amask'][:,:])
     id.close()
@@ -41,6 +50,7 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zic
     zice_rtopo[mask_zice_rtopo < 0.1] = 0.0
 
     # Read ROMS latitude and longitude on all grids (rho, u, v, psi)
+    print 'Reading ROMS grid'
     id = Dataset(roms_grid, 'r')
     lon_rho = id.variables['lon_rho'][:,:]
     lat_rho = id.variables['lat_rho'][:,:]
@@ -64,13 +74,20 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zic
     lon_psi[index] = lon_psi[index] - 360
 
     # Interpolate bathymetry, ice shelf draft, and ice shelf mask to rho grid
+    print 'Interpolating h'
     h = interp_rtopo2roms(h_rtopo, lon_rtopo, lat_rtopo, lon_rho, lat_rho)
+    print 'Interpolating zice'
     zice = interp_rtopo2roms(zice_rtopo, lon_rtopo, lat_rtopo, lon_rho, lat_rho)
+    print 'Interpolating mask_zice'
     mask_zice = interp_rtopo2roms(mask_zice_rtopo, lon_rtopo, lat_rtopo, lon_rho, lat_rho)
     # Interpolate land-ocean mask to each ROMS grid
+    print 'Interpolating mask_rho'
     mask_rho = interp_rtopo2roms(mask_ocn_rtopo, lon_rtopo, lat_rtopo, lon_rho, lat_rho)
+    print 'Interpolating mask_u'
     mask_u = interp_rtopo2roms(mask_ocn_rtopo, lon_rtopo, lat_rtopo, lon_u, lat_u)
+    print 'Interoplating mask_v'
     mask_v = interp_rtopo2roms(mask_ocn_rtopo, lon_rtopo, lat_rtopo, lon_v, lat_v)
+    print 'Interpolating mask_psi'
     mask_psi = interp_rtopo2roms(mask_ocn_rtopo, lon_rtopo, lat_rtopo, lon_psi, lat_psi)
 
     # Interpolation of masks near the coast will lead to values between 0 and 1.
@@ -108,10 +125,13 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zic
     zice[-zice < min_zice] = -min_zice
 
     # Smooth h and zice
+    print 'Smoothing h'
     h = gaussian_filter(h, h_smooth, mode='nearest')
+    print 'Smoothing zice'
     zice = gaussian_filter(zice, zice_smooth, mode='nearest')
 
     # Overwrite h, zice, and masks in the ROMS grid file
+    print 'Writing to ROMS grid file'
     id = Dataset(roms_grid, 'a')
     id.variables['h'][:,:] = h
     id.variables['zice'][:,:] = zice
@@ -161,8 +181,8 @@ if __name__ == "__main__":
     min_zice = 50.0
     # Standard deviations of Gaussian filters for smoothing bathymetry (h)
     # and ice shelf draft (zice); higher values mean more smoothing
-    h_smooth = 0.5
-    zice_smooth = 0.4
+    h_smooth = 0.6
+    zice_smooth = 0.5
 
     run(rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, h_smooth, zice_smooth)
 
