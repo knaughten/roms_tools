@@ -137,7 +137,7 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     # ice shelf draft) is less than minimum water column thickness hc,
     # and modify bathymetry in these cells to fix this
     wct_bad = h - abs(zice) < hc
-    h[wct_bad] = hc + abs(zice)
+    h[wct_bad] = abs(zice[wct_bad]) + hc
 
     # Overwrite h, zice, and masks in the ROMS grid file
     print 'Writing to ROMS grid file'
