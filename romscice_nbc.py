@@ -29,12 +29,12 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
+    grid_file = '../apps/common/grid/rtopo2_circumpolar_quarterdegree.nc'
     theta_base = '../data/ECCO2/THETA.1440x720x50.' + str(year)
     salt_base = '../data/ECCO2/SALT.1440x720x50.' + str(year)
     uvel_base = '../data/ECCO2/UVEL.1440x720x50.' + str(year)
     vvel_base = '../data/ECCO2/VVEL.1440x720x50.' + str(year)
-    output_file = '../data/caisom001_lbc_' + str(year) + '.nc'
+    output_file = '../data/ecco2_cube92_lbc_' + str(year) + '.nc'
 
     # Grid parameters; check grid_file and *.in to make sure these are correct
     Tcline = 40

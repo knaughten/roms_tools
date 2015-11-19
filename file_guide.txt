@@ -1,5 +1,13 @@
 ***GENERATING INPUT FILES***
 
+roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
+                     some smoothing. Then overwrite the bathymetry, ice shelf
+		     draft, and masks in the ROMS grid with the new RTopo-2
+		     values.
+		     To run: Modify the user parameters near the bottom of
+		             the file. Then open python/ipython and type
+			     "run roms_grid_rtopo2.py".
+
 cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt
               (land mask) files.
 	      To run: Open python or ipython, and type "run cice_grid.py." The
@@ -144,6 +152,13 @@ repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
 		           (paths to forcing files, years, variable names, etc)
 			   then open python or ipython and type "run
 			   repeat_forcing.py".
+
+romscice_nbc_rep.py: Given a ROMS lateral bounday condition file with one year
+                     of monthly data, convert it to a file which can be used
+		     repeatedly year after year (for eg spinup).
+		     To run: Edit the user parameter (path to LBC file)
+		             near the bottom of the file. Then open python or
+			     ipython and type "run romscice_nbc_rep.py".
 
 romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
                           (eg created with romscice_ini.py), overwrite the
