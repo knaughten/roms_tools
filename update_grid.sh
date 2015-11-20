@@ -27,6 +27,6 @@ python -c "from romscice_nbc import convert_file; convert_file(1995)"
 # Convert these to repeating annual boundary conditions
 mv ../data/ecco2_cube92_lbc_1995.nc ../data/ecco2_cube92_lbc_1995_rep.nc
 python romscice_nbc_rep.py
-# Submit the 
-cd ../apps/common/circumpolar
+# Submit the test run
+cd ../apps/circumpolar
 qsub submit.job
