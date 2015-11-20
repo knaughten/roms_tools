@@ -122,11 +122,14 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     h[mask_rho < 0.1] = min_h
     # Similarly with zice, as before
     zice[mask_zice < 0.1] = 0.0
-    # Find grid cells where the water column thickness (bathymetry minus
-    # ice shelf draft) is less than minimum water column thickness hc,
-    # and modify bathymetry in these cells to fix this
-    wct_bad = h - abs(zice) < hc
-    h[wct_bad] = abs(zice[wct_bad]) + hc
+    # Find the minimum water column depth
+    min_wct = amin(h-abs(zice))
+    # If this is less than the specified minimum hc, shift h downward at all
+    # ocean points so that wct at this cell equals hc, but slopes are preserved
+    if min_wct < hc:
+        incr = hc - min_wct
+        index = abs(mask_rho-1) < 0.1
+        h[index] = h[index] + incr
 
     # Smooth h and zice
     print 'Smoothing bathymetry in open ocean'
@@ -142,8 +145,11 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     zice[-zice < min_zice] = -min_zice    
     h[mask_rho < 0.1] = min_h
     zice[mask_zice < 0.1] = 0.0
-    wct_bad = h - abs(zice) < hc
-    h[wct_bad] = abs(zice[wct_bad]) + hc
+    min_wct = amin(h-abs(zice))
+    if min_wct < hc:
+        incr = hc - min_wct
+        index = abs(mask_rho-1) < 0.1
+        h[index] = h[index] + incr
 
     # Overwrite h, zice, and masks in the ROMS grid file
     print 'Writing to ROMS grid file'
