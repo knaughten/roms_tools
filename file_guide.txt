@@ -11,6 +11,21 @@ roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
 			     of the file).Then open python/ipython and type
 			     "run roms_grid_rtopo2.py".
 
+update_grid.sh: After making changes to bathymetry, ice shelf draft, and masks
+                in the ROMS grid (as in roms_grid_rtopo2.py), all input files
+		which depend on water column thickness (initial conditions
+		and lateral boundary conditions) must be regenerated. If it
+		is a spinup, the lateral boundary condition file will have to
+		be altered as in romscice_nbc_rep.py. Then a new spinup will
+		have to be submitted to test the changes to the grid. It is
+		likely that this process will have to be repeated many times
+		and this bash script was created to streamline the process.
+		To run: Other users will have to alter just about every line in
+		        this script as there are a lot of paths hard-coded,
+			plus PBS flags for the raijin queue. Hopefully it will
+			still be useful. Then type "qsub update_grid.sh" to
+			submit to the queue.
+
 cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt
               (land mask) files.
 	      To run: Open python or ipython, and type "run cice_grid.py." The
