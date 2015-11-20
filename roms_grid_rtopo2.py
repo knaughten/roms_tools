@@ -113,15 +113,18 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     mask_v[0:50,400:600] = 0.0
     mask_psi[0:50,400:600] = 0.0
 
+    # Apply clipping depths to bathymetry and zice
+    h[h < min_h] = min_h
+    h[h > max_h] = max_h    
+    zice[-zice < min_zice] = -min_zice    
     # At land points, set bathymetry to min_h again, in case the interpolation
     # changed this near the coast
     h[mask_rho < 0.1] = min_h
     # Similarly with zice, as before
     zice[mask_zice < 0.1] = 0.0
-    # Apply clipping depths to bathymetry and zice
-    h[h < min_h] = min_h
-    h[h > max_h] = max_h    
-    zice[-zice < min_zice] = -min_zice
+    # Find grid cells where the water column thickness (bathymetry minus
+    # ice shelf draft) is less than minimum water column thickness hc,
+    # and modify bathymetry in these cells to fix this
     wct_bad = h - abs(zice) < hc
     h[wct_bad] = abs(zice[wct_bad]) + hc
 
@@ -133,9 +136,12 @@ def run (rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1
     print 'Smoothing ice shelf draft'
     zice = smooth(zice, mask_zice, filter_zice)
 
-    # Find grid cells where the water column thickness (bathymetry minus
-    # ice shelf draft) is less than minimum water column thickness hc,
-    # and modify bathymetry in these cells to fix this
+    # Repeat fixes from above, in case smoothing changed them
+    h[h < min_h] = min_h
+    h[h > max_h] = max_h    
+    zice[-zice < min_zice] = -min_zice    
+    h[mask_rho < 0.1] = min_h
+    zice[mask_zice < 0.1] = 0.0
     wct_bad = h - abs(zice) < hc
     h[wct_bad] = abs(zice[wct_bad]) + hc
 
