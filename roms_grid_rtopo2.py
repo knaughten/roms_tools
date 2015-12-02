@@ -253,8 +253,8 @@ if __name__ == "__main__":
     # under ice shelves, and ice shelf draft. A higher value means more
     # smoothing.
     filter_h1 = 5
-    filter_h2 = 3
-    filter_zice = 3
+    filter_h2 = 5
+    filter_zice = 5
 
     run(rtopo_data, rtopo_aux, roms_grid, min_h, max_h, min_zice, hc, filter_h1, filter_h2, filter_zice)
 
