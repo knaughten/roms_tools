@@ -241,19 +241,25 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 			timestep length and the output frequency for ocean.log
 			(INFOSTEP in Params.py if you are using ROMS-CICE-MCT).
 
-plot_ohc.py: Calculate the total ocean heat content at each timestep of the
-             given ocean averages file, and plot the timeseries. This script
-	     also contains useful code for calculating volume integrals.
-	     To run: Open python or ipython, and type "run plot_ohc.py". The
-	             script will prompt you for paths to the ocean averages
-		     and ROMS grid files.
+plot_ohc.py: Calculates and plots the total heat content at each timestep of
+             the given ocean averages file. This file also contains useful code
+	     for calculating volume averages.
+	     To run: Open python or ipython, and type "run plot_ohc.py".
+	             The script will prompt you for paths to the ocean averages
+		     file and the grid file.
 
-plot_totalsalt.py: Calculate the total ocean salt content at each timestep of
-                   the given ocean averages file, and plot the timeseries.
-		   To run: Open python or ipython, and type "run plot_ohc.py".
-		           The script will prompt you for paths to the ocean
-			   averages and ROMS grid files.
+plot_totalsalt.py: Calculates and plots the total salt content at each timestep
+                   of the given ocean averages file.
+		   To run: Open python or ipython, and type 
+                           "run plot_totalsalt.py". The script will prompt you
+			   for paths to the ocean averages file and the grid
+			   file.
 
+plot_tke.py: Calculates and plots the total kinetic energy at each timestep of
+             the given ocean averages file.
+	     To run: Open python or ipython, and type "run plot_tke.py". The
+	             script will prompt you for paths to the ocean averages file
+		     and the grid file.
 
 ***NICE FIGURES***
 

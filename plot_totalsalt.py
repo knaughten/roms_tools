@@ -3,7 +3,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-# Calculate the total ocean salt content at each timestep of the given ocean
+# Calculate and plot the total salt content at each timestep of the given ocean
 # averages file.
 def plot_totalsalt (file_path, grid_path):
 
@@ -42,19 +42,19 @@ def plot_totalsalt (file_path, grid_path):
     lon[index2] = lon[index2] - 360
 
     # Interpolate to get longitude at the edges of each cell
-    w_bdry = (lon[:,0] + lon[:,num_lon-1] - 360)/2
-    middle_lon = (lon[:,0:num_lon-1] + lon[:,1:num_lon])/2
-    e_bdry = (lon[:,0] + 360 + lon[:,num_lon-1])/2
+    w_bdry = (lon[:,0] + lon[:,-1] - 360)/2
+    middle_lon = (lon[:,0:-1] + lon[:,1:])/2
+    e_bdry = (lon[:,0] + 360 + lon[:,-1])/2
     lon_edges = ma.concatenate((w_bdry[:,None], middle_lon, e_bdry[:,None]), axis=1)
     # Subtract to get the change in longitude over each cell
-    dlon = abs(lon_edges[:,1:num_lon+1] - lon_edges[:,0:num_lon])
+    dlon = abs(lon_edges[:,1:] - lon_edges[:,0:-1])
 
     # Similarly for latitude
     s_bdry = lat[0,:]
-    middle_lat = (lat[0:num_lat-1,:] + lat[1:num_lat,:])/2
-    n_bdry = lat[num_lat-1,:]*0 - 50
+    middle_lat = (lat[0:-1,:] + lat[1:,:])/2
+    n_bdry = lat[-1,:]*0 - 50
     lat_edges = ma.concatenate((s_bdry[None,:], middle_lat, n_bdry[None,:]))
-    dlat = lat_edges[1:num_lat+1,:] - lat_edges[0:num_lat,:]
+    dlat = lat_edges[1:,:] - lat_edges[0:-1,:]
 
     # Convert from spherical to Cartesian coordinates
     # dy = r*dlat where dlat is converted to radians
@@ -97,7 +97,7 @@ def plot_totalsalt (file_path, grid_path):
     clf()
     plot(time, totalsalt)
     xlabel('Years')
-    ylabel('Ocean Salt Content (kg)')
+    ylabel('Southern Ocean Salt Content (kg)')
     show()
 
 
