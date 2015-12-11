@@ -65,8 +65,8 @@ def make_density_file (grid_file, input_file, output_file):
         out_id.variables['ocean_time'][t] = time[t]
         # Read temperature and salinity (convert to float128 to prevent
         # overflow in UNESCO calculations)
-        temp = array(in_id.variables['temp'][t,:,:,:], dtype=float128)
-        salt = array(in_id.variables['salt'][t,:,:,:], dtype=float128)
+        temp = ma.asarray(in_id.variables['temp'][t,:,:,:], dtype=float128)
+        salt = ma.asarray(in_id.variables['salt'][t,:,:,:], dtype=float128)
         # Magic happens here
         rho = unesco(temp, salt, press)
         # Save the results for this timestep
