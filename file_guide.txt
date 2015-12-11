@@ -241,25 +241,21 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 			timestep length and the output frequency for ocean.log
 			(INFOSTEP in Params.py if you are using ROMS-CICE-MCT).
 
-plot_ohc.py: Calculates and plots the total heat content at each timestep of
-             the given ocean averages file. This file also contains useful code
-	     for calculating volume averages.
-	     To run: Open python or ipython, and type "run plot_ohc.py".
-	             The script will prompt you for paths to the ocean averages
-		     file and the grid file.
+unesco.py: Calculates the UNESCO seawater equation of state (1980): given
+           temperature, salinity, and pressure (depth/10 is fine), returns
+	   density.
+	   To run: The function unesco is designed to be called by another
+	           script. See make_density_file.py for an example.
 
-plot_totalsalt.py: Calculates and plots the total salt content at each timestep
-                   of the given ocean averages file.
-		   To run: Open python or ipython, and type 
-                           "run plot_totalsalt.py". The script will prompt you
-			   for paths to the ocean averages file and the grid
-			   file.
-
-plot_tke.py: Calculates and plots the total kinetic energy at each timestep of
-             the given ocean averages file.
-	     To run: Open python or ipython, and type "run plot_tke.py". The
-	             script will prompt you for paths to the ocean averages file
-		     and the grid file.
+make_density_file.py: Given an ocean history or averages file with temperature
+                      and salinity data, calculate density fields at each
+		      timestep using the 1980 UENSCO seawater equation of
+		      state. Save in a new file.
+		      To run: Open python or ipython, and type
+		              "run make_density_file.py". The script will
+			      prompt you for the paths to the ROMS grid file,
+			      the ocean history or averages file, and the
+			      desired path to the new density file.
 
 ***NICE FIGURES***
 
