@@ -3,18 +3,22 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-# Analyse a ROMS spinup by calculating and plotting 5 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 6 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
 # Total kinetic energy
 # Maximum velocity
+# Drake Passage transport
 
 
-# Given the path to a ROMS grid file, calculate the differentials dA (elements
-# of area, masked with zice since ice shelf melt rate is the only 
-# depth-independent variable integrated in this file) and dV (volume) on the
-# rho grid.
+# Given the path to a ROMS grid file, calculate differentials for later
+# integration.
+# Input: grid_path = string containing path to ROMS grid file
+# Output:
+# dx_2d, dy_2d = differentials of x and y on the 2D rho-grid (lat x lon)
+# dA = differential of area on the 2D rho-grid, masked with zice
+# dV = differential of volume on the 3D rho-grid (depth x lat x lon)
 def calc_grid (grid_path):
 
     # Grid parameters
@@ -98,11 +102,14 @@ def calc_grid (grid_path):
     # Calculate dV
     dV = dx*dy*dz
 
-    return dA, dV
+    return dx[0,:,:], dy[0,:,:], dA, dV
 
 
-# Read and return the density field from the given density file (with path
-# rho_path) at the given timestep t.
+# Read and return density.
+# Input:
+# rho_path = string containing path to density file
+# t = timestep index in file_path
+# Output: rho = density field at timestep t
 def get_rho (rho_path, t):
 
     id = Dataset(rho_path, 'r')
@@ -220,6 +227,55 @@ def calc_maxvel (u_rho, v_rho):
     return amax(sqrt(u_rho**2 + v_rho**2))
 
 
+# Calculate zonal transport through the Drake Passage.
+# Input:
+# file_path = path to ocean history/averages file
+# dV = elements of volume on the rho grid
+# dx_2d, dy_2d = elements of x and y on the 2D rho grid
+# u_rho = u at timestep t, interpolated to the rho-grid
+# Output: drakepsg_trans = zonal transport through the Drake Passage,
+#                          integrated over depth and latitude, and averaged 
+#                          between 65W and 55W
+def calc_drakepsgtrans (file_path, dV, dx_2d, dy_2d, u_rho):
+
+    # Bounds on Drake Passage
+    lon_min = -65 + 360
+    lon_max = -55 + 360
+
+    # Read longitude on the rho grid
+    id = Dataset(file_path, 'r')
+    lon = id.variables['lon_rho'][:,:]
+    id.close()
+
+    # Only save the northernmost index of longitude
+    lon = lon[-1,:]
+    i = arange(1, size(lon)+1)
+
+    # Find the first index where i is at least 1000 and lon exceeds lon_min
+    i_min = nonzero((i >= 1000)*(lon >= lon_min))[0][0]
+    # Same for lon_max
+    i_max = nonzero((i >= 1000)*(lon >= lon_max))[0][0]
+    # For each array, only save the slices between i_min and i_max
+    dV_slice = dV[:,:,i_min:i_max]
+    dx_2d_slice = dx_2d[:,i_min:i_max]
+    dy_2d_slice = dy_2d[:,i_min:i_max]
+    u_rho_slice = u_rho[:,:,i_min:i_max]
+
+    # Since x varies with latitude, we can't just integrate dx at a single
+    # latitude to get the distance x across the region. Instead, integrate
+    # dx*dy over the region to get the area, then divide by the integral of
+    # dy at a single longitude (since dy does not vary with longitude) to
+    # get the y-averaged integral of dx.
+    avg_int_dx = sum(dx_2d_slice*dy_2d_slice)/sum(dy_2d_slice[:,0])
+
+    # Divide the integral of u_rho over volume by the y-averaged integral
+    # of dx to get the x-averaged zonal transport between 65W and 55W.
+    transport = sum(u_rho_slice*dV_slice)/avg_int_dx
+
+    # Divide by 1e6 to convert to Sv and return the result.
+    return transport*1e-6
+
+
 # Command-line interface
 if __name__ == "__main__":
 
@@ -228,7 +284,7 @@ if __name__ == "__main__":
     rho_path = raw_input('Enter path to density file: ')
 
     # Calculate differentials
-    dA, dV = calc_grid(grid_path)
+    dx_2d, dy_2d, dA, dV = calc_grid(grid_path)
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
     time = id.variables['ocean_time'][:]/(365*24*60*60)
@@ -239,6 +295,7 @@ if __name__ == "__main__":
     avgismr = []
     tke = []
     maxvel = []
+    drakepsgtrans = []
     # Process each timestep separately to prevent memory overflow
     for t in range(size(time)):
         print 'Processing timestep '+str(t+1)+' of '+str(size(time))
@@ -254,6 +311,8 @@ if __name__ == "__main__":
         tke.append(tke_tmp)
         print 'Calculating maximum velocity'
         maxvel.append(calc_maxvel(u_rho, v_rho))
+        print 'Calculating Drake Passage transport'
+        drakepsgtrans.append(calc_drakepsgtrans(file_path, dV, dx_2d, dy_2d, u_rho))
 
     # Plot each timeseries in sequence
     clf()
@@ -277,3 +336,8 @@ if __name__ == "__main__":
     xlabel('Years')
     ylabel('Maximum Southern Ocean Velocity (m/s)')
     show()
+    plot(time, drakepsgtrans)
+    xlabel('Years')
+    ylabel('Drake Passage Transport (Sv)')
+    show()
+    

@@ -29,7 +29,7 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../apps/common/grid/rtopo2_circumpolar_quarterdegree.nc'
+    grid_file = '../apps/common/grid/rtopo1_circumpolar_quarterdegree.nc'
     theta_base = '../data/ECCO2/THETA.1440x720x50.' + str(year)
     salt_base = '../data/ECCO2/SALT.1440x720x50.' + str(year)
     uvel_base = '../data/ECCO2/UVEL.1440x720x50.' + str(year)
@@ -289,8 +289,8 @@ def convert_file (year):
         vbar_interp[index] = 0.0
 
         # Calculate time values centered in the middle of each month,
-        # relative to 1992
-        time = 365.25*(year-1992) + 365.25/12*(month+0.5)
+        # relative to 1995
+        time = 365.25*(year-1995) + 365.25/12*(month+0.5)
 
         # Save data to NetCDF file
         out_fid = Dataset(output_file, 'a')
