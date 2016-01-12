@@ -3,13 +3,14 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-# Analyse a ROMS spinup by calculating and plotting 6 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 7 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
 # Total kinetic energy
 # Maximum velocity
 # Drake Passage transport
+# Total sea ice area
 
 
 # Given the path to a ROMS grid file, calculate differentials for later
@@ -276,12 +277,31 @@ def calc_drakepsgtrans (file_path, dV, dx_2d, dy_2d, u_rho):
     return transport*1e-6
 
 
+# Calculate total sea ice area at the given timestep t.
+# Input:
+# cice_path = path to CICE history file
+# dx_2d, dy_2d = elements of x and y on the 2D rho grid
+# t = timestep index in file_path
+# Output: totalice = total sea ice area (m^2)
+def calc_totalice (cice_path, dx_2d, dy_2d, t):
+
+    id = Dataset(cice_path, 'r')
+    # Read sea ice area fraction at each grid cell
+    aice = ma.asarray(id.variables['aice'][t,:,:], dtype=float128)
+    id.close()    
+
+    # Integrate over area
+    totalice = sum(aice*dx_2d*dy_2d)
+    return totalice    
+
+
 # Command-line interface
 if __name__ == "__main__":
 
     grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
     rho_path = raw_input('Enter path to density file: ')
+    cice_path = raw_input('Enter path to CICE history file: ')
 
     # Calculate differentials
     dx_2d, dy_2d, dA, dV = calc_grid(grid_path)
@@ -296,48 +316,60 @@ if __name__ == "__main__":
     tke = []
     maxvel = []
     drakepsgtrans = []
+    totalice = []
     # Process each timestep separately to prevent memory overflow
     for t in range(size(time)):
         print 'Processing timestep '+str(t+1)+' of '+str(size(time))
         rho = get_rho(rho_path, t)
-        print 'Calculating ocean heat content'
+        #print 'Calculating ocean heat content'
         ohc.append(calc_ohc(file_path, dV, rho, t))
-        print 'Calculating total salt content'
+        #print 'Calculating total salt content'
         totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
-        print 'Calculating average ice shelf melt rate'
+        #print 'Calculating average ice shelf melt rate'
         avgismr.append(calc_avgismr(file_path, dA, t))
-        print 'Calculating total kinetic energy'
+        #print 'Calculating total kinetic energy'
         tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
         tke.append(tke_tmp)
-        print 'Calculating maximum velocity'
+        #print 'Calculating maximum velocity'
         maxvel.append(calc_maxvel(u_rho, v_rho))
-        print 'Calculating Drake Passage transport'
+        #print 'Calculating Drake Passage transport'
         drakepsgtrans.append(calc_drakepsgtrans(file_path, dV, dx_2d, dy_2d, u_rho))
+        print 'Calculating total sea ice area'
+        totalice.append(calc_totalice(cice_path, dx_2d, dy_2d, t))
 
     # Plot each timeseries in sequence
     clf()
     plot(time, ohc)
     xlabel('Years')
     ylabel('Southern Ocean Heat Content (J)')
-    show()
+    savefig('ohc.png')
+    clf()
     plot(time, totalsalt)
     xlabel('Years')
     ylabel('Southern Ocean Salt Content (kg)')
-    show()
+    savefig('totalsalt.png')
+    clf()
     plot(time, avgismr)
     xlabel('Years')
     ylabel('Area-averaged Ice Shelf Melt Rate (m/y)')
-    show()    
+    savefig('avgismr.png')
+    clf()
     plot(time, tke)
     xlabel('Years')
     ylabel('Southern Ocean Total Kinetic Energy (J)')
-    show()
+    savefig('tke.png')
+    clf()
     plot(time, maxvel)
     xlabel('Years')
     ylabel('Maximum Southern Ocean Velocity (m/s)')
-    show()
+    savefig('maxvel.png')
+    clf()
     plot(time, drakepsgtrans)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
-    show()
-    
+    savefig('drakepsgtrans.png')
+    clf()
+    plot(time, totalice)
+    xlabel('Years')
+    ylabel(r'Total sea ice area (m$^2$)')
+    savefig('totalice.png')

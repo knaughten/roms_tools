@@ -257,15 +257,17 @@ make_density_file.py: Given an ocean history or averages file with temperature
 			      the ocean history or averages file, and the
 			      desired path to the new density file.
 
-spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 6 timeseries:
+spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 7 timeseries:
                  total heat content, total salt content, area-averaged ice shelf
-		 melt rate, total kinetic energy, maximum velocity, and Drake
-		 Passage transport.
+		 melt rate, total kinetic energy, maximum velocity, Drake
+		 Passage transport, and total sea ice area.
 		 To run: Open python or ipython, and type "run spinup_plots.py".
 		         The script will prompt you for the paths to the ROMS
-			 grid file, the ocean history or averages file, and the
+			 grid file, the ocean history or averages file, the
 			 corresponding density file (created using
-			 make_density_file.py).
+			 make_density_file.py), and the CICE history file
+			 (concatenate the individual files first so it contains
+			 the same timesteps as the ROMS history/averages file).
 
 ***NICE FIGURES***
 
