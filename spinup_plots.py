@@ -232,46 +232,57 @@ def calc_maxvel (u_rho, v_rho):
 # Input:
 # file_path = path to ocean history/averages file
 # dV = elements of volume on the rho grid
-# dx_2d, dy_2d = elements of x and y on the 2D rho grid
+# dx_2d = element of x-distance on the rho grid
 # u_rho = u at timestep t, interpolated to the rho-grid
 # Output: drakepsg_trans = zonal transport through the Drake Passage,
 #                          integrated over depth and latitude, and averaged 
 #                          between 65W and 55W
-def calc_drakepsgtrans (file_path, dV, dx_2d, dy_2d, u_rho):
+def calc_drakepsgtrans (file_path, dV, dx_2d, u_rho):
 
     # Bounds on Drake Passage
-    lon_min = -65 + 360
-    lon_max = -55 + 360
+    lon_target = -60 + 360
+    lat_min = -65
+    lat_max = -55
 
-    # Read longitude on the rho grid
+    # Calculate dy*dz = dV/dx
+    # First make dx 3D
+    N = size(dV, 0)
+    dx = tile(dx_2d, (N,1,1))
+    dydz = dV/dx
+
+    # Read longitude and latitude on the rho grid
     id = Dataset(file_path, 'r')
     lon = id.variables['lon_rho'][:,:]
+    lat = id.variables['lat_rho'][:,:]
     id.close()
 
     # Only save the northernmost index of longitude
     lon = lon[-1,:]
     i = arange(1, size(lon)+1)
+    # Find the first index where i is at least 1000 and lon exceeds lon_target
+    i2 = nonzero((i >= 1000)*(lon >= lon_target))[0][0]
+    # Subtract 1 to get the last index below lon_target
+    i1 = i2-1
 
-    # Find the first index where i is at least 1000 and lon exceeds lon_min
-    i_min = nonzero((i >= 1000)*(lon >= lon_min))[0][0]
-    # Same for lon_max
-    i_max = nonzero((i >= 1000)*(lon >= lon_max))[0][0]
-    # For each array, only save the slices between i_min and i_max
-    dV_slice = dV[:,:,i_min:i_max]
-    dx_2d_slice = dx_2d[:,i_min:i_max]
-    dy_2d_slice = dy_2d[:,i_min:i_max]
-    u_rho_slice = u_rho[:,:,i_min:i_max]
+    # Now select that slice of latitude
+    lat = lat[:,i1]
+    # Find the first index where lat exceeds lat_min
+    j_min = nonzero(lat >= lat_min)[0][0]
+    # Same for lat_max
+    j_max = nonzero(lat >= lat_max)[0][0]
 
-    # Since x varies with latitude, we can't just integrate dx at a single
-    # latitude to get the distance x across the region. Instead, integrate
-    # dx*dy over the region to get the area, then divide by the integral of
-    # dy at a single longitude (since dy does not vary with longitude) to
-    # get the y-averaged integral of dx.
-    avg_int_dx = sum(dx_2d_slice*dy_2d_slice)/sum(dy_2d_slice[:,0])
+    # Calculate transport at the first longitude
+    dydz1 = dydz[:,j_min:j_max,i1]
+    u_rho1 = u_rho[:,j_min:j_max,i1]
+    transport1 = sum(u_rho1*dydz1)
 
-    # Divide the integral of u_rho over volume by the y-averaged integral
-    # of dx to get the x-averaged zonal transport between 65W and 55W.
-    transport = sum(u_rho_slice*dV_slice)/avg_int_dx
+    # Calculate transport at the second longitude
+    dydz2 = dydz[:,j_min:j_max,i2]
+    u_rho2 = u_rho[:,j_min:j_max,i2]
+    transport2 = sum(u_rho2*dydz2)
+
+    # Linearly interpolate to lon_target
+    transport = (transport2-transport1)/(lon[i2]-lon[i1])*(lon_target-lon[i1]) + transport1
 
     # Divide by 1e6 to convert to Sv and return the result.
     return transport*1e-6
@@ -321,19 +332,19 @@ if __name__ == "__main__":
     for t in range(size(time)):
         print 'Processing timestep '+str(t+1)+' of '+str(size(time))
         rho = get_rho(rho_path, t)
-        #print 'Calculating ocean heat content'
+        print 'Calculating ocean heat content'
         ohc.append(calc_ohc(file_path, dV, rho, t))
-        #print 'Calculating total salt content'
+        print 'Calculating total salt content'
         totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
-        #print 'Calculating average ice shelf melt rate'
+        print 'Calculating average ice shelf melt rate'
         avgismr.append(calc_avgismr(file_path, dA, t))
-        #print 'Calculating total kinetic energy'
+        print 'Calculating total kinetic energy'
         tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
         tke.append(tke_tmp)
-        #print 'Calculating maximum velocity'
+        print 'Calculating maximum velocity'
         maxvel.append(calc_maxvel(u_rho, v_rho))
-        #print 'Calculating Drake Passage transport'
-        drakepsgtrans.append(calc_drakepsgtrans(file_path, dV, dx_2d, dy_2d, u_rho))
+        print 'Calculating Drake Passage transport'
+        drakepsgtrans.append(calc_drakepsgtrans(file_path, dV, dx_2d, u_rho))
         print 'Calculating total sea ice area'
         totalice.append(calc_totalice(cice_path, dx_2d, dy_2d, t))
 
