@@ -17,9 +17,11 @@ from calc_z import *
 # integration.
 # Input: grid_path = string containing path to ROMS grid file
 # Output:
-# dx_2d, dy_2d = differentials of x and y on the 2D rho-grid (lat x lon)
 # dA = differential of area on the 2D rho-grid, masked with zice
-# dV = differential of volume on the 3D rho-grid (depth x lat x lon)
+# dV = differential of volume on the 3D rho-grid (depth x lat x lon), masked
+#      with land mask
+# dydz = differential of area in the y-z direction for each cell on the 3D 
+#        rho-grid, masked with land mask
 def calc_grid (grid_path):
 
     # Grid parameters
@@ -38,12 +40,7 @@ def calc_grid (grid_path):
     zice = id.variables['zice'][:,:]
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
-    mask = id.variables['mask_rho'][:,:]
     id.close()
-
-    # Mask lat and lon at land points
-    lon = ma.masked_where(mask==0, lon)
-    lat = ma.masked_where(mask==0, lat)
     # Save dimensions
     num_lat = size(lon, 0)
     num_lon = size(lon, 1)
@@ -100,10 +97,17 @@ def calc_grid (grid_path):
     # Now find dz
     dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
 
-    # Calculate dV
-    dV = dx*dy*dz
+    # Read land mask
+    id = Dataset(grid_path, 'r')
+    mask = id.variables['mask_rho'][:,:]
+    id.close()
+    mask = tile(mask, (N,1,1))
+    # Calculate dV and mask with land mask
+    dV = ma.masked_where(mask==0, dx*dy*dz)
+    # Similarly for dydz
+    dydz = ma.masked_where(mask==0, dy*dz)
 
-    return dx[0,:,:], dy[0,:,:], dA, dV
+    return dA, dV, dydz
 
 
 # Read and return density.
@@ -122,7 +126,7 @@ def get_rho (rho_path, t):
 # Calculate ocean heat content at the given timestep t.
 # Input:
 # file_path = path to ocean history/averages file
-# dV = elements of volume on the rho grid
+# dV = elements of volume on the rho grid, masked with land mask
 # rho = density on the rho grid at timestep t
 # t = timestep index in file_path
 # Output: ohc = ocean heat content (J)
@@ -149,7 +153,7 @@ def calc_ohc (file_path, dV, rho, t):
 # Calculate total salt content at the given timestep t.
 # Input:
 # file_path = path to ocean history/averages file
-# dV = elements of volume on the rho grid
+# dV = elements of volume on the rho grid, masked with land mask
 # rho = density on the rho grid at timestep t
 # t = timestep index in file_path
 # Output: totalsalt = total salt content (kg)
@@ -169,7 +173,7 @@ def calc_totalsalt (file_path, dV, rho, t):
 # Calculate area-averaged ice shelf melt rate at the given timestep t.
 # Input:
 # file_path = path to ocean history/averages file
-# dA = elements of area on the rho grid, masked to only include ice shelves
+# dA = elements of area on the rho grid, masked with zice
 # t = timestep index in file_path
 # Output: avgismr = area-averaged ice shelf melt rate (m/y)
 def calc_avgismr (file_path, dA, t):
@@ -190,7 +194,7 @@ def calc_avgismr (file_path, dA, t):
 # Calculate total kinetic energy at the given timestep t.
 # Input:
 # file_path = path to ocean history/averages file
-# dV = elements of volume on the rho grid
+# dV = elements of volume on the rho grid, masked with land mask
 # rho = density on the rho grid at timestep t
 # t = timestep index in file_path
 # Output: tke = total kinetic energy (J)
@@ -231,24 +235,18 @@ def calc_maxvel (u_rho, v_rho):
 # Calculate zonal transport through the Drake Passage.
 # Input:
 # file_path = path to ocean history/averages file
-# dV = elements of volume on the rho grid
-# dx_2d = element of x-distance on the rho grid
+# dydz = elements of area in the y-z direction for each cell in the 3D
+#        rho-grid, masked with land mask
 # u_rho = u at timestep t, interpolated to the rho-grid
 # Output: drakepsg_trans = zonal transport through the Drake Passage,
 #                          integrated over depth and latitude, and averaged 
 #                          between 65W and 55W
-def calc_drakepsgtrans (file_path, dV, dx_2d, u_rho):
+def calc_drakepsgtrans (file_path, dydz, u_rho):
 
     # Bounds on Drake Passage
     lon_target = -60 + 360
     lat_min = -65
     lat_max = -55
-
-    # Calculate dy*dz = dV/dx
-    # First make dx 3D
-    N = size(dV, 0)
-    dx = tile(dx_2d, (N,1,1))
-    dydz = dV/dx
 
     # Read longitude and latitude on the rho grid
     id = Dataset(file_path, 'r')
@@ -291,19 +289,27 @@ def calc_drakepsgtrans (file_path, dV, dx_2d, u_rho):
 # Calculate total sea ice area at the given timestep t.
 # Input:
 # cice_path = path to CICE history file
-# dx_2d, dy_2d = elements of x and y on the 2D rho grid
+# dA = elements of area on the 2D rho grid (any mask will be removed)
 # t = timestep index in file_path
 # Output: totalice = total sea ice area (m^2)
-def calc_totalice (cice_path, dx_2d, dy_2d, t):
+def calc_totalice (cice_path, dA, t):
 
     id = Dataset(cice_path, 'r')
     # Read sea ice area fraction at each grid cell
     aice = ma.asarray(id.variables['aice'][t,:,:], dtype=float128)
-    id.close()    
+    id.close()
+
+    # Remove masks on aice and dA, and fill aice with zeros on land mask
+    # (numpy was throwing weird masking errors originally, and it doesn't
+    # matter if dA is unmasked because we are integrating not averaging)
+    aice_nomask = aice.data
+    aice_nomask[aice.mask] = 0.0
+    dA_nomask = dA.data
 
     # Integrate over area
-    totalice = sum(aice*dx_2d*dy_2d)
-    return totalice    
+    totalice = sum(aice_nomask*dA_nomask)
+    # Convert to km^2 and return
+    return totalice*1e-6    
 
 
 # Command-line interface
@@ -315,7 +321,7 @@ if __name__ == "__main__":
     cice_path = raw_input('Enter path to CICE history file: ')
 
     # Calculate differentials
-    dx_2d, dy_2d, dA, dV = calc_grid(grid_path)
+    dA, dV, dydz = calc_grid(grid_path)
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
     time = id.variables['ocean_time'][:]/(365*24*60*60)
@@ -344,9 +350,9 @@ if __name__ == "__main__":
         print 'Calculating maximum velocity'
         maxvel.append(calc_maxvel(u_rho, v_rho))
         print 'Calculating Drake Passage transport'
-        drakepsgtrans.append(calc_drakepsgtrans(file_path, dV, dx_2d, u_rho))
+        drakepsgtrans.append(calc_drakepsgtrans(file_path, dydz, u_rho))
         print 'Calculating total sea ice area'
-        totalice.append(calc_totalice(cice_path, dx_2d, dy_2d, t))
+        totalice.append(calc_totalice(cice_path, dA, t))
 
     # Plot each timeseries in sequence
     clf()
@@ -382,5 +388,5 @@ if __name__ == "__main__":
     clf()
     plot(time, totalice)
     xlabel('Years')
-    ylabel(r'Total sea ice area (m$^2$)')
+    ylabel(r'Total sea ice area (km$^2$)')
     savefig('totalice.png')
