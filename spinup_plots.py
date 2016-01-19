@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from os.path import *
 from calc_z import *
 
 # Analyse a ROMS spinup by calculating and plotting 7 timeseries:
@@ -232,15 +233,14 @@ def calc_maxvel (u_rho, v_rho):
     return amax(sqrt(u_rho**2 + v_rho**2))
 
 
-# Calculate zonal transport through the Drake Passage.
+# Calculate zonal transport (maximum over latitude) through the Drake Passage.
 # Input:
 # file_path = path to ocean history/averages file
 # dydz = elements of area in the y-z direction for each cell in the 3D
 #        rho-grid, masked with land mask
 # u_rho = u at timestep t, interpolated to the rho-grid
-# Output: drakepsg_trans = zonal transport through the Drake Passage,
-#                          integrated over depth and latitude, and averaged 
-#                          between 65W and 55W
+# Output: drakepsg_trans = zonal transport through the Drake Passage (60W),
+#                          integrated over depth, maximum over latitude
 def calc_drakepsgtrans (file_path, dydz, u_rho):
 
     # Bounds on Drake Passage
@@ -272,18 +272,18 @@ def calc_drakepsgtrans (file_path, dydz, u_rho):
     # Calculate transport at the first longitude
     dydz1 = dydz[:,j_min:j_max,i1]
     u_rho1 = u_rho[:,j_min:j_max,i1]
-    transport1 = sum(u_rho1*dydz1)
+    transport1 = sum(u_rho1*dydz1, 0)
 
     # Calculate transport at the second longitude
     dydz2 = dydz[:,j_min:j_max,i2]
     u_rho2 = u_rho[:,j_min:j_max,i2]
-    transport2 = sum(u_rho2*dydz2)
+    transport2 = sum(u_rho2*dydz2, 0)
 
     # Linearly interpolate to lon_target
     transport = (transport2-transport1)/(lon[i2]-lon[i1])*(lon_target-lon[i1]) + transport1
 
-    # Divide by 1e6 to convert to Sv and return the result.
-    return transport*1e-6
+    # Find the maximum value and divide by 1e6 to convert to Sv
+    return max(transport)*1e-6
 
 
 # Calculate total sea ice area at the given timestep t.
@@ -312,21 +312,18 @@ def calc_totalice (cice_path, dA, t):
     return totalice*1e-6    
 
 
-# Command-line interface
-if __name__ == "__main__":
+# Main routine
+# Input:
+# grid_path = path to ROMS grid file
+# file_path = path to ocean history/averages file
+# rho_path = path to density file
+# cice_path = path to CICE history file
+# log_path = path to log file (if it exists, previously calculated values will
+#            be read from it; regardless, it will be overwritten with all
+#            calculated values following computation)
+def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
 
-    grid_path = raw_input('Enter path to grid file: ')
-    file_path = raw_input('Enter path to ocean history/averages file: ')
-    rho_path = raw_input('Enter path to density file: ')
-    cice_path = raw_input('Enter path to CICE history file: ')
-
-    # Calculate differentials
-    dA, dV, dydz = calc_grid(grid_path)
-    # Read time data and convert from seconds to years
-    id = Dataset(file_path, 'r')
-    time = id.variables['ocean_time'][:]/(365*24*60*60)
-    id.close()
-
+    time = []
     ohc = []
     totalsalt = []
     avgismr = []
@@ -334,9 +331,66 @@ if __name__ == "__main__":
     maxvel = []
     drakepsgtrans = []
     totalice = []
+    # Check if the log file exists
+    if exists(log_path):
+        print 'Reading previously calculated values'
+        f = open(log_path, 'r')
+        # Skip the first line (header for time array)
+        f.readline()
+        for line in f:
+            try:
+                time.append(float(line))
+            except (ValueError):
+                # Reached the header for the next variable
+                break
+        for line in f:
+            try:
+                ohc.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                totalsalt.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                avgismr.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                tke.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                maxvel.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                drakepsgtrans.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            totalice.append(float(line))
+        f.close()
+
+    # Calculate differentials
+    print 'Analysing grid'
+    dA, dV, dydz = calc_grid(grid_path)
+    # Read time data and convert from seconds to years
+    id = Dataset(file_path, 'r')
+    new_time = id.variables['ocean_time'][:]/(365*24*60*60)
+    id.close()
+    # Concatenate with time values from log file
+    for t in range(size(new_time)):
+        time.append(new_time[t])
+
     # Process each timestep separately to prevent memory overflow
-    for t in range(size(time)):
-        print 'Processing timestep '+str(t+1)+' of '+str(size(time))
+    for t in range(size(new_time)):
+        print 'Processing timestep '+str(t+1)+' of '+str(size(new_time))
         rho = get_rho(rho_path, t)
         print 'Calculating ocean heat content'
         ohc.append(calc_ohc(file_path, dV, rho, t))
@@ -355,38 +409,87 @@ if __name__ == "__main__":
         totalice.append(calc_totalice(cice_path, dA, t))
 
     # Plot each timeseries in sequence
+    print 'Plotting ocean heat content'
     clf()
     plot(time, ohc)
     xlabel('Years')
     ylabel('Southern Ocean Heat Content (J)')
     savefig('ohc.png')
+    print 'Plotting total salt content'
     clf()
     plot(time, totalsalt)
     xlabel('Years')
     ylabel('Southern Ocean Salt Content (kg)')
     savefig('totalsalt.png')
+    print 'Plotting average ice shelf melt rate'
     clf()
     plot(time, avgismr)
     xlabel('Years')
     ylabel('Area-averaged Ice Shelf Melt Rate (m/y)')
     savefig('avgismr.png')
+    print 'Plotting total kinetic energy'
     clf()
     plot(time, tke)
     xlabel('Years')
     ylabel('Southern Ocean Total Kinetic Energy (J)')
     savefig('tke.png')
+    print 'Plotting maximum velocity'
     clf()
     plot(time, maxvel)
     xlabel('Years')
     ylabel('Maximum Southern Ocean Velocity (m/s)')
     savefig('maxvel.png')
+    print 'Plotting Drake Passage transport'
     clf()
     plot(time, drakepsgtrans)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
     savefig('drakepsgtrans.png')
+    print 'Plotting total sea ice area'
     clf()
     plot(time, totalice)
     xlabel('Years')
-    ylabel(r'Total sea ice area (km$^2$)')
+    ylabel(r'Total Sea Ice Area (km$^2$)')
     savefig('totalice.png')
+
+    print 'Saving results to log file'
+    f = open(log_path, 'w')
+    f.write('Time (years):\n')
+    for elm in time:
+        f.write(str(elm) + '\n')
+    f.write('Southern Ocean Heat Content (J):\n')
+    for elm in ohc:
+        f.write(str(elm) + '\n')
+    f.write('Southern Ocean Salt Content (kg):\n')
+    for elm in totalsalt:
+        f.write(str(elm) + '\n')
+    f.write('Area-averaged Ice Shelf Melt Rate (m/y):\n')
+    for elm in avgismr:
+        f.write(str(elm) + '\n')
+    f.write('Southern Ocean Total Kinetic Energy (J):\n')
+    for elm in tke:
+        f.write(str(elm) + '\n')
+    f.write('Maximum Southern Ocean Velocity (m/s):\n')
+    for elm in maxvel:
+        f.write(str(elm) + '\n')
+    f.write('Drake Passage Transport (Sv):\n')
+    for elm in drakepsgtrans:
+        f.write(str(elm) + '\n')
+    f.write('Total Sea Ice Area (km^2):\n')
+    for elm in totalice:
+        f.write(str(elm) + '\n')
+    f.close()
+
+
+# Command-line interface
+if __name__ == "__main__":
+
+    grid_path = raw_input('Enter path to grid file: ')
+    file_path = raw_input('Enter path to ocean history/averages file: ')
+    rho_path = raw_input('Enter path to density file: ')
+    cice_path = raw_input('Enter path to CICE history file: ')
+    log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
+
+    spinup_plots(grid_path, file_path, rho_path, cice_path, log_path)
+
+
