@@ -4,10 +4,11 @@ from matplotlib.pyplot import *
 from os.path import *
 from calc_z import *
 
-# Analyse a ROMS spinup by calculating and plotting 7 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 8 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
+# Ice shelf basal mass loss
 # Total kinetic energy
 # Maximum velocity
 # Drake Passage transport
@@ -177,6 +178,7 @@ def calc_totalsalt (file_path, dV, rho, t):
 # dA = elements of area on the rho grid, masked with zice
 # t = timestep index in file_path
 # Output: avgismr = area-averaged ice shelf melt rate (m/y)
+#         ismr = 2D ice shelf melt rate field (m/y) at this timestep
 def calc_avgismr (file_path, dA, t):
 
     # Read ice shelf melt rate, converting to float128 to prevent overflow
@@ -184,12 +186,29 @@ def calc_avgismr (file_path, dA, t):
     id = Dataset(file_path, 'r')
     ismr = ma.asarray(id.variables['m'][t,:,:], dtype=float128)
     # Convert from m/s to m/y
-    ismr = ismr*365*24*60*60
+    ismr = ismr*365.25*24*60*60
     id.close()    
 
     # Integrate ismr over area and divide by total area to get average
     avgismr = sum(ismr*dA)/sum(dA)
-    return avgismr
+    return avgismr, ismr
+
+
+# Calculate net basal mass loss based on the given ice shelf melt rate field.
+# Input:
+# ismr = 2D ice shelf melt rate field (m/y)
+# dA = elements of area on the rho grid, masked with zice
+# Output: massloss = net basal mass loss (Gt/y)
+def calc_massloss (ismr, dA):
+
+    # Density of ice in kg/m^3
+    rho_ice = 916
+
+    # Integrate over area to get volume loss
+    volumeloss = sum(ismr*dA)
+    # Convert to mass loss in Gt/y
+    massloss = 1e-12*rho_ice*volumeloss
+    return massloss
 
 
 # Calculate total kinetic energy at the given timestep t.
@@ -327,6 +346,7 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
     ohc = []
     totalsalt = []
     avgismr = []
+    massloss = []
     tke = []
     maxvel = []
     drakepsgtrans = []
@@ -356,6 +376,11 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
         for line in f:
             try:
                 avgismr.append(float(line))
+            except (ValueError):
+                break
+        for line in f:
+            try:
+                massloss.append(float(line))
             except (ValueError):
                 break
         for line in f:
@@ -397,7 +422,10 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
         print 'Calculating total salt content'
         totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
         print 'Calculating average ice shelf melt rate'
-        avgismr.append(calc_avgismr(file_path, dA, t))
+        avgismr_tmp, ismr = calc_avgismr(file_path, dA, t)
+        avgismr.append(avgismr_tmp)
+        print 'Calculating basal mass loss'
+        massloss.append(calc_massloss(ismr, dA))
         print 'Calculating total kinetic energy'
         tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
         tke.append(tke_tmp)
@@ -427,6 +455,12 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
     xlabel('Years')
     ylabel('Area-averaged Ice Shelf Melt Rate (m/y)')
     savefig('avgismr.png')
+    print 'Plotting basal mass loss'
+    clf()
+    plot(time, massloss)
+    xlabel('Years')
+    ylabel('Ice Shelf Basal Mass Loss (Gt/y)')
+    savefig('massloss.png')
     print 'Plotting total kinetic energy'
     clf()
     plot(time, tke)
@@ -465,6 +499,9 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
         f.write(str(elm) + '\n')
     f.write('Area-averaged Ice Shelf Melt Rate (m/y):\n')
     for elm in avgismr:
+        f.write(str(elm) + '\n')
+    f.write('Ice Shelf Basal Mass Loss (Gt/y):\n')
+    for elm in massloss:
         f.write(str(elm) + '\n')
     f.write('Southern Ocean Total Kinetic Energy (J):\n')
     for elm in tke:
