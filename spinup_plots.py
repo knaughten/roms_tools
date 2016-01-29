@@ -252,14 +252,14 @@ def calc_maxvel (u_rho, v_rho):
     return amax(sqrt(u_rho**2 + v_rho**2))
 
 
-# Calculate zonal transport (maximum over latitude) through the Drake Passage.
+# Calculate zonal transport through the Drake Passage.
 # Input:
 # file_path = path to ocean history/averages file
 # dydz = elements of area in the y-z direction for each cell in the 3D
 #        rho-grid, masked with land mask
 # u_rho = u at timestep t, interpolated to the rho-grid
 # Output: drakepsg_trans = zonal transport through the Drake Passage (60W),
-#                          integrated over depth, maximum over latitude
+#                          integrated over depth and latitude
 def calc_drakepsgtrans (file_path, dydz, u_rho):
 
     # Bounds on Drake Passage
@@ -291,18 +291,18 @@ def calc_drakepsgtrans (file_path, dydz, u_rho):
     # Calculate transport at the first longitude
     dydz1 = dydz[:,j_min:j_max,i1]
     u_rho1 = u_rho[:,j_min:j_max,i1]
-    transport1 = sum(u_rho1*dydz1, 0)
+    transport1 = sum(u_rho1*dydz1)
 
     # Calculate transport at the second longitude
     dydz2 = dydz[:,j_min:j_max,i2]
     u_rho2 = u_rho[:,j_min:j_max,i2]
-    transport2 = sum(u_rho2*dydz2, 0)
+    transport2 = sum(u_rho2*dydz2)
 
     # Linearly interpolate to lon_target
     transport = (transport2-transport1)/(lon[i2]-lon[i1])*(lon_target-lon[i1]) + transport1
 
-    # Find the maximum value and divide by 1e6 to convert to Sv
-    return max(transport)*1e-6
+    # Ddivide by 1e6 to convert to Sv
+    return transport*1e-6
 
 
 # Calculate total sea ice area at the given timestep t.
