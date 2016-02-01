@@ -125,6 +125,14 @@ calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
 	   To run: This is a function designed to be called from other
 	           scripts. 
 
+romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
+                         atmospheric forcing to ROMS-CICE input forcing files
+			 on the correct grid and with the correct units.
+			 To run: Edit file paths near the top of the file and
+			         start/end years near the bottom. Then open
+				 python or ipython and type "run
+				 romscice_atm_monthly.py".
+
 
 ***MODIFYING INPUT FILES***
 
