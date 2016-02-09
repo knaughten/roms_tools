@@ -282,6 +282,29 @@ spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 8 timeseries:
 			 the same timesteps as the ROMS history/averages file),
 			 and the log file.
 
+***CMIP5 ANALYSIS***
+
+cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
+                models used in Kaitlin's project. Model objects contain
+		information about the model, and most usefully a class function
+		get_directory which returns the directory containing monthly
+		output for the specified variable and experiment.
+		To run: The function build_model_list is designed to be called
+		        by other functions; see for example
+			cmip5_eraint_plot.py. Note that for the class function
+			get_directory to work, you must be running on raijin
+			and be part of the ua6 project.
+
+cmip5_field.py: Reads CMIP5 model output for the specified model, experiment,
+                variable, and date range. Returns the time-averaged data over
+		the Southern Ocean (for atmosphere variables, i.e. lat x lon)
+		or at the northern boundary of ROMS (for ocean variables, i.e.
+		depth x lon).
+		To run: The function cmip5_field is designed to be called by
+		        other functions; see for example cmip5_eraint_plot.py.
+			Note that for this function to work, you must be
+			running on raijin and be part of the ua6 project.
+
 ***NICE FIGURES***
 
 zice.py: Saves a contour plot of ice shelf draft, with the land masked in white,
@@ -290,3 +313,20 @@ zice.py: Saves a contour plot of ice shelf draft, with the land masked in white,
 	 To run: Open python or ipython, and type "run zice.py". The script
 	         will prompt you for the paths to the ROMS grid file and the
 		 desired output figure. 
+
+cmip5_eraint_plot.py: Compares ERA-Interim reanalyses and CMIP5 output by
+                      saving plots for 11 atmospheric surface variables (the
+		      8 which will be used by ROMS-CICE, plus 3 more which
+		      FESOM uses), zonally averaged over the ROMS domain (90S
+		      to 38S) and time-averaged between 1992 and 2005, with
+		      the given variable on the x-axis and latitude on the
+		      y-axis.
+		      To run: Edit parameters at the top of the file, such as
+		              the directory where ERA-Interim monthly data is
+			      stored. Then open python or ipython and type
+			      "run cmip5_eraint_plot.py". Note that for this
+			      script to work, you must be running on raijin and
+			      be part of the ua6 project.
+
+
+

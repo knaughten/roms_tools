@@ -21,11 +21,11 @@ def convert_file (year):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
-    input_atm_file = '../data/ERA_Interim/monthly/AN_' + str(year) + '_monthly_orig.nc'
-    input_ppt_file = '../data/ERA_Interim/monthly/FC_' + str(year) + '_monthly_orig.nc'
-    output_atm_file = '../data/ERA_Interim/AN_' + str(year) + '_monthly.nc'
-    output_ppt_file = '../data/ERA_Interim/FC_' + str(year) + '_monthly.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    input_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/originals/AN_' + str(year) + '_monthly_orig.nc'
+    input_ppt_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/originals/FC_' + str(year) + '_monthly_orig.nc'
+    output_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/AN_' + str(year) + '_monthly.nc'
+    output_ppt_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/FC_' + str(year) + '_monthly.nc'
 
     Lv = 2.5e6 # Latent heat of vapourisation, J/kg
     Rv = 461.5 # Ideal gas constant for water vapour, J/K/kg
@@ -91,7 +91,7 @@ def convert_file (year):
     # Process one timestep at a time to minimise memory use
     for t in range(size(time)):
         oatm_fid = Dataset(output_atm_file, 'a')
-        print 'Processing record ' + str(t+1) + ' of ' + str(size(atm_time))
+        print 'Processing record ' + str(t+1) + ' of ' + str(size(time))
         # Write the current time value to output AN file
         oatm_fid.variables['time'][t] = time[t]
         # Read variables for this timestep

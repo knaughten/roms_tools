@@ -215,12 +215,12 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
 if __name__ == "__main__":
 
     # Path to ROMS grid file
-    grid_file = '../apps/common/grid/rtopo2_circumpolar_quarterdegree.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
     # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
     # woa_netcdf.py)
     woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
     # Path to desired output file
-    output_file = '../data/woa_ini.nc'
+    output_file = '../ROMS-CICE-MCT/data/woa_ini.nc'
 
     # Grid parameters: check grid_file and *.in file to make sure these are correct
     Tcline = 40
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     N = 31
 
     # Northernmost index of WOA grid to read (1-based)
-    nbdry_woa = 32
+    nbdry_woa = 44
 
     run(grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_woa)
 

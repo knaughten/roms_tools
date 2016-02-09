@@ -4,9 +4,8 @@ from scipy.interpolate import RegularGridInterpolator
 from calc_z import *
 
 # Build a ROMS lateral boundary condition file from ECCO2 temperature, salinity,
-# and velocity output, containing boundary conditions at the northern boundary
-# (50S). Output 12 sets of monthly-averaged data, one for each month of the
-# given year.
+# and velocity output, containing boundary conditions at the northern boundary.
+# Output 12 sets of monthly-averaged data, one for each month of the given year.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
 # the interp_ecco2roms function to find where these filenames are defined.
 
@@ -29,12 +28,12 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../apps/common/grid/rtopo1_circumpolar_quarterdegree.nc'
-    theta_base = '../data/ECCO2/THETA.1440x720x50.' + str(year)
-    salt_base = '../data/ECCO2/SALT.1440x720x50.' + str(year)
-    uvel_base = '../data/ECCO2/UVEL.1440x720x50.' + str(year)
-    vvel_base = '../data/ECCO2/VVEL.1440x720x50.' + str(year)
-    output_file = '../data/ecco2_cube92_lbc_' + str(year) + '.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    theta_base = '../ROMS-CICE-MCT/data/ECCO2/THETA.1440x720x50.' + str(year)
+    salt_base = '../ROMS-CICE-MCT/data/ECCO2/SALT.1440x720x50.' + str(year)
+    uvel_base = '../ROMS-CICE-MCT/data/ECCO2/UVEL.1440x720x50.' + str(year)
+    vvel_base = '../ROMS-CICE-MCT/data/ECCO2/VVEL.1440x720x50.' + str(year)
+    output_file = '../ROMS-CICE-MCT/data/ecco2_cube92_lbc_' + str(year) + '.nc'
 
     # Grid parameters; check grid_file and *.in to make sure these are correct
     Tcline = 40
@@ -47,7 +46,7 @@ def convert_file (year):
     # Constant to convert from degrees to radians
     deg2rad = pi/180.0
     # Northernmost index of ECCO2 grid to read (1-based)
-    nbdry_ecco = 161
+    nbdry_ecco = 208
 
     # Read ECCO2 grid
     print 'Reading ECCO2 grid'
