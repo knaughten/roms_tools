@@ -273,11 +273,13 @@ spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 8 timeseries:
 		 have to be recomputed if the run is extended; at the beginning
 		 of this script, previous values will be read from the same
 		 log file if it exists.
-		 To run: Open python or ipython, and type "run spinup_plots.py".
-		         The script will prompt you for the paths to the ROMS
-			 grid file, the ocean history or averages file, the
-			 corresponding density file (created using
-			 make_density_file.py), the CICE history file
+		 To run: First edit the i and j coordinates of the Drake Passage
+		         (in the function calc_drakepsgtrans) for your grid.
+			 Then open python or ipython, and type
+			 "run spinup_plots.py". The script will prompt you for
+			 the paths to the ROMS grid file, the ocean history or
+			 averages file, the corresponding density file (created
+			 using make_density_file.py), the CICE history file
 			 (concatenate the individual files first so it contains
 			 the same timesteps as the ROMS history/averages file),
 			 and the log file.

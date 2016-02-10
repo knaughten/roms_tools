@@ -22,7 +22,7 @@ from calc_z import *
 # dA = differential of area on the 2D rho-grid, masked with zice
 # dV = differential of volume on the 3D rho-grid (depth x lat x lon), masked
 #      with land mask
-# dydz = differential of area in the y-z direction for each cell on the 3D 
+# dydz = differential of area in the y-z direction for each cell on the 3D
 #        rho-grid, masked with land mask
 def calc_grid (grid_path):
 
@@ -35,6 +35,8 @@ def calc_grid (grid_path):
     r = 6.371e6
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
+    # Northern boundary of ROMS grid
+    nbdry_val = -38
 
     # Read grid variables
     id = Dataset(grid_path, 'r')
@@ -66,7 +68,7 @@ def calc_grid (grid_path):
     # Similarly for latitude
     s_bdry = lat[0,:]
     middle_lat = 0.5*(lat[0:-1,:] + lat[1:,:])
-    n_bdry = lat[-1,:]*0 - 50
+    n_bdry = lat[-1,:]*0 + nbdry_val
     lat_edges = ma.concatenate((s_bdry[None,:], middle_lat, n_bdry[None,:]))
     dlat = lat_edges[1:,:] - lat_edges[0:-1,:]
 
@@ -262,46 +264,19 @@ def calc_maxvel (u_rho, v_rho):
 #                          integrated over depth and latitude
 def calc_drakepsgtrans (file_path, dydz, u_rho):
 
-    # Bounds on Drake Passage
-    lon_target = -60 + 360
-    lat_min = -65
-    lat_max = -55
+    # Bounds on Drake Passage; edit for new grids
+    i_DP = 1175    
+    j_min = 220
+    j_max = 300
 
-    # Read longitude and latitude on the rho grid
-    id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    id.close()
+    # Trim arrays to these bounds
+    u_rho_DP = u_rho[:,j_min:j_max,i_DP]
+    dydz_DP = dydz[:,j_min:j_max,i_DP]
 
-    # Only save the northernmost index of longitude
-    lon = lon[-1,:]
-    i = arange(1, size(lon)+1)
-    # Find the first index where i is at least 1000 and lon exceeds lon_target
-    i2 = nonzero((i >= 1000)*(lon >= lon_target))[0][0]
-    # Subtract 1 to get the last index below lon_target
-    i1 = i2-1
+    # Calculate transport
+    transport = sum(u_rho_DP*dydz_DP)
 
-    # Now select that slice of latitude
-    lat = lat[:,i1]
-    # Find the first index where lat exceeds lat_min
-    j_min = nonzero(lat >= lat_min)[0][0]
-    # Same for lat_max
-    j_max = nonzero(lat >= lat_max)[0][0]
-
-    # Calculate transport at the first longitude
-    dydz1 = dydz[:,j_min:j_max,i1]
-    u_rho1 = u_rho[:,j_min:j_max,i1]
-    transport1 = sum(u_rho1*dydz1)
-
-    # Calculate transport at the second longitude
-    dydz2 = dydz[:,j_min:j_max,i2]
-    u_rho2 = u_rho[:,j_min:j_max,i2]
-    transport2 = sum(u_rho2*dydz2)
-
-    # Linearly interpolate to lon_target
-    transport = (transport2-transport1)/(lon[i2]-lon[i1])*(lon_target-lon[i1]) + transport1
-
-    # Ddivide by 1e6 to convert to Sv
+    # Divide by 1e6 to convert to Sv
     return transport*1e-6
 
 
