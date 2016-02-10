@@ -330,5 +330,16 @@ cmip5_eraint_plot.py: Compares ERA-Interim reanalyses and CMIP5 output by
 			      script to work, you must be running on raijin and
 			      be part of the ua6 project.
 
+drakepsgtrans_latvstime.py: Calculates zonal transport through each grid cell
+                            in the Drake Passage, vertically integrates, and
+			    makes a contour plot of 2D (latitude vs time)
+			    result.
+			    To run: Edit the i and j coordinates of the Drake
+			            Passage, near the top of the file, for your
+				    grid. Then open python or ipython and type
+				    "run drakepsgtrans_latvstime.py". The script
+				    will prompt you for paths to the ROMS grid
+				    file and the ocean history or averages file.
+
 
 

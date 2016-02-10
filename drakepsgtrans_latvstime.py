@@ -3,6 +3,12 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
+# Calculates zonal transport through each grid cell in the Drake Passage,
+# vertically integrates, and makes a contour plot of the 2D (latitude vs time)
+# result.
+# Input:
+# grid_path = path to ROMS grid file
+# file_path = path to ROMS ocean history or averages file
 def drakepsgtrans_latvstime (grid_path, file_path):
 
     # Grid parameters
@@ -17,8 +23,15 @@ def drakepsgtrans_latvstime (grid_path, file_path):
     # Northern boundary of ROMS grid
     nbdry_val = -38
 
-    # Bounds on Drake Passage; edit for new grids
+    # Bounds on Drake Passage: edit for new grids
+    # i-index of single north-south line to plot (representing a zonal slice);
+    # it doesn't really matter which slice of the Drake Passage this is, due
+    # to volume conservation
     i_DP = 1175
+    # j-indices of the southern tip of South America (j_min) and the northern
+    # tip of the Antarctic Peninsula (j_max); make sure these are far enough
+    # north/south to be land points, but not so far that they pass through the
+    # land and become ocean again (eg Weddell Sea)
     j_min = 210
     j_max = 300
 
@@ -88,8 +101,8 @@ def drakepsgtrans_latvstime (grid_path, file_path):
         transport[t,:] = sum(u_rho_DP*dydz_DP, axis=0)*1e-6
 
     # Plot
+    # Bounds are set to +/- 16 Sv, adjust as needed
     clf()
-    lev = linspace(-16, 16, num=40)
     pcolormesh(time, lat_DP, transpose(transport), vmin=-16, vmax=16, cmap='seismic')
     colorbar(ticks=arange(-16, 16+1, 4))
     title('Drake Passage Transport (Sv)')

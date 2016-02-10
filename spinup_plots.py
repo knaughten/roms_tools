@@ -265,7 +265,14 @@ def calc_maxvel (u_rho, v_rho):
 def calc_drakepsgtrans (file_path, dydz, u_rho):
 
     # Bounds on Drake Passage; edit for new grids
+    # i-index of single north-south line to plot (representing a zonal slice);
+    # it doesn't really matter which slice of the Drake Passage this is, due
+    # to volume conservation
     i_DP = 1175    
+    # j-indices of the southern tip of South America (j_min) and the northern
+    # tip of the Antarctic Peninsula (j_max); make sure these are far enough
+    # north/south to be land points, but not so far that they pass through the
+    # land and become ocean again (eg Weddell Sea)
     j_min = 220
     j_max = 300
 
