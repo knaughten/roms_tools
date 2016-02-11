@@ -76,9 +76,11 @@ woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
 
 romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
                      data for temperature and salinity; starts with a motionless
-		     ocean and zero sea surface height. Depends on calc_z.py,
-		     and uses WOA data assumed to be converted from FESOM input
-		     using woa_netcdf.py
+		     ocean and zero sea surface height. Under ice shelves, sets
+		     the salinity to a constant value (34.5 psu) and the
+		     temperature to the local freezing point. Depends on
+		     calc_z.py, and uses WOA data assumed to be converted from
+		     FESOM input using woa_netcdf.py
 		     To run: First edit user parameters (file paths and grid
 		             parameters) near the bottom of the file (after the
 			     Then make sure that you have scipy version 0.14 or
