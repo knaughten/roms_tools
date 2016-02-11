@@ -286,6 +286,35 @@ spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 8 timeseries:
 			 the same timesteps as the ROMS history/averages file),
 			 and the log file.
 
+dpt_2d.py: Calculates zonal transport through each grid cell in the Drake
+           Passage, vertically integrates, and makes a contour plot of 2D
+	   (latitude vs time) result.
+	   To run: Edit the i and j coordinates of the Drake Passage, near the
+	           top of the file, for your grid. Then open python or ipython
+		   and type "run dpt_2d.py". The script will prompt you for
+		   paths to the ROMS grid file and the ocean history or averages
+		   file.
+
+dpt_2d_int.py: Like dpt_2d.py, but plots the indefinite integral over latitude
+               (cumulative sum north to south) of transport.
+	       To run: Edit the i and j coordinates of the Drake Passage, near
+	               the top of the file, for your grid. Then open python or
+		       ipython and type "run dpt_2d.py". The script will prompt
+		       you for paths to the ROMS grid file and the ocean history
+		       or averages file.
+
+zonal_slice_plot.py: Creates a zonal slice plot (i.e. depth vs latitude, single
+                     i-index) of the given variable.
+		     To run: Edit grid parameters near the top of the file.
+		             Then open python or ipython and type
+			     "run zonal_slice_plot.py". The script will prompt
+			     you for paths to the ROMS grid file and the ocean
+			     history or averages file, the name of the variable
+			     to plot, the timestep number to plot, the i-index
+			     of the zonal slice, the deepest depth to plot,
+			     whether to save the figure (and if so, the
+			     filename) or display it on the screen.
+
 ***CMIP5 ANALYSIS***
 
 cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
@@ -332,34 +361,7 @@ cmip5_eraint_plot.py: Compares ERA-Interim reanalyses and CMIP5 output by
 			      script to work, you must be running on raijin and
 			      be part of the ua6 project.
 
-dpt_2d.py: Calculates zonal transport through each grid cell in the Drake
-           Passage, vertically integrates, and makes a contour plot of 2D
-	   (latitude vs time) result.
-	   To run: Edit the i and j coordinates of the Drake Passage, near the
-	           top of the file, for your grid. Then open python or ipython
-		   and type "run dpt_2d.py". The script will prompt you for
-		   paths to the ROMS grid file and the ocean history or averages
-		   file.
 
-dpt_2d_int.py: Like dpt_2d.py, but plots the indefinite integral over latitude
-               (cumulative sum north to south) of transport.
-	       To run: Edit the i and j coordinates of the Drake Passage, near
-	               the top of the file, for your grid. Then open python or
-		       ipython and type "run dpt_2d.py". The script will prompt
-		       you for paths to the ROMS grid file and the ocean history
-		       or averages file.
-
-zonal_slice_plot.py: Creates a zonal slice plot (i.e. depth vs latitude, single
-                     i-index) of the given variable.
-		     To run: Edit grid parameters near the top of the file.
-		             Then open python or ipython and type
-			     "run zonal_slice_plot.py". The script will prompt
-			     you for paths to the ROMS grid file and the ocean
-			     history or averages file, the name of the variable
-			     to plot, the timestep number to plot, the i-index
-			     of the zonal slice, the deepest depth to plot,
-			     whether to save the figure (and if so, the
-			     filename) or display it on the screen.
 
 
 
