@@ -9,7 +9,7 @@ from calc_z import *
 # Input:
 # grid_path = path to ROMS grid file
 # file_path = path to ROMS ocean history or averages file
-def drakepsgtrans_latvstime (grid_path, file_path):
+def dpt_2d (grid_path, file_path):
 
     # Grid parameters
     theta_s = 0.9
@@ -103,7 +103,7 @@ def drakepsgtrans_latvstime (grid_path, file_path):
     # Plot
     # Bounds are set to +/- 16 Sv, adjust as needed
     clf()
-    pcolormesh(time, lat_DP, transpose(transport), vmin=-16, vmax=16, cmap='seismic')
+    pcolormesh(time, lat_DP, transpose(transport), vmin=-16, vmax=16, cmap='RdYlBu_r')
     colorbar(ticks=arange(-16, 16+1, 4))
     title('Drake Passage Transport (Sv)')
     xlabel('Years')
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    drakepsgtrans_latvstime(grid_path, file_path)
+    dpt_2d(grid_path, file_path)
     
 
 
