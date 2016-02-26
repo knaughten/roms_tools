@@ -12,7 +12,7 @@ from scipy.interpolate import LinearNDInterpolator, RectBivariateSpline
 # to two ROMS-CICE input forcing files with the correct units and naming
 # conventions:
 # AN_yyyy_monthly.nc: one year of monthly averaged measurements for surface
-#                     pressure (Pair), temperature (Tair), specific humidity
+#                     pressure (Pair), temperature (Tair), relative humidity
 #                     (Qair), cloud fraction (cloud), and winds (Uwind, Vwind)
 # FC_yyyy_monthly.nc: one year of monthly averaged measurements for rainfall
 #                     (rain) and snowfall (snow)
@@ -21,11 +21,11 @@ def convert_file (year):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
-    input_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/originals/AN_' + str(year) + '_monthly_orig.nc'
-    input_ppt_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/originals/FC_' + str(year) + '_monthly_orig.nc'
-    output_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/AN_' + str(year) + '_monthly.nc'
-    output_ppt_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/FC_' + str(year) + '_monthly.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree.nc'
+    input_atm_file = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/AN_' + str(year) + '_monthly_orig.nc'
+    input_ppt_file = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/FC_' + str(year) + '_monthly_orig.nc'
+    output_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/historical/AN_' + str(year) + '_monthly.nc'
+    output_ppt_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/historical/FC_' + str(year) + '_monthly.nc'
 
     Lv = 2.5e6 # Latent heat of vapourisation, J/kg
     Rv = 461.5 # Ideal gas constant for water vapour, J/K/kg
@@ -227,7 +227,7 @@ def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
 if __name__ == "__main__":
 
     # Start and end years; other users will need to change these
-    first_year = 1992
+    first_year = 1997
     last_year = 2005
     for year in range(first_year, last_year+1):
         print 'Processing '+str(year)

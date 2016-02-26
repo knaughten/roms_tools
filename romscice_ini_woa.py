@@ -1,7 +1,6 @@
 # Build an initialisation file for ROMS using climatology temperature and
 # salinity values from the World Ocean Atlas. Set initial velocities and sea
-# surface height to zero. Under the ice shelves, set salinity to a constant
-# value (34.5 psu) and temperature to the local freezing point.
+# surface height to zero.
 
 # NB for raijin users: RegularGridInterpolator needs python/2.7.6 but the
 # default is 2.7.3. Before running this script, switch them as follows:
@@ -13,18 +12,12 @@
 from netCDF4 import Dataset
 from numpy import *
 from scipy.interpolate import RegularGridInterpolator
+from scipy.spatial import KDTree
 from calc_z import *
 
 
 # Main routine
 def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_woa):
-
-    # Parameters for freezing point of seawater; taken from Ben's PhD thesis
-    a = -5.73e-2
-    b = 8.32e-2
-    c = -7.61e-8
-    rho = 1035.0
-    g = 9.81
 
     # Read WOA data and grid
     print 'Reading World Ocean Atlas data'
@@ -64,11 +57,6 @@ def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdr
     temp = interp_woa2roms(temp_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
     print 'Interpolating salinity'
     salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
-
-    # Set the temperature in ice shelf cavities to the local freezing point
-    mask_zice_3d = tile(mask_zice, (N,1,1))
-    index = mask_zice_3d == 1
-    temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
 
     # Set initial velocities and sea surface height to zero
     u = zeros((N, num_lat, num_lon-1))
@@ -161,7 +149,8 @@ def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdr
 
 
 # Given an array on the World Ocean Atlas grid, interpolate onto the ROMS grid,
-# and fill the ice shelf cavities and the land mask with constant values.
+# fill the ice shelf cavities with nearest-neighbour values from the same depth
+# level, and fill the land mask with constant values.
 # Input:
 # A = array of size nxmxo containing values on the World Ocean Atlas grid
 #     (dimension longitude x latitude x depth)
@@ -178,12 +167,12 @@ def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdr
 #            land 0)
 # mask_zice = array of size qxr containing ROMS ice shelf mask (ice shelf 1,
 #             ocean/land 0)
-# fill = scalar containing the value with which to fill the ROMS land mask and
-#        ice shelf cavities (really doesn't matter, don't use NaN)
+# land_fill = scalar containing the value with which to fill the ROMS land mask
+#             (really doesn't matter, don't use NaN though)
 # Output:
 # B = array of size pxqxr containing values on the ROMS grid (dimension depth x
 #     latitude x longitude)
-def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, fill):
+def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, land_fill):
 
     # Calculate N based on size of ROMS grid
     N = size(lon_roms_3d, 0)
@@ -196,11 +185,26 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
     # Call this function once at each depth level - 3D vectorisation uses too
     # much memory!
     for k in range(N):
+
         print '...vertical level ', str(k+1), ' of ', str(N)
         tmp = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))
-        # Fill land mask and ice shelf cavities with constant value
-        tmp[mask_rho==0] = fill
-        tmp[mask_zice==1] = fill
+
+        # Fill missing values in ice shelf cavities with nearest-neighbour
+        # values at this depth level
+        # I got this code from Stack Exchange and am not entirely sure
+        # how it works
+        j,i = mgrid[0:tmp.shape[0], 0:tmp.shape[1]]
+        # Good indices are not NaN and not land points
+        good_index = nonzero(~isnan(tmp)*(mask_rho > 0.5))
+        # Bad indicies are NaN and are ice shelf cavity points
+        bad_index = nonzero(isnan(tmp)*(mask_zice > 0.5))
+        jigood = array((j[good_index], i[good_index])).T
+        jibad = array((j[bad_index], i[bad_index])).T
+        # Magic happens here
+        tmp[bad_index] = tmp[good_index][KDTree(jigood).query(jibad)[1]]
+
+        # Fill land mask with constant value
+        tmp[mask_rho==0] = land_fill
         # Save this depth level
         B[k,:,:] = tmp
 
@@ -211,7 +215,7 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
 if __name__ == "__main__":
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree.nc'
     # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
     # woa_netcdf.py)
     woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
@@ -226,7 +230,7 @@ if __name__ == "__main__":
     N = 31
 
     # Northernmost index of WOA grid to read (1-based)
-    nbdry_woa = 44
+    nbdry_woa = 52
 
     run(grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_woa)
 

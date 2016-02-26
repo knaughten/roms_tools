@@ -28,7 +28,7 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree.nc'
     theta_base = '../ROMS-CICE-MCT/data/ECCO2/THETA.1440x720x50.' + str(year)
     salt_base = '../ROMS-CICE-MCT/data/ECCO2/SALT.1440x720x50.' + str(year)
     uvel_base = '../ROMS-CICE-MCT/data/ECCO2/UVEL.1440x720x50.' + str(year)
@@ -46,7 +46,7 @@ def convert_file (year):
     # Constant to convert from degrees to radians
     deg2rad = pi/180.0
     # Northernmost index of ECCO2 grid to read (1-based)
-    nbdry_ecco = 208
+    nbdry_ecco = 241
 
     # Read ECCO2 grid
     print 'Reading ECCO2 grid'
@@ -67,10 +67,12 @@ def convert_file (year):
 
     # The shallowest ECCO2 depth value is 5 m, but ROMS needs 0 m. So add the
     # index depth = 0 m to the beginning. Later we will just copy the 5 m
-    # values for theta and salt into this index.
-    depth_ecco = zeros(size(depth_ecco_raw)+1)
+    # values for theta and salt into this index. Similarly, the deepest ECCO2
+    # depth value is not deep enough for ROMS, so make a 6000 m index at the end.
+    depth_ecco = zeros(size(depth_ecco_raw)+2)
     depth_ecco[0] = 0.0
-    depth_ecco[1:] = depth_ecco_raw
+    depth_ecco[1:-1] = depth_ecco_raw
+    depth_ecco[-1] = 6000.0
 
     # Read ROMS grid
     print 'Reading ROMS grid'
@@ -236,25 +238,29 @@ def convert_file (year):
         # Copy the data to the new longitude and depth indices, making sure
         # to preserve the mask.
         theta = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-        theta[1:-1,:,1:] = ma.copy(theta_raw)
-        theta[0,:,1:] = ma.copy(theta_raw[-1,:,:])
-        theta[-1,:,1:] = ma.copy(theta_raw[0,:,:])
+        theta[1:-1,:,1:-1] = ma.copy(theta_raw)
+        theta[0,:,1:-1] = ma.copy(theta_raw[-1,:,:])
+        theta[-1,:,1:-1] = ma.copy(theta_raw[0,:,:])
         theta[:,:,0] = ma.copy(theta[:,:,1])
+        theta[:,:,-1] = ma.copy(theta[:,:,-2])
         salt = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-        salt[1:-1,:,1:] = ma.copy(salt_raw)
-        salt[0,:,1:] = ma.copy(salt_raw[-1,:,:])
-        salt[-1,:,1:] = ma.copy(salt_raw[0,:,:])
+        salt[1:-1,:,1:-1] = ma.copy(salt_raw)
+        salt[0,:,1:-1] = ma.copy(salt_raw[-1,:,:])
+        salt[-1,:,1:-1] = ma.copy(salt_raw[0,:,:])
         salt[:,:,0] = ma.copy(salt[:,:,1])
+        salt[:,:,-1] = ma.copy(salt[:,:,-2])
         uvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-        uvel[1:-1,:,1:] = ma.copy(uvel_raw)
-        uvel[0,:,1:] = ma.copy(uvel_raw[-1,:,:])
-        uvel[-1,:,1:] = ma.copy(uvel_raw[0,:,:])
+        uvel[1:-1,:,1:-1] = ma.copy(uvel_raw)
+        uvel[0,:,1:-1] = ma.copy(uvel_raw[-1,:,:])
+        uvel[-1,:,1:-1] = ma.copy(uvel_raw[0,:,:])
         uvel[:,:,0] = ma.copy(uvel[:,:,1])
+        uvel[:,:,-1] = ma.copy(uvel[:,:,-2])
         vvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-        vvel[1:-1,:,1:] = ma.copy(vvel_raw)
-        vvel[0,:,1:] = ma.copy(vvel_raw[-1,:,:])
-        vvel[-1,:,1:] = ma.copy(vvel_raw[0,:,:])
+        vvel[1:-1,:,1:-1] = ma.copy(vvel_raw)
+        vvel[0,:,1:-1] = ma.copy(vvel_raw[-1,:,:])
+        vvel[-1,:,1:-1] = ma.copy(vvel_raw[0,:,:])
         vvel[:,:,0] = ma.copy(vvel[:,:,1])
+        vvel[:,:,-1] = ma.copy(vvel[:,:,-2])
 
         # Regridding happens here...
         print 'Interpolating temperature'

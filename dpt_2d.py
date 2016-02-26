@@ -108,8 +108,8 @@ def dpt_2d (grid_path, file_path):
     title('Drake Passage Transport (Sv)')
     xlabel('Years')
     ylabel('Latitude')
-    #show()
-    savefig('dp_trans_2d.png')
+    show()
+    #savefig('dp_trans_2d.png')
 
 
 # Command-line interface

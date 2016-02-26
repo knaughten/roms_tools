@@ -112,8 +112,8 @@ def dpt_2d_int (grid_path, file_path):
     title('Drake Passage Transport (Sv), indefinite N-S integral')
     xlabel('Years')
     ylabel('Latitude')
-    #show()
-    savefig('dp_trans_2d_int.png')
+    show()
+    #savefig('dp_trans_2d_int.png')
 
 
 # Command-line interface

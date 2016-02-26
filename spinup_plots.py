@@ -12,7 +12,7 @@ from calc_z import *
 # Total kinetic energy
 # Maximum velocity
 # Drake Passage transport
-# Total sea ice area
+# Total sea ice extent
 
 
 # Given the path to a ROMS grid file, calculate differentials for later
@@ -36,7 +36,7 @@ def calc_grid (grid_path):
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
     # Northern boundary of ROMS grid
-    nbdry_val = -38
+    nbdry_val = -30
 
     # Read grid variables
     id = Dataset(grid_path, 'r')
@@ -116,14 +116,20 @@ def calc_grid (grid_path):
 
 # Read and return density.
 # Input:
-# rho_path = string containing path to density file
+# file_path = path to ocean history/averages file
 # t = timestep index in file_path
 # Output: rho = density field at timestep t
-def get_rho (rho_path, t):
+def get_rho (file_path, t):
 
-    id = Dataset(rho_path, 'r')
+    # Reference density
+    # New users: edit this based on the value in your .in ROMS configuration file
+    rho0 = 1025.0
+
+    id = Dataset(file_path, 'r')
+    # Read density anomalies, add rho0 to get absolute density
     # Convert to float128 to prevent overflow later
-    rho = ma.asarray(id.variables['rho'][t,:,:,:], dtype=float128)
+    rho = ma.asarray(id.variables['rho'][t,:,:,:], dtype=float128) + rho0
+    id.close()
     return rho
 
 
@@ -287,12 +293,12 @@ def calc_drakepsgtrans (file_path, dydz, u_rho):
     return transport*1e-6
 
 
-# Calculate total sea ice area at the given timestep t.
+# Calculate total sea ice extent at the given timestep t.
 # Input:
 # cice_path = path to CICE history file
 # dA = elements of area on the 2D rho grid (any mask will be removed)
 # t = timestep index in file_path
-# Output: totalice = total sea ice area (m^2)
+# Output: totalice = total sea ice extent (m^2)
 def calc_totalice (cice_path, dA, t):
 
     id = Dataset(cice_path, 'r')
@@ -307,22 +313,24 @@ def calc_totalice (cice_path, dA, t):
     aice_nomask[aice.mask] = 0.0
     dA_nomask = dA.data
 
-    # Integrate over area
-    totalice = sum(aice_nomask*dA_nomask)
-    # Convert to km^2 and return
-    return totalice*1e-6    
+    # Find the cells with at least 15% sea ice
+    extent_flag = aice_nomask >= 0.15
+
+    # Integrate area of these cells
+    totalice = sum(dA_nomask*extent_flag)
+    # Convert to million km^2 and return
+    return totalice*1e-12   
 
 
 # Main routine
 # Input:
 # grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
-# rho_path = path to density file
 # cice_path = path to CICE history file
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
+def spinup_plots (grid_path, file_path, cice_path, log_path):
 
     time = []
     ohc = []
@@ -398,7 +406,7 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
     # Process each timestep separately to prevent memory overflow
     for t in range(size(new_time)):
         print 'Processing timestep '+str(t+1)+' of '+str(size(new_time))
-        rho = get_rho(rho_path, t)
+        rho = get_rho(file_path, t)
         print 'Calculating ocean heat content'
         ohc.append(calc_ohc(file_path, dV, rho, t))
         print 'Calculating total salt content'
@@ -415,7 +423,7 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
         maxvel.append(calc_maxvel(u_rho, v_rho))
         print 'Calculating Drake Passage transport'
         drakepsgtrans.append(calc_drakepsgtrans(file_path, dydz, u_rho))
-        print 'Calculating total sea ice area'
+        print 'Calculating total sea ice extent'
         totalice.append(calc_totalice(cice_path, dA, t))
 
     # Plot each timeseries in sequence
@@ -461,11 +469,11 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
     savefig('drakepsgtrans.png')
-    print 'Plotting total sea ice area'
+    print 'Plotting total sea ice extent'
     clf()
     plot(time, totalice)
     xlabel('Years')
-    ylabel(r'Total Sea Ice Area (km$^2$)')
+    ylabel(r'Total Sea Ice Extent (million km$^2$)')
     savefig('totalice.png')
 
     print 'Saving results to log file'
@@ -494,7 +502,7 @@ def spinup_plots (grid_path, file_path, rho_path, cice_path, log_path):
     f.write('Drake Passage Transport (Sv):\n')
     for elm in drakepsgtrans:
         f.write(str(elm) + '\n')
-    f.write('Total Sea Ice Area (km^2):\n')
+    f.write('Total Sea Ice Extent (million km^2):\n')
     for elm in totalice:
         f.write(str(elm) + '\n')
     f.close()
@@ -505,10 +513,9 @@ if __name__ == "__main__":
 
     grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    rho_path = raw_input('Enter path to density file: ')
     cice_path = raw_input('Enter path to CICE history file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    spinup_plots(grid_path, file_path, rho_path, cice_path, log_path)
+    spinup_plots(grid_path, file_path, cice_path, log_path)
 
 
