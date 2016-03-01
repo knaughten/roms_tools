@@ -65,9 +65,9 @@ def dpt_2d (grid_path, file_path):
     # bottom edges of each cell
     z_edges = zeros((size(z,0)+1, size(z,1), size(z,2)))
     z_edges[1:-1,:,:] = 0.5*(z[0:-1,:,:] + z[1:,:,:])
-    # At surface, z = 0; at bottom, set z to be the same as the midpoint of
-    # the deepest cell
-    z_edges[0,:,:] = z[0,:,:]
+    # At surface, z = zice; at bottom, extrapolate
+    z_edges[-1,:,:] = zice[:,:]
+    z_edges[0,:,:] = 2*z[0,:,:] - z_edges[1,:,:]
     # Now find dz
     dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
 
@@ -108,8 +108,8 @@ def dpt_2d (grid_path, file_path):
     title('Drake Passage Transport (Sv)')
     xlabel('Years')
     ylabel('Latitude')
-    show()
-    #savefig('dp_trans_2d.png')
+    #show()
+    savefig('dp_trans_2d.png')
 
 
 # Command-line interface

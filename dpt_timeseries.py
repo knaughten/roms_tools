@@ -3,13 +3,13 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-# Calculates zonal transport through each grid cell in the Drake Passage,
-# vertically integrates, takes indefinite integral (cumulative sum) over
-# latitude, and makes a contour plot of the 2D (latitude vs time) result.
+# Calculates zonal transport through each grid cell in the Drake Passage
+# and plots a timeseries of the result.
 # Input:
 # grid_path = path to ROMS grid file
 # file_path = path to ROMS ocean history or averages file
-def dpt_2d_int (grid_path, file_path):
+# fig_name = filename for figure
+def dpt_timeseries (grid_path, file_path, fig_name):
 
     # Grid parameters
     theta_s = 0.9
@@ -83,8 +83,7 @@ def dpt_2d_int (grid_path, file_path):
     id = Dataset(file_path, 'r')
     time = id.variables['ocean_time'][:]/(365*24*60*60)
 
-    # Set up an array of dimension time x lat to store transport values
-    transport = ma.empty([size(time), j_max-j_min])
+    transport = []
     # Calculate transport one timestep at a time
     for t in range(size(time)):
 
@@ -97,23 +96,16 @@ def dpt_2d_int (grid_path, file_path):
         u_rho = ma.concatenate((w_bdry_u[:,:,None], middle_u, e_bdry_u[:,:,None]), axis=2)
         # Trim to Drake Passage bounds
         u_rho_DP = u_rho[:,j_min:j_max,i_DP]
-        # Integrate transport over depth and convert to Sv
-        transport[t,:] = sum(u_rho_DP*dydz_DP, axis=0)*1e-6
-
-    # Cumulative sum; flip the latitude axis before and after so the sum
-    # goes from north to south, not south to north
-    transport_cs = fliplr(cumsum(fliplr(transport), axis=1))
+        # Integrate transport and convert to Sv
+        transport.append(sum(u_rho_DP*dydz_DP)*1e-6)
 
     # Plot
-    # Bounds are set to 0-150 Sv, adjust as needed
+    # Bounds are set to +/- 16 Sv, adjust as needed
     clf()
-    pcolormesh(time, lat_DP, transpose(transport_cs), vmin=0, vmax=150, cmap='jet')
-    colorbar(ticks=arange(0, 150+1, 20))
-    title('Drake Passage Transport (Sv), indefinite N-S integral')
+    plot(time, transport)
     xlabel('Years')
-    ylabel('Latitude')
-    show()
-    #savefig('dp_trans_2d_int.png')
+    ylabel('Drake Passage Transport (Sv)')
+    savefig(fig_name)
 
 
 # Command-line interface
@@ -121,7 +113,8 @@ if __name__ == "__main__":
 
     grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    dpt_2d_int(grid_path, file_path)
+    fig_name = raw_input('Filename for figure: ')
+    dpt_timeseries(grid_path, file_path, fig_name)
     
 
 

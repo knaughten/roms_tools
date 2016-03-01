@@ -128,9 +128,9 @@ def convert_file (year):
     # bottom edges
     z_edges_u = zeros((size(z_u, 0)+1, size(z_u, 1)))
     z_edges_u[1:-1,:] = 0.5*(z_u[0:-1,:] + z_u[1:,:])
-    # At surface, z = 0; at bottom, set z to be the same as the midpoint of
-    # the deepest cell
-    z_edges_u[0,:] = z_u[0,:]
+    # At surface, z = zice; at bottom, extrapolate
+    z_edges_u[-1,:] = zice_u[-1,:]    
+    z_edges_u[0,:] = 2*z_u[0,:] - z_edges_u[1,:]
     # Now find dz
     dz_u = z_edges_u[1:,:] - z_edges_u[0:-1,:]
     # Repeat for the v grid
@@ -138,7 +138,8 @@ def convert_file (year):
     z_v = z_v[:,-1,:]
     z_edges_v = zeros((size(z_v, 0)+1, size(z_v, 1)))
     z_edges_v[1:-1,:] = 0.5*(z_v[0:-1,:] + z_v[1:,:])
-    z_edges_v[0,:] = z_v[0,:]
+    z_edges_v[-1,:] = zice_v[-1,:]
+    z_edges_v[0,:] = 2*z_v[0,:] - z_edges_v[1,:]
     dz_v = z_edges_v[1:,:] - z_edges_v[0:-1,:]
 
     # Copy longitude and latitude into arrays of dimension depth x longitude
@@ -273,12 +274,12 @@ def convert_file (year):
         v_interp = interp_ecco2roms(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0)
 
         # Find the volume-average of v
-        v_int = sum(v_interp*dx*dy*dz_v)
-        volume = sum(dx*dy*dz_v)
-        v_avg = v_int/volume
+        #v_int = sum(v_interp*dx*dy*dz_v)
+        #volume = sum(dx*dy*dz_v)
+        #v_avg = v_int/volume
         # Subtract this average from the data to make sure that volume is
         # conserved at the northern boundary
-        v_interp = v_interp - v_avg
+        #v_interp = v_interp - v_avg
 
         # Calculate vertical averages of u and v to get ubar and vbar
         # Be sure to treat land mask carefully so we don't divide by 0

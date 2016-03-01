@@ -309,6 +309,14 @@ dpt_2d_int.py: Like dpt_2d.py, but plots the indefinite integral over latitude
 		       you for paths to the ROMS grid file and the ocean history
 		       or averages file.
 
+dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
+                   depth, and plots the resulting 1D tiemseries.
+		   To run: Edit the i and j coordinates of the Drake Passage,
+		           near the top of the file, for your grid. Then open
+			   python or ipython and type "run dpt_timeseries.py".
+			   The script will prompt you for paths to the ROMS
+			   grid file and the ocean history or averages file.
+
 zonal_slice_plot.py: Creates a zonal slice plot (i.e. depth vs latitude, single
                      i-index) of the given variable.
 		     To run: Edit grid parameters near the top of the file.
@@ -367,6 +375,74 @@ cmip5_eraint_plot.py: Compares ERA-Interim reanalyses and CMIP5 output by
 			      script to work, you must be running on raijin and
 			      be part of the ua6 project.
 
+circumpolar_plot.py: Generates a circumpolar Antarctic plot of the given
+                     variable from ROMS. If the variable is depth-dependent,
+		     you can choose to plot the surface level, the bottom
+		     level, a specific depth in metres, the vertical average
+		     throughout the entire water column, or the vertical
+		     average between two specified depths in metres.
+		     To run: Open python or ipython and type
+		             "run circumpolar_plot.py". The script will
+			     prompt you for paths to the ROMS grid file,
+			     the ocean history or averages file, the variable
+			     name, the timestep to plot, what to do about
+			     depth (if the variable is depth-dependent),
+			     and whether to save the figure in a file or
+			     display it on the screen. When the plot is
+			     complete, the script will ask if you want to
+			     make another, and if so, what changes you want
+			     to make to the parameters (eg variable name).
+			     It will repeat as many times as you want. This
+			     way you don't have to re-enter all the parameters
+			     again if only one or two of them have changed.
+
+circumpolar_cice_plot.py: Generates a circumpolar Antarctic plot of the given
+                          variable from CICE.
+			  To run: Open python or ipython and type
+			          "run circumpolar_plot.py". The interface is
+				  similar to that of circumpolar_plot.py, but
+				  since sea ice variables are not
+				  depth-dependent, there is no need to enter
+				  depth information.
+
+h_circumpolar.py: Creates a circumpolar Antarctic plot of bathymetry. Follows
+                  the same process as circumpolar_plot.py, but since h is not
+		  time-dependent, it requires a special case.
+		  To run: Open python or ipython and type
+		          "run h_circumpolar.py". The script will prompt you
+			  for paths to the ROMS grid file and the filename
+			  to save the figure as.
+
+ice2ocn_f2flux.py: Creates a circumpolar Antarctic plot of net CICE-to-ROMS
+                   freshwater flux in cm/day. Follows the same process as
+		   circumpolar_cice_plot.py, but the derived variable
+		   (FW flux - salt flux, converted to cm/day) requires a
+		   special case.
+		   To run: Open python or ipython and type
+		           "run ice2ocn_fwflux.py". The script will prompt
+			   you for the path to the CICE history file, the
+			   timestep to plot, and the filename to save the
+			   figure as.
+
+ini_sst_circumpolar.py: Creates a circumpolar Antarctic plot of initial
+                        SST from the ROMS initialisation file. Follows the
+			same process as circumpolar_plot.py, but since the
+			initialisation file is set up differently to the
+			ROMS history/averages files, it requires a special
+			case.
+			To run: Open python or ipython and type
+			        "run ini_sst_circumpolar.py". The script
+				will prompt you for paths to the ROMS
+				grid file, the ROMS initialisation file,
+				and the filename to save the figure as.
+
+ini_sss_circumpolar.py: Like ini_sst_circumpolar.py, but for initial SSS.
+                        To run: Open python or ipython and type
+			        "run ini_sss_circumpolar.py". The script
+				will prompt you for paths to the ROMS
+				grid file, the ROMS initialisation file,
+				and the filename to save the figure as.
+               
 
 
 

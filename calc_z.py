@@ -11,12 +11,13 @@ from numpy import *
 #                             v grids, but make sure h and zice have been
 #                             interpolated to have the same size.
 # theta_s, theta_b, hc, N = scalar parameters
+# zeta = optional 2D array containing values for sea surface height
 # Output:
 # z = 3D array containing negative z-coordinate values for depth on the rho 
 #     grid; dimension depth x latitude x longitude
 # s = 1D array of s-coordinate values
 # C = 1D array of stretching curve values
-def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N):
+def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N, zeta=None):
 
     # Follows the method of scoord_zice.m and stretching.m on katabatic
     # (in /ds/projects/iomp/matlab_scripts/ROMS_NetCDF/iomp_IAF/)
@@ -41,6 +42,9 @@ def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N):
     z = zeros((N, num_lat, num_lon))
     for k in range(N):
         z0 = (h*C[k] + hc*s[k])/(h + hc)
-        z[k,:,:] = h*z0 - abs(zice)
+        if zeta is None:
+            z[k,:,:] = h*z0 - abs(zice)
+        else:
+            z[k,:,:] = (zeta+h)*z0 + zeta - abs(zice)
 
     return z, s, C
