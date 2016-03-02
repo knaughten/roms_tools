@@ -317,18 +317,6 @@ dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
 			   The script will prompt you for paths to the ROMS
 			   grid file and the ocean history or averages file.
 
-zonal_slice_plot.py: Creates a zonal slice plot (i.e. depth vs latitude, single
-                     i-index) of the given variable.
-		     To run: Edit grid parameters near the top of the file.
-		             Then open python or ipython and type
-			     "run zonal_slice_plot.py". The script will prompt
-			     you for paths to the ROMS grid file and the ocean
-			     history or averages file, the name of the variable
-			     to plot, the timestep number to plot, the i-index
-			     of the zonal slice, the deepest depth to plot,
-			     whether to save the figure (and if so, the
-			     filename) or display it on the screen.
-
 ***CMIP5 ANALYSIS***
 
 cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
@@ -442,6 +430,27 @@ ini_sss_circumpolar.py: Like ini_sst_circumpolar.py, but for initial SSS.
 				will prompt you for paths to the ROMS
 				grid file, the ROMS initialisation file,
 				and the filename to save the figure as.
+
+zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
+               choose to plot a single longitude slice, a zonal average over
+	       all longitudes, or a zonal average between two specific
+	       longitudes.
+	       To run: Edit grid parameters near the top of the file, and the
+	               value of "dlon" (regular longitude spacing for your
+		       grid) in the function average_btw_lons. Then open
+		       python or ipython and type "run zonal_plot.py". The
+		       script will prompt you for paths to the ROMS grid file
+		       and the ocean history or averages file, the name of the
+		       variable to plot, the timestep number to plot, the type
+		       of plot (single longitude, zonally averaged over all
+		       longitudes, or zonally averaged between two specific
+		       longitudes), the deepst depth to plot, whether to save
+		       the file (and if so, the filename) or display it on
+		       the screen. As with circumpolar_plot.py and
+		       circumpolar_cice_plot.py, the interface will repeat
+		       as many times as you like, and you only have to
+		       specify which parameters have changed since the last
+		       plot.
                
 
 
