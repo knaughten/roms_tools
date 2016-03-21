@@ -1,6 +1,6 @@
 from re import split
 from numpy import *
-from matplotlib.pyplot import plot,xlabel,ylabel,clf,show
+from matplotlib.pyplot import *
 
 # Read the maximum speed values written in ocean.log each timestep
 # and return them as a 1D array. 
@@ -71,11 +71,11 @@ def plot_maxspeed (files, dt, freq):
     time = arange(size(maxv_all))*dt/seconds_per_year*freq
 
     # Plot the results
-    clf()
+    figure()
     plot(time, maxv_all)
     xlabel('Years')
     ylabel('Maximum speed')
-    show()
+    show(block=False)
 
 
 if __name__ == "__main__":

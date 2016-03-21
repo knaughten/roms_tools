@@ -94,11 +94,11 @@ def circumpolar_plot (grid_path, file_path, var_name, tstep, depth_key, depth, d
         elif depth_key == 1:
             depth_string = 'at bottom'
         elif depth_key == 2:
-            depth_string = 'at '+str(round(-depth))+' m'
+            depth_string = 'at '+str(int(round(-depth)))+' m'
         elif depth_key == 3:
             depth_string = 'vertically averaged'
         elif depth_key == 4:
-            depth_string = 'vertically averaged between '+str(round(-depth_bounds[0]))+' and '+str(round(-depth_bounds[1]))+' m'
+            depth_string = 'vertically averaged between '+str(int(round(-depth_bounds[0])))+' and '+str(int(round(-depth_bounds[1])))+' m'
     else:
         depth_string = ''
 

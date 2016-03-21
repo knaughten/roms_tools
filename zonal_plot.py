@@ -113,7 +113,7 @@ def zonal_plot (grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds
     # Interpolate or average data
     if lon_key == 0:
         # Interpolate to lon0
-        data, z, lat = interp_lon (data_3d, z_3d, lat_2d, lon_2d, lon0)
+        data, z, lat = interp_lon(data_3d, z_3d, lat_2d, lon_2d, lon0)
     elif lon_key == 1:
         # Zonally average over all longitudes
         # dlon is constant on this grid (0.25 degrees) so this is easy
@@ -184,7 +184,7 @@ def zonal_plot (grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds
 # Output:
 # data = array of data interpolated to lon0, dimension depth x lat
 # z = array of depth values interpolated to lon0, dimension depth x lat
-# lat = array of latitue values interpolated to lon0, dimension depth x lat
+# lat = array of latitude values interpolated to lon0, dimension depth x lat
 def interp_lon (data_3d, z_3d, lat_2d, lon_2d, lon0):
 
     # Save dimensions
