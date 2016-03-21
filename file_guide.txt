@@ -106,7 +106,7 @@ convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
 			      qsub -v YEAR=$i convert_ecco.job
 			  done
 
-romscice_nbc.py: Builds a ROMS northern lateral bounday condition file from 1
+romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
                  year of monthly ECCO2 data for temperature, salinity, and
 		 velocity (set sea surface height to zero). Also contains useful
 		 code for calculating volume averages. Depends on calc_z.py.
@@ -134,6 +134,21 @@ romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
 			         start/end years near the bottom. Then open
 				 python or ipython and type "run
 				 romscice_atm_monthly.py".
+
+romscice_nbc_zeta.py: Interpolate one year of monthly AVISO sea surface height
+                      data to the northern boundary of the ROMS grid. Save to
+		      the existing lateral boundary condition file, created
+		      using romscice_nbc.py.
+		      To run: Edit file paths and boundary index near the top
+		              of the file. Then make sure that you have scipy
+			      version 0.14 or higher (on raijin, this means
+			      switching to python/2.7.6; instructions at the
+			      top of the file). Then open python or ipython
+			      and type "from romscice_nbc_zeta import *" then
+			      "romscice_nbc_zeta(year)" where year is eg 1992.
+			      You can also easily call it in a loop, e.g.
+			      for year in range(1995, 2005+1):
+			          romscice_nbc_zeta(year)
 
 
 ***MODIFYING INPUT FILES***
