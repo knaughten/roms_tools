@@ -21,7 +21,7 @@ def convert_file (year):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
     input_atm_file = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/AN_' + str(year) + '_monthly_orig.nc'
     input_ppt_file = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/FC_' + str(year) + '_monthly_orig.nc'
     output_atm_file = '../ROMS-CICE-MCT/data/ERA_Interim/monthly/historical/AN_' + str(year) + '_monthly.nc'
@@ -42,8 +42,8 @@ def convert_file (year):
 
     # Open input AN file and read ERA-Interim grid
     iatm_fid = Dataset(input_atm_file, 'r')
-    lon_era = iatm_fid.variables['longitude'][:]
-    lat_era = iatm_fid.variables['latitude'][:]
+    lon_era = iatm_fid.variables['lon'][:]
+    lat_era = iatm_fid.variables['lat'][:]
     iatm_fid.close()
 
     # Create time axis: 12 equally spaced values throughout the year,
@@ -227,7 +227,7 @@ def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
 if __name__ == "__main__":
 
     # Start and end years; other users will need to change these
-    first_year = 1997
+    first_year = 1995
     last_year = 2005
     for year in range(first_year, last_year+1):
         print 'Processing '+str(year)

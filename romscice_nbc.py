@@ -28,7 +28,7 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
     theta_base = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.' + str(year)
     salt_base = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.' + str(year)
     uvel_base = '../ROMS-CICE-MCT/data/ECCO2/raw/UVEL.1440x720x50.' + str(year)
@@ -46,7 +46,7 @@ def convert_file (year):
     # Constant to convert from degrees to radians
     deg2rad = pi/180.0
     # Northernmost index of ECCO2 grid to read (1-based)
-    nbdry_ecco = 241
+    nbdry_ecco = 209
 
     # Read ECCO2 grid
     print 'Reading ECCO2 grid'

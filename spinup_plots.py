@@ -36,7 +36,7 @@ def calc_grid (grid_path):
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
     # Northern boundary of ROMS grid
-    nbdry_val = -30
+    nbdry_val = -38
 
     # Read grid variables
     id = Dataset(grid_path, 'r')

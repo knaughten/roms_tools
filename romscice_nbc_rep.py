@@ -19,5 +19,5 @@ def run (filename):
 # User parameters
 if __name__ == "__main__":
 
-    filename = '../ROMS-CICE-MCT/data/ECCO2/ecco2_cube92_lbc_1995_rep.nc'
+    filename = '../ROMS-CICE-MCT/data/ecco2_cube92_lbc_1995_rep.nc'
     run(filename)

@@ -25,7 +25,7 @@ class Model:
         # Figure out whether it is an atmosphere or ocean variable
         if var_name in ['ps', 'tas', 'huss', 'clt', 'uas', 'vas', 'pr', 'prsn', 'evspsbl', 'rsds', 'rlds']:
             realm = 'atmos'
-        elif var_name in ['thetao', 'so', 'uo', 'vo']:
+        elif var_name in ['thetao', 'so', 'uo', 'vo', 'zos']:
             realm = 'ocean'
         else:
             print 'Unknown variable'
@@ -58,7 +58,6 @@ def build_model_list ():
     Models.append(Model('CMCC', 'CMCC-CM'))
     Models.append(Model('CMCC', 'CMCC-CMS'))
     Models.append(Model('CNRM', 'CNRM-CM5'))
-    Models.append(Model('CSIRO-BOM', 'ACCESS1-0'))
     Models.append(Model('CSIRO-BOM', 'ACCESS1-3'))
     Models.append(Model('CSIRO-QCCCE', 'CSIRO-Mk3-6-0'))
     Models.append(Model('FIO', 'FIO-ESM'))
@@ -90,5 +89,6 @@ def build_model_list ():
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-BGC'))
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-CAM5'))
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-WACCM'))
+    Models.append(Model('CSIRO-BOM', 'ACCESS1-0'))
 
     return Models

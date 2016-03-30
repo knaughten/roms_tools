@@ -58,15 +58,15 @@ romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
 				  is designed to be called by a self-submitting
 				  batch job, e.g. convert_era.job.
 
-romscice_ini.py: Builds a ROMS initialisation file using ECCO2 data for
-                 temperature and salinity; starts with a motionless ocean and
-		 zero sea surface height. Depends on calc_z.py.
-		 To run: First edit user parameters (file paths and grid
-		         parameters) near the bottom of the file. Then make
-			 sure that you have scipy version 0.14 or higher (on
-			 raijin, this means switching to python/2.7.6;
-			 instructions at the top of the file). Then open
-			 python/ipython and type "run romscice_ini.py".
+romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
+                      temperature and salinity; starts with a motionless ocean
+		      and zero sea surface height. Depends on calc_z.py.
+		      To run: First edit user parameters (file paths and grid
+		              parameters) near the bottom of the file. Then make
+			      sure that you have scipy version 0.14 or higher
+			      (on raijin, this means switching to python/2.7.6;
+			      instructions at the top of the file). Then open
+			      python/ipython and type "run romscice_ini.py".
 
 woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
                text file (FESOM input format) to NetCDF.
@@ -215,6 +215,13 @@ romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
 				  python or ipython and type "run
 				  romscice_ini_iceshelf.py".
 
+romscice_atm_rep.py: Given a ROMS atmospheric boundary condition file with one
+                     year of monthly data, convert it to a file which can be
+		     used repeatedly year after year (for eg spinup).
+		     To run: Edit the paths to ERA-Interim files at the bottom
+		             of the file. Then open python or ipython and type
+			     "run romscice_atm_rep.py".
+
 
 ***POST-PROCESSING DIAGNOSTICS***
 
@@ -346,14 +353,23 @@ cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
 			and be part of the ua6 project.
 
 cmip5_field.py: Reads CMIP5 model output for the specified model, experiment,
-                variable, and date range. Returns the time-averaged data over
-		the Southern Ocean (for atmosphere variables, i.e. lat x lon)
+                variable, and date range. Returns the CMIP5 data over the
+		Southern Ocean (for atmosphere variables, i.e. time x lat x lon)
 		or at the northern boundary of ROMS (for ocean variables, i.e.
-		depth x lon).
+		time x depth x lon).
 		To run: The function cmip5_field is designed to be called by
 		        other functions; see for example cmip5_eraint_plot.py.
 			Note that for this function to work, you must be
 			running on raijin and be part of the ua6 project.
+
+cmip5_field_ss.py: Like cmip5_field, but for surface ocean variables. Returns
+                   the CMIP5 data at the northern boundary of ROMS, i.e.
+		   dimension time x lon.
+		   To run: The function cmip5_field_ss is designed to be called
+		           by other functions; see for example
+			   cmip5_ecco2_plot.py. Note that for this function to
+			   work, you must be running on raijin and be part of
+			   the ua6 project.
 
 ***NICE FIGURES***
 
@@ -368,7 +384,7 @@ cmip5_eraint_plot.py: Compares ERA-Interim reanalyses and CMIP5 output by
                       saving plots for 11 atmospheric surface variables (the
 		      8 which will be used by ROMS-CICE, plus 3 more which
 		      FESOM uses), zonally averaged over the ROMS domain (90S
-		      to 38S) and time-averaged between 1992 and 2005, with
+		      to 38S) and time-averaged between 1995 and 2005, with
 		      the given variable on the x-axis and latitude on the
 		      y-axis.
 		      To run: Edit parameters at the top of the file, such as
@@ -466,6 +482,32 @@ zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
 		       as many times as you like, and you only have to
 		       specify which parameters have changed since the last
 		       plot.
+
+cmip5_ecco2_plot.py: Compares ECCO2 reanalyses and CMIP5 output by saving plots
+                     for ocean temperature, salinity, u, and v at the northern
+		     boundary of the circumpolar ROMS domain (currently 38S),
+		     zonally averaged over all longitudes and time-averaged
+		     between 1995 and 2005, with the given variable on the
+		     x-axis and depth on the y-axis.
+		     To run: Edit parameters at the top of the file, such as
+		             the directory where ECCO2 data is stored. Then
+			     open python or ipython and type
+			     "run cmip5_ecco2_plot.py". Note that for this
+			     script to work, you must be running on raijin and
+			     be part of the ua6 project.
+
+cmip5_aviso_plot.py: Compares AVISO sea surface height reanalyses and CMIP5
+                     output, zonally averaged at the northern boundary of the
+		     circumpolar ROMS domain (currently 38S) and time-averaged
+		     between 1995 and 2005. Creates a plot with model on the
+		     x-axis and sea surface height on the y-axis.
+		     To run: Edit parameters at the top of the file, such as
+		             the directory where AVISO data is stored. Then
+			     open python or ipython and type
+			     "run cmip5_aviso_plot.py". Note that for this
+			     script to work, you must be running on raijin
+			     and be part of the ua6 project.
+
                
 
 

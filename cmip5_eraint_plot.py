@@ -1,14 +1,13 @@
 from cmip5_paths import *
 from cmip5_field import *
 from matplotlib.pyplot import *
-from matplotlib.font_manager import FontProperties
 from numpy import *
 from netCDF4 import Dataset
 from matplotlib.font_manager import FontProperties
 
 # Compare ERA-Interim reanalyses and CMIP5 output by creating plots for 11
 # atmospheric surface variables, zonally averaged over the ROMS domain and 
-# time-averaged between 1992 and 2005, with the given variable on the 
+# time-averaged between 1995 and 2005, with the given variable on the 
 # x-axis and latitude on the y-axis.
 def cmip5_eraint_plot ():
 
@@ -16,7 +15,7 @@ def cmip5_eraint_plot ():
     # Experiment name
     expt = 'historical'
     # Years to average over
-    start_year = 1992
+    start_year = 1995
     end_year = 2005
     # Latitude of the northern boundary of the circumpolar ROMS domain
     nbdry = -38
@@ -33,18 +32,20 @@ def cmip5_eraint_plot ():
     # Long names for variables to be used as plot titles
     plot_titles = ['Surface Pressure', 'Surface Air Temperature', 'Surface Specific Humidity', 'Total Cloud Cover', 'Eastward Wind Velocity', 'Northward Wind Velocity', 'Total Precipitation', 'Snowfall', 'Evaporation', 'Downgoing Shortwave Radiation', 'Downgoing Longwave Radiation']
     # Units for each variable
-    plot_units = ['kPa', 'K', '1', '%', 'm/s', 'm/s', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'W m$^{-2}$', r'W m$^{-2}$']
+    plot_units = ['kPa', r'$^{\circ}$C', '1', '%', 'm/s', 'm/s', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'10$^6$ kg m$^{-2}$ s$^{-1}$', r'W m$^{-2}$', r'W m$^{-2}$']
     # Latent heat of vapourisation, J/kg
     Lv = 2.5e6
     # Ideal gas constant for water vapour, J/K/kg
     Rv = 461.5
     # Density of water, kg/m^3
     rho_w = 1e3
+    # Conversion from K to C
+    degKtoC = -273.15
 
     # RGB colours to be used for the 39 CMIP5 models
     # These 39 visually distinct (or as visually distinct as possible) colours
     # were generated from http://phrogz.net/css/distinct-colors.html
-    cmip5_colours = [(1,0,0), (0.83,0,0), (0.49,0,0), (0.32,0,0), (1,0.39,0.39), (0.66,0.26,0.26), (0.83,0.39,0), (0.49,0.23,0), (0.83,0.56,0.33), (0.49,0.33,0.19), (1,0.93,0), (0.66,0.61,0), (0.49,0.47,0.19), (0.19,0.32,0), (0.76,1,0.39), (0.31,0.66,0.26), (0,1,0.33), (0.13,0.32,0.19), (0,0.49,0.39), (0.39,1,0.88), (0,0.24,0.32), (0.33,0.69,0.83), (0.19,0.41,0.49), (0,0.18,0.66), (0.33,0.46,0.83), (0.19,0.27,0.49), (0.2,0.2,0.2), (0.16,0,0.83), (0.1,0,0.49), (0.51,0.39,1), (0.67,0,1), (0.21,0,0.32), (0.39,0.19,0.49), (1,0.39,0.92), (0.66,0.26,0.61), (0.32,0.13,0.29), (0.83,0,0.33), (0.83,0.33,0.53), (0.49,0.19,0.31)]
+    cmip5_colours = [(0.83,0,0), (0.49,0,0), (0.32,0,0), (1,0.39,0.39), (0.66,0.26,0.26), (0.83,0.39,0), (0.49,0.23,0), (0.83,0.56,0.33), (0.49,0.33,0.19), (1,0.93,0), (0.66,0.61,0), (0.49,0.47,0.19), (0.19,0.32,0), (0.76,1,0.39), (0.31,0.66,0.26), (0,1,0.33), (0.13,0.32,0.19), (0,0.49,0.39), (0.39,1,0.88), (0,0.24,0.32), (0.33,0.69,0.83), (0.19,0.41,0.49), (0,0.18,0.66), (0.33,0.46,0.83), (0.19,0.27,0.49), (0.2,0.2,0.2), (0.16,0,0.83), (0.1,0,0.49), (0.51,0.39,1), (0.67,0,1), (0.21,0,0.32), (0.39,0.19,0.49), (1,0.39,0.92), (0.66,0.26,0.61), (0.32,0.13,0.29), (0.83,0,0.33), (0.83,0.33,0.53), (0.49,0.19,0.31), (1,0,0)]
     # FontProperties object to have smaller font size for legends
     fontP = FontProperties()
     fontP.set_size('small')
@@ -54,8 +55,8 @@ def cmip5_eraint_plot ():
 
     # Read ERA-Interim latitude and longitude from the first file
     id = Dataset(era_dir + 'AN_' + str(start_year) + '_monthly_orig.nc', 'r')
-    era_lat = id.variables['latitude'][:]
-    era_lon = id.variables['longitude'][:]
+    era_lat = id.variables['lat'][:]
+    era_lon = id.variables['lon'][:]
     id.close()
     # Latitude values are decreasing for some reason, i.e. 90 to -90
     # Find the first index south of nbdry, and subtract 1 to find the last
@@ -81,8 +82,10 @@ def cmip5_eraint_plot ():
         elif var_era in ['e', 'ssrd', 'strd']:
             era_head = era_dir + 'ER_'
 
+        print 'Processing ERA-Interim'
+
         # Create empty array of dimension time x latitude x longitude
-        era_data = empty([12*(end_year-start_year+1), size(era_lat), size(era_lon)])
+        era_data = ma.empty([12*(end_year-start_year+1), size(era_lat), size(era_lon)])
         # Initialise next available time index in this array
         posn = 0
         # Loop over years
@@ -98,6 +101,9 @@ def cmip5_eraint_plot ():
             if var_cmip5 == 'ps':
                 # Convert pressure from Pa to kPa
                 data = 1e-3*data
+            elif var_cmip5 == 'tas':
+                # Convert temperature from K to C
+                data = data + degKtoC
             elif var_cmip5 == 'huss':
                 # Calculate specific humidity from dewpoint temperature
                 # and surface pressure
@@ -130,7 +136,7 @@ def cmip5_eraint_plot ():
         era_data_timeavg = mean(era_data_zonalavg, axis=0)
 
         # Plot ERA-Interim data
-        figure(figsize=(10,8))
+        figure(figsize=(12,9))
         ax = subplot(111)
         # Keyword "zorder" makes sure this line will be on top of all the
         # thinner CMIP5 lines
@@ -140,8 +146,10 @@ def cmip5_eraint_plot ():
         j = 0
         for model in models:
 
-            # Get the time-averaged model output for this variable, and the
-            # model's latitude axis (they are all on different grids)
+            print 'Processing ' + model.name
+
+            # Get the model output for this variable, and the model's latitude
+            # axis (they are all on different grids)
             model_data, model_lat = cmip5_field(model, expt, var_cmip5, start_year, end_year)
 
             # Check if the output actually exists (if not, cmip5_field will
@@ -160,10 +168,16 @@ def cmip5_eraint_plot ():
                 elif var_cmip5 == 'ps':
                     # Convert surface pressure from Pa to kPa
                     model_data_timeavg = 1e-3*model_data_timeavg
+                elif var_cmip5 == 'tas':
+                    # Convert temperature from K to C
+                    model_data_timeavg = model_data_timeavg + degKtoC
 
                 # Add this model's output to the plot, selecting the correct
                 # colour
-                ax.plot(model_data_timeavg, model_lat, label=model.name, color=cmip5_colours[j])
+                if model.name == 'ACCESS1-0':
+                    ax.plot(model_data_timeavg, model_lat, label=model.name, color=cmip5_colours[j], linewidth=3)
+                else:
+                    ax.plot(model_data_timeavg, model_lat, label=model.name, color=cmip5_colours[j])
             # Increment j whether or not this model had any output, so that
             # colour choices for each model will be consistent between variables
             j += 1
