@@ -81,9 +81,9 @@ def eraint_field (var_name, start_year, end_year):
             # Intermediate step to calculate vapour pressure
             e = 611*exp(Lv/Rv*(1/273.0 - 1/d2m))
             data = 0.622*e/(sp - 0.378*e)
-        elif var_name == 'clt':
+        elif var_name == 'tcc':
             # Convert total cloud cover from fraction to percent
-            data = data*1e2
+            data = data*100
         elif var_name in ['tp', 'sf', 'e']:
             # Convert precip/snowfall/evap from kg/m^2/s to 1e-6 kg/m^2/s
             data = 1e6*data*rho_w/(12*60*60)
