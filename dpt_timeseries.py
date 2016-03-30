@@ -33,7 +33,7 @@ def dpt_timeseries (grid_path, file_path, fig_name):
     # north/south to be land points, but not so far that they pass through the
     # land and become ocean again (eg Weddell Sea)
     j_min = 210
-    j_max = 300
+    j_max = 298
 
     print 'Reading grid'
     # Read grid variables

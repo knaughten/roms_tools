@@ -19,13 +19,17 @@ from scipy.interpolate import interp1d
 # data_trimmed = 3D array of model output, with dimension time x latitude x
 #                longitude (for atmosphere variables, at the surface) or
 #                time x depth x longitude (for ocean variables, interpolated
-#                to the northern boundary of ROMS)
+#                to the northern boundary of ROMS), possibly with units
+#                converted to be more comparable to other models and/or
+#                reanalyses
 # axis = 1D array containing latitude values (for atmosphere variables) or
 #        depth values (for ocean variables).
 def cmip5_field (model, expt, var_name, start_year, end_year):
 
     # Northern boundary of ROMS
     nbdry = -38
+    # Conversion from K to C
+    degKtoC = -273.15
 
     # Figure out whether it is an atmosphere or ocean variable
     if var_name in ['ps', 'tas', 'huss', 'clt', 'uas', 'vas', 'pr', 'prsn', 'evspsbl', 'rsds', 'rlds']:
@@ -136,18 +140,21 @@ def cmip5_field (model, expt, var_name, start_year, end_year):
                 if lat[0] > lat[1]:
                     # Latitude decreases
                     # Find the first index south of nbdry
-                    j_max = nonzero(lat <= nbdry)[0][0]
+                    j_bdryS = nonzero(lat < nbdry)[0][0]
+                    j_bdryN = j_bdryS - 1
                 elif lat[0] < lat[1]:
                     # Latitude increases
                     # Find the first index where latitude exceeds nbdry
-                    j_max = nonzero(lat >= nbdry)[0][0]                
-                # Trim latitude values
-                lat = lat[0:j_max+1]
+                    j_bdryN = nonzero(lat > nbdry)[0][0]
+                    j_bdryS = j_bdryN - 1
 
                 # Read model output
                 if realm == 'atmos':
                     # The data is already 3D (surface variable) so this is easy
-                    data_tmp = id.variables[var_name][:,0:j_max+1,:]
+                    if lat[0] > lat[1]:
+                        data_tmp = id.variables[var_name][:,j_bdryN:,:]
+                    elif lat[0] < lat[1]:
+                        data_tmp = id.variables[var_name][:,0:j_bdryN+1,:]
                     # Initialise the master data array if it doesn't exist yet,
                     # otherwise add the new data values to the end
                     if data is None:
@@ -155,12 +162,15 @@ def cmip5_field (model, expt, var_name, start_year, end_year):
                     else:
                         data = ma.concatenate((data, data_tmp), axis=0)
                     # Save latitude as the axis this function will return
-                    axis = lat
+                    if lat[0] > lat[1]:
+                        axis = lat[j_bdryN:]
+                    elif lat[0] < lat[1]:
+                        axis = lat[0:j_bdryN+1]
 
                 elif realm == 'ocean':
                     # Read data immediately south and north of nbdry
-                    data_tmp1 = id.variables[var_name][:,:,j_max-1,:]
-                    data_tmp2 = id.variables[var_name][:,:,j_max,:]
+                    data_tmp1 = id.variables[var_name][:,:,j_bdryS,:]
+                    data_tmp2 = id.variables[var_name][:,:,j_bdryN,:]
                     # Some of the CMIP5 ocean models are not saved as masked
                     # arrays, but rather as regular arrays with the value 0
                     # at all land points. Catch these with a try-except block
@@ -177,8 +187,8 @@ def cmip5_field (model, expt, var_name, start_year, end_year):
                         # Calculate z-coordinates at points on either side of
                         # northern boundary
                         sigma = id.variables['lev'][:]
-                        h1 = id.variables['depth'][j_max-1,:]
-                        h2 = id.variables['depth'][j_max,:]
+                        h1 = id.variables['depth'][j_bdryS,:]
+                        h2 = id.variables['depth'][j_bdryN,:]
                         depth1 = ma.empty([size(sigma), size(h1)])
                         depth2 = ma.empty([size(sigma), size(h1)])
                         for k in range(size(sigma)):
@@ -213,7 +223,7 @@ def cmip5_field (model, expt, var_name, start_year, end_year):
                         axis = id.variables['lev'][:]
 
                     # Linearly interpolate to nbdry
-                    data_tmp = (data_tmp2 - data_tmp1)/(lat[j_max]-lat[j_max-1])*(nbdry-lat[j_max-1]) + data_tmp1
+                    data_tmp = (data_tmp2 - data_tmp1)/(lat[j_bdryN]-lat[j_bdryS])*(nbdry-lat[j_bdryS]) + data_tmp1
                     # Initialise or add to data array as before
                     if data is None:
                         data = data_tmp[:,:,:]
@@ -247,6 +257,24 @@ def cmip5_field (model, expt, var_name, start_year, end_year):
             # Save model output at this time index to the new array
             data_trimmed[posn,:,:] = data[index,:,:]
             posn += 1
+
+    # Conversions if necessary
+    if var_name in ['pr', 'prsn', 'evspsbl']:
+        # Convert precip/snowfall/evap from kg/m^2/s to
+        # 1e-6 kg/m^2/s
+        data_trimmed = 1e6*data_trimmed
+    elif var_name == 'ps':
+        # Convert surface pressure from Pa to kPa
+        data_trimmed = 1e-3*data_trimmed
+    elif var_name == 'tas':
+        # Convert temperature from K to C
+        data_trimmed = data_trimmed + degKtoC
+    elif var_name == 'thetao' and amin(data_trimmed) > 100:
+        # Convert ocean temperature from K to C if needed
+        data_trimmed = data_trimmed + degKtoC
+    elif var_name == 'so' and amax(data_trimmed) < 1:
+        # Convert salinity from fraction to psu if needed
+        data_trimmed = 1e3*data_trimmed
 
     return data_trimmed, axis
     

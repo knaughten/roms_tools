@@ -32,8 +32,6 @@ def cmip5_ecco2_plot ():
     plot_titles = ['Temperature', 'Salinity', 'Eastward Velocity', 'Northward Velocity']
     # Units for each variable
     plot_units = [r'$^{\circ}$C', 'psu', 'm/s', 'm/s']
-    # Conversion from C to K
-    degKtoC = -273.15
 
     # RGB colours to be used for the 39 CMIP5 models
     # These 39 visually distinct (or as visually distinct as possible) colours
@@ -120,9 +118,6 @@ def cmip5_ecco2_plot ():
                 model_data_zonalavg = mean(model_data, axis=2)
                 # Time average
                 model_data_timeavg = mean(model_data_zonalavg, axis=0)
-                if var_cmip5 == 'thetao' and amin(model_data_timeavg) > 100:
-                    # Convert temperature from K to C if needed
-                    model_data_timeavg = model_data_timeavg + degKtoC
 
                 # Add this model's output to the plot, selecting the correct
                 # colour

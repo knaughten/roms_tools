@@ -279,8 +279,8 @@ def calc_drakepsgtrans (file_path, dydz, u_rho):
     # tip of the Antarctic Peninsula (j_max); make sure these are far enough
     # north/south to be land points, but not so far that they pass through the
     # land and become ocean again (eg Weddell Sea)
-    j_min = 220
-    j_max = 300
+    j_min = 210
+    j_max = 298
 
     # Trim arrays to these bounds
     u_rho_DP = u_rho[:,j_min:j_max,i_DP]
