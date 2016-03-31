@@ -1,14 +1,15 @@
 from cmip5_paths import *
 from cmip5_field_ss import *
 from aviso_field import *
-from matplotlib.pyplot import *
 from numpy import *
 from netCDF4 import Dataset
 
-# Compare AVISO sea surface height reanalyses and CMIP5 output, time-averaged 
-# between 1995 and 2005 and zonally averaged at the northern boundary of the 
-# ROMS grid, with model on the x-axis and sea surface height on the y-axis.
-def cmip5_aviso_plot ():
+# Calculate skill scores (square of residual) for each CMIP5 model compared to
+# AVISO reanalyses of sea surface height, zonally averaged over the northern
+# boundary of the ROMS circumpolar grid (currently 38S) and time-averaged
+# between 1995 and 2005. Rank the models by their skill scores and output the
+# results in a plain text file.
+def cmip5_aviso_skill ():
 
     # Set parameters
     # Experiment name
@@ -27,15 +28,14 @@ def cmip5_aviso_plot ():
     # Time average - also easy because equally spaced time indices
     aviso_data_timeavg = mean(aviso_data_zonalavg, axis=0)
 
-    # Start an array of values (one for each model)
-    labels = ['AVISO']
-    zeta = [aviso_data_timeavg]
-
     # Loop through Model objects
+    labels = []
+    error_scores = []
     for model in models:
         print 'Processing ' + model.name
         # Get the model output for this variable
         model_data = cmip5_field_ss(model, expt, 'zos', start_year, end_year)
+
         # Check if the output actually exists (if not, cmip5_field will
         # return None)
         if model_data is not None:
@@ -43,37 +43,26 @@ def cmip5_aviso_plot ():
             model_data_zonalavg = mean(model_data, axis=1)
             # Time average
             model_data_timeavg = mean(model_data_zonalavg, axis=0)
-            # Append model name and value
+
+            # Calculate square of residual
+            error = (model_data_timeavg - aviso_data_timeavg)**2
             labels.append(model.name)
-            zeta.append(model_data_timeavg)
+            error_scores.append(error)
 
-    # Rerrange labels and zeta so that ACCESS1-0 is right after AVISO
-    if labels[-1] == 'ACCESS1-0':
-        labels = [labels[0]] + [labels[-1]] + labels[1:-1]
+    # Get indices of sorted error estimates
+    sort_index = argsort(error_scores)
 
-    # Plot
-    figure(figsize=(12,9))
-    ax = subplot(111)
-    ax.plot(arange(len(zeta)), zeta, 'ko')
-
-    # Configure plot
-    title('Sea Surface Height (m)')
-    grid(True)
-    ylabel('Depth (m)')
-    xlim([-1, len(labels)])
-    # Move the plot upward so there's room for model labels below
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0+box.height*0.1, box.width, box.height*0.9])
-    # Add model labels
-    xticks(arange(len(labels)), labels, rotation=-90)    
-    
-    savefig('zos.png')
+    # Write model names and their error estimates to a file, in increasing
+    # order of error estimate (eg models most similar to AVISO on top)
+    error_file = 'zos_errors.txt'
+    print 'Writing ' + error_file
+    f = open(error_file, 'w')
+    for i in sort_index:
+        f.write(labels[i] + '   ' + str(error_scores[i]) + '\n')
+    f.close()
 
 
 # Command-line interface
 if __name__ == "__main__":
 
-    cmip5_aviso_plot()
-    
-                     
-    
+    cmip5_aviso_skill()

@@ -420,6 +420,29 @@ cmip5_ecco2_skill.py: Calculates skill scores (sum of squares of residuals,
 			      this script to work, you must be running on raijin
 			      and be part of the ua6 project.
 
+aviso_field.py: Reads AVISO sea surface height data between the given start and
+                end years. Interpolates to the northern boundary of the
+		circumpolar ROMS domain (currently 38S).
+		To run: The function aviso_field is designed to be called by
+		        other functions; see for example cmip5_aviso_plot.py and
+			cmip5_aviso_skill.py. If you are using it, be sure to
+			edit the parameters near the top of the file (eg paths
+			to AVISO data, and the location of the ROMS northern
+			boundary).
+
+cmip5_aviso_skill.py: Calculates skill scores (square of residuals) for each
+                      CMIP5 model compared to AVISO reanalyses of sea surface
+		      height, zonally averaged over the northern boundary of the
+		      ROMS grid (currently 38S) and time-averaged between 1995
+		      and 2005. Rank the models by their skill scores and output
+		      the results in a plain text file.
+		      To run: Edit aviso_field.py to make sure the paths to
+		              AVISO data and the location of the ROMS northern
+			      boundary are correct. Then open python or ipython
+			      and type "run cmip5_aviso_skill.py". Note that for
+			      this script to work, you must be running on raijin
+			      and be part of the ua6 project.
+
 ***NICE FIGURES***
 
 zice.py: Saves a contour plot of ice shelf draft, with the land masked in white,
@@ -550,9 +573,9 @@ cmip5_aviso_plot.py: Compares AVISO sea surface height reanalyses and CMIP5
 		     circumpolar ROMS domain (currently 38S) and time-averaged
 		     between 1995 and 2005. Creates a plot with model on the
 		     x-axis and sea surface height on the y-axis.
-		     To run: Edit parameters at the top of the file, such as
-		             the directory where AVISO data is stored. Then
-			     open python or ipython and type
+		     To run: Edit aviso_field.py to make sure the paths to AVISO
+		             data and teh location of the ROMS northern boundary
+			     are correct. Then open python or ipython and type
 			     "run cmip5_aviso_plot.py". Note that for this
 			     script to work, you must be running on raijin
 			     and be part of the ua6 project.

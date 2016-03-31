@@ -27,15 +27,17 @@ def cmip5_eraint_skill ():
     # Corresponding variable names for ERA-Interim
     var_names_era = ['sp', 't2m', 'd2m', 'tcc', 'u10', 'v10', 'tp', 'sf', 'e', 'ssrd', 'strd']
 
-    # Read ROMS latitude and apply land mask
+    # Read ROMS latitude and mask out land and ice shelf points
     id = Dataset(roms_grid, 'r')
     lat_rho = id.variables['lat_rho'][:,:]
     mask_rho = id.variables['mask_rho'][:,:]
+    mask_zice = id.variables['mask_zice'][:,:]
     id.close()
-    lat_roms = ma.masked_where(mask_rho==0, lat_rho)
-    # Find latitude bounds of ROMS ocean points
+    lat_roms = ma.masked_where(mask_rho-mask_zice==0, lat_rho)
+    # Find latitude bounds of ROMS open ocean points
     latS = amin(lat_roms)
     latN = amax(lat_roms)
+    print latS
 
     # Build an array of Model objects, one for each of 39 CMIP5 models
     models = build_model_list()
