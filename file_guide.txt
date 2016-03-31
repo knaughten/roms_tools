@@ -381,19 +381,44 @@ eraint_field.py: Reads ERA-Interim monthly data for the given variable name,
 			 near the top of the file (eg paths to ERA-Interim
 			 monthly data).
 
-eraint_skill.py: Calculates skill scores (sum of squares of residuals, divided
-                 by number of points) for each CMIP5 model compared to
-		 ERA-Interim reanalyses, for each of 11 atmospheric variables,
-		 zonally averaged over the Southern Ocean (with latitude bounds
-		 corresponding to the ROMS circumpolar grid) and time-averaged
-		 between 1995 and 2005. For each variable, rank the models
-		 by their skill scores and output the results in a plain text
-		 file.
-		 To run: Edit eraint_field.py to make sure the paths to
-		         ERA-Interim monthly data are correct. Then open python
-			 or ipython and type "run eraint_skill.py". Note that
-			 for this script to work, you must be running on raijin
-			 and be part of the ua6 project.
+cmip5_eraint_skill.py: Calculates skill scores (sum of squares of residuals,
+                       divided by number of points) for each CMIP5 model
+		       compared to ERA-Interim reanalyses, for each of 11
+		       atmospheric variables, zonally averaged over the
+		       Southern Ocean (with latitude bounds corresponding to the
+		       ROMS circumpolar grid) and time-averaged between 1995 and
+		       2005. For each variable, rank the models by their skill
+		       scores and output the results in a plain text file.
+		       To run: Edit eraint_field.py to make sure the paths to
+		               ERA-Interim monthly data are correct. Then open
+			       python or ipython and type
+			       "run cmip5_eraint_skill.py". Note that for this
+			       script to work, you must be running on raijin and
+			       be part of the ua6 project.
+
+ecco2_field.py: Reads ECCO2 data for the given variable name, between the given
+                start and end years. Interpolates to the northern boundary of
+		the circumpolar ROMS domain (currently 38S).
+		To run: The function ecco2_field is designed to be called by
+		        other functions; see for example cmip5_ecco2_plot.py and
+			cmip5_ecco2_skill.py. If you are using it, be sure to
+			edit the parameters near the top of the file (eg paths
+			to ECCO2 data, and the location of the ROMS northern
+			boundary).
+
+cmip5_ecco2_skill.py: Calculates skill scores (sum of squares of residuals,
+                      divided by number of points) for each CMIP5 model compared
+		      to ECCO2 reanalyses, for each of 4 ocean variables,
+		      zonally averaged over the northern boundary of the ROMS
+		      grid (currently 38S) and time-averaged between 1995 and
+		      2005. For each variable, rank the models by their skill
+		      scores and output the results in a plain text file.
+		      To run: Edit ecco2_field.py to make sure the paths to
+		              ECCO2 data and the location of the ROMS northern
+			      boundary are correct. Then open python or ipython
+			      and type "run cmip5_ecco2_kill.py". Note that for
+			      this script to work, you must be running on raijin
+			      and be part of the ua6 project.
 
 ***NICE FIGURES***
 
@@ -513,12 +538,12 @@ cmip5_ecco2_plot.py: Compares ECCO2 reanalyses and CMIP5 output by saving plots
 		     zonally averaged over all longitudes and time-averaged
 		     between 1995 and 2005, with the given variable on the
 		     x-axis and depth on the y-axis.
-		     To run: Edit parameters at the top of the file, such as
-		             the directory where ECCO2 data is stored. Then
-			     open python or ipython and type
-			     "run cmip5_ecco2_plot.py". Note that for this
-			     script to work, you must be running on raijin and
-			     be part of the ua6 project.
+		     To run: Edit ecco2_field.py to make sure the paths to ECCO2
+		             monthly data and the location of the ROMS northern
+			     boundary are correct. Then open python or ipython
+			     and type "run cmip5_ecco2_plot.py". Note that for
+			     this script to work, you must be running on raijin
+			     and be part of the ua6 project.
 
 cmip5_aviso_plot.py: Compares AVISO sea surface height reanalyses and CMIP5
                      output, zonally averaged at the northern boundary of the

@@ -1,5 +1,6 @@
 from cmip5_paths import *
 from cmip5_field import *
+from ecco2_field import *
 from matplotlib.pyplot import *
 from numpy import *
 from netCDF4 import Dataset
@@ -17,12 +18,6 @@ def cmip5_ecco2_plot ():
     # Years to average over
     start_year = 1995
     end_year = 2005
-    # Latitude of the northern boundary of the circumpolar ROMS domain
-    nbdry = -38
-    # Directory where ECCO2 data is stored
-    ecco2_dir = '/short/m68/kaa561/ROMS-CICE-MCT/data/ECCO2/raw/'
-    # Middle of ECCO2 file names
-    ecco2_mid = '.1440x720x50.'
 
     # Variable names for CMIP5
     var_names_cmip5 = ['thetao', 'so', 'uo', 'vo']
@@ -44,19 +39,6 @@ def cmip5_ecco2_plot ():
     # Build an array of Model objects, one for each of 39 CMIP5 models
     models = build_model_list()
 
-    # Read ECCO2 latitude, longitude, and depth from the first file
-    id = Dataset(ecco2_dir + 'THETA' + ecco2_mid + str(start_year) + '01.nc', 'r')
-    ecco2_lat = id.variables['LATITUDE_T'][:]
-    ecco2_lon = id.variables['LONGITUDE_T'][:]
-    ecco2_depth = id.variables['DEPTH_T'][:]
-    id.close()
-    # Find the first index north of nbdry, and subtract 1 to find the last
-    # index south of nbdry    
-    j_max = nonzero(ecco2_lat > nbdry)[0][0]
-    j_min = j_max - 1
-    # Only save the ECCO2 latitude values at these indices
-    ecco2_lat = ecco2_lat[j_min:j_max+1]
-
     # Loop over variables
     for i in range(len(var_names_cmip5)):
 
@@ -66,30 +48,7 @@ def cmip5_ecco2_plot ():
         var_ecco2 = var_names_ecco2[i]
 
         print 'Processing ECCO2 data'
-        # Create empty array of dimension time x depth x longitude
-        ecco2_data = ma.empty([12*(end_year-start_year+1), size(ecco2_depth), size(ecco2_lon)])
-        # Initialise next available time index in this array
-        posn = 0
-        # Loop over years and months
-        for year in range(start_year, end_year+1):
-            for month in range(12):
-                print 'month '+str(month+1)+' of '+str(year)
-
-                # Construct filename
-                if (month+1) < 10:
-                    month_str = '0' + str(month+1)
-                else:
-                    month_str = str(month+1)
-                ecco2_file = ecco2_dir + str(var_ecco2) + ecco2_mid + str(year) + month_str + '.nc'
-                # Read data
-                id = Dataset(ecco2_file, 'r')
-                data = id.variables[var_ecco2][0,:,j_min:j_max+1,:]
-                id.close()
-
-                # Linearly interpolate to nbdry and save to master array
-                ecco2_data[posn,:,:] = (data[:,1,:]-data[:,0,:])/(ecco2_lat[1]-ecco2_lat[0])*(nbdry-ecco2_lat[0]) + data[:,0,:]
-                posn +=1
-
+        ecco2_data, ecco2_depth = ecco2_field(var_ecco2, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         ecco2_data_zonalavg = mean(ecco2_data, axis=2)
         # Time average - also easy because equally spaced time indices

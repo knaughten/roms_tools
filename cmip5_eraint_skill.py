@@ -98,7 +98,7 @@ def cmip5_eraint_skill ():
         print 'Writing ' + error_file
         f = open(error_file, 'w')
         for i in sort_index:
-            f.write(str(error_scores[i]) + '   ' + labels[i] + '\n')
+            f.write(labels[i] + '   ' + str(error_scores[i]) + '\n')
         f.close()
 
 
