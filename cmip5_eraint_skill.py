@@ -11,16 +11,19 @@ from scipy.interpolate import interp1d
 # latitude bounds corresponding to the ROMS circumpolar grid) and time-averaged
 # between 1995 and 2005. For each variable, rank the models by their skill 
 # scores and output the results in a plain text file.
-def cmip5_eraint_skill ():
+# Input:
+# season = string specifying which season to average over ('djf', 'mam', 'jja',
+#          'son') or whether to average over all seasons ('annual')
+def cmip5_eraint_skill (season):
 
     # Set parameters
     # Experiment name
     expt = 'historical'
     # Years to average over
-    start_year = 1995
+    start_year = 1992
     end_year = 2005
     # Path to ROMS grid file
-    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
 
     # Variable names for CMIP5
     var_names_cmip5 = ['ps', 'tas', 'huss', 'clt', 'uas', 'vas', 'pr', 'prsn', 'evspsbl', 'rsds', 'rlds']
@@ -37,7 +40,19 @@ def cmip5_eraint_skill ():
     # Find latitude bounds of ROMS open ocean points
     latS = amin(lat_roms)
     latN = amax(lat_roms)
-    print latS
+
+    # Work out which months we want to average over
+    if season == 'djf':
+        months = [12, 1, 2]
+    elif season == 'mam':
+        months = [3, 4, 5]
+    elif season == 'jja':
+        months = [6, 7, 8]
+    elif season == 'son':
+        months = [9, 10, 11]
+    elif season == 'annual':
+        months = range(1,12+1)
+    print 'Time-averaging over season ' + season.upper()
 
     # Build an array of Model objects, one for each of 39 CMIP5 models
     models = build_model_list()
@@ -54,7 +69,12 @@ def cmip5_eraint_skill ():
         era_data, era_lat = eraint_field(var_era, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         era_data_zonalavg = mean(era_data, axis=2)
-        # Time avearge - also easy because equally spaced time indices
+        # Mask out months that we don't care about
+        for t in range(size(era_data_zonalavg, 0)):
+            curr_month = (t+1) % 12
+            if curr_month not in months:
+                era_data_zonalavg[t,:] = ma.masked
+        # Time average (this will only capture the correct months)
         era_data_timeavg = mean(era_data_zonalavg, axis=0)
 
         # Trim latitude bounds so we are entirely within the ROMS domain
@@ -71,12 +91,16 @@ def cmip5_eraint_skill ():
             print 'Processing ' + model.name
             # Get the model output for this variable, and the model's latitude
             # axis (they are all on different grids)
-            model_data, model_lat = cmip5_field(model, expt, var_cmip5, start_year, end_year)
+            model_data, model_lat, model_months = cmip5_field(model, expt, var_cmip5, start_year, end_year)
 
             if model_data is not None:
                 # Zonally average - note all CMIP5 models have regular grids
                 model_data_zonalavg = mean(model_data, axis=2)
-                # Time average
+                # Mask out months that we don't care about
+                for t in range(size(model_data_zonalavg, 0)):
+                    if model_months[t] not in months:
+                        model_data_zonalavg[t,:] = ma.masked
+                # Time average (this will only capture the correct months)
                 model_data_timeavg = mean(model_data_zonalavg, axis=0)
 
                 # Interpolate the resulting 1D array to the ERA-Interim
@@ -96,7 +120,7 @@ def cmip5_eraint_skill ():
 
         # Write model names and their error estimates to a file, in increasing
         # order of error estimate (eg models most similar to ERA-Interim on top)
-        error_file = var_cmip5 + '_errors.txt'
+        error_file = 'cmip5_skill_scores/' + var_cmip5 + '_' + season + '.txt'
         print 'Writing ' + error_file
         f = open(error_file, 'w')
         for i in sort_index:
@@ -107,4 +131,10 @@ def cmip5_eraint_skill ():
 # Command-line interface
 if __name__ == "__main__":
 
-    cmip5_eraint_skill()
+    # Run through all seasons
+    cmip5_eraint_skill('djf')
+    cmip5_eraint_skill('mam')
+    cmip5_eraint_skill('jja')
+    cmip5_eraint_skill('son')
+    cmip5_eraint_skill('annual')
+    

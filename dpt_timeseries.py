@@ -21,7 +21,7 @@ def dpt_timeseries (grid_path, file_path, fig_name):
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
     # Northern boundary of ROMS grid
-    nbdry_val = -38
+    nbdry_val = -30
 
     # Bounds on Drake Passage: edit for new grids
     # i-index of single north-south line to plot (representing a zonal slice);

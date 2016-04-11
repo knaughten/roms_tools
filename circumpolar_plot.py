@@ -3,20 +3,23 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-# Make a circumpolar Antarctic plot of the given (horizontal) variable from ROMS.
+# Make a circumpolar Antarctic plot of the given (horizontal) ROMS variable.
 # Input:
 # grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # var_name = name of variable in file_path to plot
 # tstep = timestep in file_path to plot (1-indexed)
-# depth_key = integer flag indicating whether to plot the surface level (0), the bottom level 
-#             (1), a specific depth to interpolate to (2), the vertical average throughout the 
-#             entire water column (3), or the vertical average between two specific depths (4)
-# depth = if depth_key=2, the specific depth to interpolate to (negative, in metres)
-# depth_bounds = if depth_key=4, the specific depths to average between (negative, in metres),
-#                stored as an array of size 2 with the shallow bound first.
-# save = optional boolean flag indicating that the plot should be saved to a file rather than 
-#        displayed on the screen
+# depth_key = integer flag indicating whether to plot the surface level (0), 
+#             the bottom level (1), a specific depth to interpolate to (2), 
+#             the vertical average throughout the entire water column (3), 
+#             or the vertical average between two specific depths (4)
+# depth = if depth_key=2, the specific depth to interpolate to (negative, 
+#         in metres)
+# depth_bounds = if depth_key=4, the specific depths to average between 
+#                (negative, in metres), stored as an array of size 2 with the 
+#                shallow bound first.
+# save = optional boolean flag indicating that the plot should be saved to a 
+#        file rather than displayed on the screen
 # fig_name = if save=True, filename for figure
 def circumpolar_plot (grid_path, file_path, var_name, tstep, depth_key, depth, depth_bounds, save=False, fig_name=None):
 

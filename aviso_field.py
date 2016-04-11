@@ -14,7 +14,7 @@ from netCDF4 import Dataset
 def aviso_field (start_year, end_year):
 
     # Latitude of the northern boundary of the circumpolar ROMS domain
-    nbdry = -38
+    nbdry = -30
     # Beginning of AVISO file names
     aviso_head = '/short/m68/kaa561/ROMS-CICE-MCT/data/AVISO/dt_global_allsat_msla_h_y'
 

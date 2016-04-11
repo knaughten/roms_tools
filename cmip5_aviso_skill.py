@@ -6,7 +6,7 @@ from netCDF4 import Dataset
 
 # Calculate skill scores (square of residual) for each CMIP5 model compared to
 # AVISO reanalyses of sea surface height, zonally averaged over the northern
-# boundary of the ROMS circumpolar grid (currently 38S) and time-averaged
+# boundary of the ROMS circumpolar grid (currently 30S) and time-averaged
 # between 1995 and 2005. Rank the models by their skill scores and output the
 # results in a plain text file.
 def cmip5_aviso_skill ():

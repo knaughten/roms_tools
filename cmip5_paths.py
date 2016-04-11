@@ -58,6 +58,7 @@ def build_model_list ():
     Models.append(Model('CMCC', 'CMCC-CM'))
     Models.append(Model('CMCC', 'CMCC-CMS'))
     Models.append(Model('CNRM', 'CNRM-CM5'))
+    Models.append(Model('CSIRO-BOM', 'ACCESS1-0'))
     Models.append(Model('CSIRO-BOM', 'ACCESS1-3'))
     Models.append(Model('CSIRO-QCCCE', 'CSIRO-Mk3-6-0'))
     Models.append(Model('FIO', 'FIO-ESM'))
@@ -89,6 +90,5 @@ def build_model_list ():
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-BGC'))
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-CAM5'))
     Models.append(Model('NSF-DOE-NCAR', 'CESM1-WACCM'))
-    Models.append(Model('CSIRO-BOM', 'ACCESS1-0'))
 
     return Models

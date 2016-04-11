@@ -18,11 +18,11 @@ def romscice_nbc_zeta (year):
     # Paths of ROMS grid file, input AVISO file (without the tail mm.nc), and
     # output ROMS-CICE boundary condition file (existing; created using
     # romscice_nbc.py)
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ38S_quarterdegree.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
     aviso_base = '../ROMS-CICE-MCT/data/AVISO/dt_global_allsat_msla_h_y' + str(year) + '_m'
     nbc_file = '../ROMS-CICE-MCT/data/ECCO2/ecco2_cube92_lbc_' + str(year) + '.nc'
     # Northernmost index of AVISO to read (1-based)
-    nbdry_aviso = 209
+    nbdry_aviso = 241
 
     # Read AVISO grid
     aviso_fid = Dataset(aviso_base + '01.nc', 'r')

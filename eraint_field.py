@@ -17,7 +17,7 @@ from netCDF4 import Dataset
 def eraint_field (var_name, start_year, end_year):
 
     # Latitude of the northern boundary of the circumpolar ROMS domain
-    nbdry = -38
+    nbdry = -30
     # Directory where ERA-Interim monthly averaged data is stored
     era_dir = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/'
     # String that ERA-Interim files end with

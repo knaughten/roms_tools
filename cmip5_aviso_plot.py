@@ -48,8 +48,8 @@ def cmip5_aviso_plot ():
             zeta.append(model_data_timeavg)
 
     # Rerrange labels and zeta so that ACCESS1-0 is right after AVISO
-    if labels[-1] == 'ACCESS1-0':
-        labels = [labels[0]] + [labels[-1]] + labels[1:-1]
+    #if labels[-1] == 'ACCESS1-0':
+        #labels = [labels[0]] + [labels[-1]] + labels[1:-1]
 
     # Plot
     figure(figsize=(12,9))

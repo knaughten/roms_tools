@@ -15,7 +15,7 @@ from netCDF4 import Dataset
 def ecco2_field (var_name, start_year, end_year):
 
     # Latitude of the northern boundary of the circumpolar ROMS domain
-    nbdry = -38
+    nbdry = -30
     # Directory where ECCO2 data is stored
     ecco2_dir = '/short/m68/kaa561/ROMS-CICE-MCT/data/ECCO2/raw/'
     # Middle of ECCO2 file names

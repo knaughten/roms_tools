@@ -257,7 +257,7 @@ if __name__ == "__main__":
     N = 31
 
     # Northernmost index of ECCO2 grid to read (1-based)
-    nbdry_ecco = 161
+    nbdry_ecco = 241
 
     run(grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_ecco)
 
