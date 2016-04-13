@@ -74,9 +74,9 @@ def calc_grid (grid_path):
 
     # Convert from spherical to Cartesian coordinates
     # dy = r*dlat where dlat is converted to radians
-    dy_2d = r*dlat*pi/180.0    
+    dy_2d = r*dlat*deg2rad
     # dx = r*cos(lat)*dlon where lat and dlon are converted to radians
-    dx_2d = r*cos(pi*lat/180.0)*dlon*pi/180.0
+    dx_2d = r*cos(lat*deg2rad)*dlon*deg2rad
 
     # Calculate dA and mask with zice
     dA = dx_2d*dy_2d

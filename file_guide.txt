@@ -339,6 +339,17 @@ dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
 			   The script will prompt you for paths to the ROMS
 			   grid file and the ocean history or averages file.
 
+massloss.py: Calculates and plots timeseries of basal mass loss from major ice
+             shelves during a ROMS simulation. Also writes the timeseries to a
+	     log file so they don't have to be recomputed if the run is
+	     extended; at the beginning of this script, previous values will be
+	     read from the same log file if it exists.
+	     To run: First edit the limits on i- and j- coordinates for each
+	             ice shelf to suit your grid. Then open python or ipython,
+		     and type "run massloss.py". The script will prompt you for
+		     the paths to the ROMS grid file, the ocean history or
+		     averages file, and the log file.
+
 ***CMIP5 ANALYSIS***
 
 cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5

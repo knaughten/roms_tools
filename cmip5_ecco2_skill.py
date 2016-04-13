@@ -121,8 +121,8 @@ def cmip5_ecco2_skill (season):
 if __name__ == "__main__":
 
     # Run through all seasons
-    cmip5_ecco2_skill('djf')
-    cmip5_ecco2_skill('mam')
+    #cmip5_ecco2_skill('djf')
+    #cmip5_ecco2_skill('mam')
     cmip5_ecco2_skill('jja')
     cmip5_ecco2_skill('son')
     cmip5_ecco2_skill('annual')

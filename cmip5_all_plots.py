@@ -24,9 +24,9 @@ def cmip5_all_plots (season):
 if __name__ == "__main__":
 
     # Run through all seasons
-    cmip5_all_plots('djf')
-    cmip5_all_plots('mam')
-    cmip5_all_plots('jja')
+    #cmip5_all_plots('djf')
+    #cmip5_all_plots('mam')
+    #cmip5_all_plots('jja')
     cmip5_all_plots('son')
     cmip5_all_plots('annual')
 
