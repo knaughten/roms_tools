@@ -1,7 +1,6 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
-from calc_z import *
 
 # Creates a circumpolar Antarctic plot of initial SST from the
 # ROMS initialisation file. Follows the same process as

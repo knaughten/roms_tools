@@ -7,10 +7,9 @@ from unesco import *
 # calculate density fields at each timestep using the 1980 UNESCO seawater
 # equation of state. Save in a new file.
 # Input:
-# grid_file = path to ROMS grid file
 # input_file = path to ocean history/averages file
 # output_file = desired path to new density file
-def make_density_file (grid_file, input_file, output_file):
+def make_density_file (input_file, output_file):
 
     # Grid parameters
     theta_s = 0.9
@@ -19,17 +18,16 @@ def make_density_file (grid_file, input_file, output_file):
     N = 31
 
     # Read grid variables
-    id = Dataset(grid_file, 'r')
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    id.close()
+    in_id = Dataset(input_file, 'r')
+    h = in_id.variables['h'][:,:]
+    zice = in_id.variables['zice'][:,:]
+    lon = in_id.variables['lon_rho'][:,:]
+    lat = in_id.variables['lat_rho'][:,:]
     num_lon = size(lon, 1)
     num_lat = size(lon, 0)
 
     # Get a 3D array of z-coordinates (metres)
-    z, sc_r, Cs_r = calc_z(h, zice, lon, lat, theta_s, theta_b, hc, N)
+    z, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
     # Pressure is approximately equal to |z|/10
     press = abs(z)/10.0
 
@@ -55,7 +53,6 @@ def make_density_file (grid_file, input_file, output_file):
     out_id.variables['rho'].units = 'kg/m^3'
 
     # Read time values from input file
-    in_id = Dataset(input_file, 'r')
     time = in_id.variables['ocean_time'][:]
 
     # Process each timestep individually to conserve memory
@@ -79,7 +76,6 @@ def make_density_file (grid_file, input_file, output_file):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_file = raw_input("Path to grid file: ")
     input_file = raw_input("Path to ocean history/averages file: ")
     output_file = raw_input("Desired path to new density file: ")
-    make_density_file(grid_file, input_file, output_file)
+    make_density_file(input_file, output_file)

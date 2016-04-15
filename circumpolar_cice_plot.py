@@ -1,7 +1,6 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
-from calc_z import *
 
 # Make a circumpolar Antarctic plot of the given (horizontal) variable from CICE.
 # Input:

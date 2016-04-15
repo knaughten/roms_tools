@@ -1,7 +1,6 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
-from calc_z import *
 
 # Creates a circumpolar Antarctic plot of net CICE-to-ROMS freshwater flux
 # in cm/day. Follows the same process as circumpolar_cice_plot.py, but

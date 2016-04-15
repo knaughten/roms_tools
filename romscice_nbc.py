@@ -116,14 +116,14 @@ def convert_file (year):
 
     # Get a 3D array of ROMS z-coordinates on the rho-grid, as well as 1D
     # arrays of s-coordinates and stretching curves
-    z_rho, sc_r, Cs_r = calc_z(h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N)
+    z_rho, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
     # Only keep the depth x longitude slice of z_rho at the northern boundary
     z_rho = z_rho[:,-1,:]
-    # Repeat for the u and v grids
-    z_u, sc_r, Cs_r = calc_z(h_u, zice_u, lon_u, lat_u, theta_s, theta_b, hc, N)
-    z_u = z_u[:,-1,:]
 
-    # Now calculate dz on the u and v grids
+    # Repeat for the u grid
+    z_u, sc_r, Cs_r = calc_z(h_u, zice_u, theta_s, theta_b, hc, N)
+    z_u = z_u[:,-1,:]
+    # Now calculate dz on the u grid
     # We have z at the midpoint of each cell, now find it on the top and
     # bottom edges
     z_edges_u = zeros((size(z_u, 0)+1, size(z_u, 1)))
@@ -133,8 +133,9 @@ def convert_file (year):
     z_edges_u[0,:] = 2*z_u[0,:] - z_edges_u[1,:]
     # Now find dz
     dz_u = z_edges_u[1:,:] - z_edges_u[0:-1,:]
+
     # Repeat for the v grid
-    z_v, sc_r, Cs_r = calc_z(h_v, zice_v, lon_v, lat_v, theta_s, theta_b, hc, N)
+    z_v, sc_r, Cs_r = calc_z(h_v, zice_v, theta_s, theta_b, hc, N)
     z_v = z_v[:,-1,:]
     z_edges_v = zeros((size(z_v, 0)+1, size(z_v, 1)))
     z_edges_v[1:-1,:] = 0.5*(z_v[0:-1,:] + z_v[1:,:])

@@ -5,7 +5,6 @@ from calc_z import *
 
 # Make a circumpolar Antarctic plot of the given (horizontal) ROMS variable.
 # Input:
-# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # var_name = name of variable in file_path to plot
 # tstep = timestep in file_path to plot (1-indexed)
@@ -21,7 +20,7 @@ from calc_z import *
 # save = optional boolean flag indicating that the plot should be saved to a 
 #        file rather than displayed on the screen
 # fig_name = if save=True, filename for figure
-def circumpolar_plot (grid_path, file_path, var_name, tstep, depth_key, depth, depth_bounds, save=False, fig_name=None):
+def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, save=False, fig_name=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -68,10 +67,8 @@ def circumpolar_plot (grid_path, file_path, var_name, tstep, depth_key, depth, d
         print 'Grid type ' + grid_string + ' not supported'
         id.close()
         return
-    id.close()
 
     # Read grid variables
-    id = Dataset(grid_path, 'r')
     h = id.variables['h'][:,:]
     zice = id.variables['zice'][:,:]
     # h and zice are on the rho-grid; interpolate if necessary
@@ -115,7 +112,7 @@ def circumpolar_plot (grid_path, file_path, var_name, tstep, depth_key, depth, d
             data = data_full[0,:,:]
         else:
             # We will need to calculate z-coordinates
-            z, sc_r, Cs_r = calc_z(h, zice, lon, lat, theta_s, theta_b, hc, N)
+            z, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
             if depth_key == 2:
                 # Interpolate to given depth
                 data = interp_depth(data_full, z, depth)
@@ -183,7 +180,7 @@ def interp_depth (data_3d, z_3d, z0):
             z_col = z_3d[:,j,i]
             data_col = data_3d[:,j,i]
             if data[j,i] is ma.masked:
-                # This is a land point; leave as is
+                # This is a land point; leave as is                
                 pass
             elif all(z_col < z0):
                 # z0 is too shallow (i.e. in an ice shelf)
@@ -292,7 +289,6 @@ def average_btw_depths (data_3d, z_3d, dz_3d, z_bounds):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_path = raw_input("Path to ROMS grid file: ")
     file_path = raw_input("Path to ocean history/averages file: ")
     var_name = raw_input("Variable name: ")
 
@@ -347,7 +343,7 @@ if __name__ == "__main__":
         fig_name = None
 
     # Make the plot
-    circumpolar_plot(grid_path, file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
+    circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
 
     # Repeat until the user wants to exit
     while True:
@@ -355,18 +351,15 @@ if __name__ == "__main__":
         if repeat == 'y':
             while True:
                 # Ask for changes to the input parameters; repeat until the user is finished
-                changes = raw_input("Enter a parameter to change: (1) grid path, (2) file path, (3) variable name, (4) depth, (5) timestep number, (6) save/display; or enter to continue: ")
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) depth, (4) timestep number, (5) save/display; or enter to continue: ")
                 if len(changes) == 0:
                     # No more changes to parameters.
                     break
                 else:
                     if int(changes) == 1:
-                        # New grid path
-                        grid_path = raw_input("Path to ROMS grid file: ")
-                    elif int(changes) == 2:
                         # New file path
                         file_path = raw_input("Path to ocean history/averages file: ")
-                    elif int(changes) == 3:
+                    elif int(changes) == 2:
                         # New variable name
                         var_name = raw_input("Variable name: ")
                         # Figure out if we need to ask for depth information
@@ -406,7 +399,7 @@ if __name__ == "__main__":
                             depth = NaN
                             depth_bounds = None
                         id.close()
-                    elif int(changes) == 4:
+                    elif int(changes) == 3:
                         # New depth information
                         depth_type = raw_input("Single depth (s) or vertical average (v)? ")
                         if depth_type == 's':
@@ -435,10 +428,10 @@ if __name__ == "__main__":
                                 shallow_bound = -1*float(raw_input("Enter shallow depth bound (positive, in metres): "))
                                 deep_bound = -1*float(raw_input("Enter deep depth bound (positive, in metres): "))
                                 depth_bounds = [shallow_bound, deep_bound]
-                    elif int(changes) == 5:
+                    elif int(changes) == 4:
                         # New timestep
                         tstep = int(raw_input("Timestep number (starting at 1): "))
-                    elif int(changes) == 6:
+                    elif int(changes) == 5:
                         # Change from display to save, or vice versa
                         save = not save
             if save:
@@ -446,7 +439,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            circumpolar_plot(grid_path, file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
+            circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
 
         else:
             break

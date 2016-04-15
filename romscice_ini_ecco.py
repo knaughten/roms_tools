@@ -83,7 +83,7 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 
     # Get a 3D array of ROMS z-coordinates, as well as 1D arrays of s-coordinates
     # and stretching curves
-    z_roms_3d, sc_r, Cs_r = calc_z(h, zice, lon_roms, lat_roms, theta_s, theta_b, hc, N)
+    z_roms_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
     # Copy the latitude and longitude values into 3D arrays of the same shape
     lon_roms_3d = tile(lon_roms, (N,1,1))
     lat_roms_3d = tile(lat_roms, (N,1,1))

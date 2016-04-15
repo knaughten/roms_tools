@@ -6,7 +6,6 @@ from calc_z import *
 # Create a zonally averaged or zonally sliced plot (i.e. depth vs latitude)
 # of the given variable.
 # Input:
-# grid_path = path to ROMS grid file
 # file_path = path to ocean history or output file
 # var_name = variable name in file_path; must be a variable of dimension
 #            time x depth x latitude x longitude, and on the rho, u, or v grid
@@ -21,7 +20,7 @@ from calc_z import *
 # save = optional boolean flag; if True, the figure will be saved with file name
 #        fig_name, if False, the figure will display on the screen
 # fig_name = optional string containing filename for figure, if save=True
-def zonal_plot (grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save=False, fig_name=None):
+def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save=False, fig_name=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -58,10 +57,8 @@ def zonal_plot (grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds
         print 'Grid type ' + grid_string + ' not supported'
         id.close()
         return
-    id.close()
 
     # Read grid variables
-    id = Dataset(grid_path, 'r')
     h = id.variables['h'][:,:]
     zice = id.variables['zice'][:,:]
     # h, zice, and zeta are on the rho-grid; interpolate if necessary
@@ -79,7 +76,7 @@ def zonal_plot (grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds
     id.close()
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z_3d, sc_r, Cs_r = calc_z(h, zice, lon_2d, lat_2d, theta_s, theta_b, hc, N, zeta)
+    z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
 
     # Choose what to write on the title about longitude
     if lon_key == 0:
@@ -398,7 +395,6 @@ def interp_lon_helper (lon, lon0):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_path = raw_input("Path to ROMS grid file: ")
     file_path = raw_input("Path to ocean history/averages file: ")
     var_name = raw_input("Variable name: ")
     tstep = int(raw_input("Timestep number (starting at 1): "))
@@ -429,7 +425,7 @@ if __name__ == "__main__":
     elif action == 'd':
         save = False
         fig_name = None
-    zonal_plot(grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
+    zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
 
     # Repeat until the user wants to exit
     while True:
@@ -437,24 +433,21 @@ if __name__ == "__main__":
         if repeat == 'y':
             while True:
                 # Ask for changes to the input parameters; repeat until the user is finished
-                changes = raw_input("Enter a parameter to change: (1) grid path, (2) file path, (3) variable name, (4) timestep number, (5) longitude, (6) deepest depth, (7) save/display; or enter to continue: ")
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) timestep number, (4) longitude, (5) deepest depth, (6) save/display; or enter to continue: ")
                 if len(changes) == 0:
                     # No more changes to parameters
                     break
                 else:
                     if int(changes) == 1:
-                        # New grid path
-                        grid_path = raw_input("Path to ROMS grid file: ")
-                    elif int(changes) == 2:
                         # New file path
                         file_path = raw_input("Path to ocean history/averages file: ")
-                    elif int(changes) == 3:
+                    elif int(changes) == 2:
                         # New variable name
                         var_name = raw_input("Variable name: ")
-                    elif int(changes) == 4:
+                    elif int(changes) == 3:
                         # New timestep
                         tstep = int(raw_input("Timestep number (starting at 1): "))
-                    elif int(changes) == 5:
+                    elif int(changes) == 4:
                         # New longitude information
                         lon_type = raw_input("Single longitude (s) or zonal average (z)? ")
                         if lon_type == 's':
@@ -473,10 +466,10 @@ if __name__ == "__main__":
                                 w_bound = float(raw_input("Enter western bound on longitude (-180 to 180): "))
                                 e_bound = float(raw_input("Enter eastern bound on longitude (-180 to 180): "))
                                 lon_bounds = [w_bound, e_bound]
-                    elif int(changes) == 6:
+                    elif int(changes) == 5:
                         # New depth bound
                         depth_min = -1*float(raw_input("Deepest depth to plot (positive, metres): "))
-                    elif int(changes) == 7:
+                    elif int(changes) == 6:
                         # Change from display to save, or vice versa
                         save = not save
             if save:
@@ -484,7 +477,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            zonal_plot(grid_path, file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
+            zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
 
         else:
             break

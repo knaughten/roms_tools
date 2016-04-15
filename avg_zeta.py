@@ -4,17 +4,16 @@ from matplotlib.pyplot import plot,xlabel,ylabel,clf,show
 
 # Calculate the average sea surface height (zeta) at each timestep of the given
 # ocean history file.
-def avg_zeta (file_path, grid_path):
+def avg_zeta (file_path):
 
     # Read time and grid variables
     file = Dataset(file_path, 'r')
-    grid = Dataset(grid_path, 'r')
     time = file.variables['ocean_time'][:]
     # Convert time from seconds to years
     time = time/(365*24*60*60)
-    lon = grid.variables['lon_rho'][:,:]
-    lat = grid.variables['lat_rho'][:,:]
-    mask = grid.variables['mask_rho'][:,:]
+    lon = file.variables['lon_rho'][:,:]
+    lat = file.variables['lat_rho'][:,:]
+    mask = file.variables['mask_rho'][:,:]
     avg_zeta = []
 
     # Mask land points out of lat and lon
@@ -54,8 +53,6 @@ def avg_zeta (file_path, grid_path):
     # Multiply to get the area of each cell
     area = nansum(dx*dy)
 
-    grid.close()
-
     for l in range(size(time)):
         print 'Processing timestep ' + str(l+1) + ' of ' + str(size(time))
         # Read zeta at this timestep
@@ -78,8 +75,7 @@ def avg_zeta (file_path, grid_path):
 if __name__ == "__main__":
 
     file_path = raw_input("Path to ocean history file: ")
-    grid_path = raw_input("Path to grid file: ")
-    avg_zeta(file_path, grid_path)
+    avg_zeta(file_path)
 
     
         

@@ -17,14 +17,14 @@ from calc_z import *
 
 # Given the path to a ROMS grid file, calculate differentials for later
 # integration.
-# Input: grid_path = string containing path to ROMS grid file
+# Input: file_path = string containing path to ROMS history/averages file
 # Output:
 # dA = differential of area on the 2D rho-grid, masked with zice
 # dV = differential of volume on the 3D rho-grid (depth x lat x lon), masked
 #      with land mask
-# dydz = differential of area in the y-z direction for each cell on the 3D
-#        rho-grid, masked with land mask
-def calc_grid (grid_path):
+# dy_wct = differential of y times water column thickness for each cell on the 
+#          2D rho-grid, masked with land mask
+def calc_grid (file_path):
 
     # Grid parameters
     theta_s = 0.9
@@ -39,15 +39,19 @@ def calc_grid (grid_path):
     nbdry_val = -30
 
     # Read grid variables
-    id = Dataset(grid_path, 'r')
+    id = Dataset(file_path, 'r')
     h = id.variables['h'][:,:]
     zice = id.variables['zice'][:,:]
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
+    mask = id.variables['mask_rho'][:,:]
     id.close()
     # Save dimensions
     num_lat = size(lon, 0)
     num_lon = size(lon, 1)
+
+    # Calculate water column thickness
+    wct = h + zice
 
     # Add or subtract 360 from longitude values which wrap around
     # so that longitude increases monotonically from west to east
@@ -80,17 +84,14 @@ def calc_grid (grid_path):
 
     # Calculate dA and mask with zice
     dA = dx_2d*dy_2d
-    id = Dataset(grid_path, 'r')
-    mask = id.variables['mask_zice'][:,:]
-    id.close()
-    dA = ma.masked_where(mask==0, dA)
+    dA = ma.masked_where(zice==0, dA)
 
     # Copy dx and dy into 3D arrays, same at each depth level
     dy = tile(dy_2d, (N,1,1))
     dx = tile(dx_2d, (N,1,1))
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z, sc_r, Cs_r = calc_z(h, zice, lon, lat, theta_s, theta_b, hc, N)
+    z, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
     # We have z at the midpoint of each cell, now find it on the top and
     # bottom edges of each cell
     z_edges = zeros((size(z,0)+1, size(z,1), size(z,2)))
@@ -101,17 +102,13 @@ def calc_grid (grid_path):
     # Now find dz
     dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
 
-    # Read land mask
-    id = Dataset(grid_path, 'r')
-    mask = id.variables['mask_rho'][:,:]
-    id.close()
-    mask = tile(mask, (N,1,1))
+    mask_3d = tile(mask, (N,1,1))
     # Calculate dV and mask with land mask
-    dV = ma.masked_where(mask==0, dx*dy*dz)
-    # Similarly for dydz
-    dydz = ma.masked_where(mask==0, dy*dz)
+    dV = ma.masked_where(mask_3d==0, dx*dy*dz)
+    # Similarly for dy_wct
+    dy_wct = ma.masked_where(mask==0, dy_2d*wct)
 
-    return dA, dV, dydz
+    return dA, dV, dy_wct
 
 
 # Read and return density.
@@ -263,31 +260,42 @@ def calc_maxvel (u_rho, v_rho):
 # Calculate zonal transport through the Drake Passage.
 # Input:
 # file_path = path to ocean history/averages file
-# dydz = elements of area in the y-z direction for each cell in the 3D
-#        rho-grid, masked with land mask
-# u_rho = u at timestep t, interpolated to the rho-grid
+# dy_wct = differential of y times water column thickness for each cell on the 
+#          2D rho-grid, masked with land mask
+# t = timestep index in file_path
 # Output: drakepsg_trans = zonal transport through the Drake Passage (60W),
 #                          integrated over depth and latitude
-def calc_drakepsgtrans (file_path, dydz, u_rho):
+def calc_drakepsgtrans (file_path, dy_wct, t):
 
     # Bounds on Drake Passage; edit for new grids
     # i-index of single north-south line to plot (representing a zonal slice);
     # it doesn't really matter which slice of the Drake Passage this is, due
     # to volume conservation
-    i_DP = 1175    
+    i_DP = 1179  
     # j-indices of the southern tip of South America (j_min) and the northern
     # tip of the Antarctic Peninsula (j_max); make sure these are far enough
     # north/south to be land points, but not so far that they pass through the
     # land and become ocean again (eg Weddell Sea)
-    j_min = 210
+    j_min = 229
     j_max = 298
 
+    # Read ubar, converting to float128 to prevent overflow during integration
+    id = Dataset(file_path, 'r')
+    ubar = ma.asarray(id.variables['ubar'][t,:,:], dtype=float128)
+    id.close()
+
+    # Interpolate ubar onto the rho-grid
+    w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
+    middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
+    e_bdry_ubar = w_bdry_ubar[:]
+    ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
+
     # Trim arrays to these bounds
-    u_rho_DP = u_rho[:,j_min:j_max,i_DP]
-    dydz_DP = dydz[:,j_min:j_max,i_DP]
+    ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
+    dy_wct_DP = dy_wct[j_min:j_max,i_DP]
 
     # Calculate transport
-    transport = sum(u_rho_DP*dydz_DP)
+    transport = sum(ubar_rho_DP*dy_wct_DP)
 
     # Divide by 1e6 to convert to Sv
     return transport*1e-6
@@ -324,13 +332,12 @@ def calc_totalice (cice_path, dA, t):
 
 # Main routine
 # Input:
-# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # cice_path = path to CICE history file
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def spinup_plots (grid_path, file_path, cice_path, log_path):
+def spinup_plots (file_path, cice_path, log_path):
 
     time = []
     ohc = []
@@ -394,7 +401,7 @@ def spinup_plots (grid_path, file_path, cice_path, log_path):
 
     # Calculate differentials
     print 'Analysing grid'
-    dA, dV, dydz = calc_grid(grid_path)
+    dA, dV, dy_wct = calc_grid(file_path)
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
     new_time = id.variables['ocean_time'][:]/(365*24*60*60)
@@ -422,7 +429,7 @@ def spinup_plots (grid_path, file_path, cice_path, log_path):
         print 'Calculating maximum velocity'
         maxvel.append(calc_maxvel(u_rho, v_rho))
         print 'Calculating Drake Passage transport'
-        drakepsgtrans.append(calc_drakepsgtrans(file_path, dydz, u_rho))
+        drakepsgtrans.append(calc_drakepsgtrans(file_path, dy_wct, t))
         print 'Calculating total sea ice extent'
         totalice.append(calc_totalice(cice_path, dA, t))
 
@@ -511,11 +518,10 @@ def spinup_plots (grid_path, file_path, cice_path, log_path):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
     cice_path = raw_input('Enter path to CICE history file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    spinup_plots(grid_path, file_path, cice_path, log_path)
+    spinup_plots(file_path, cice_path, log_path)
 
 

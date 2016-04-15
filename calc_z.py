@@ -4,12 +4,8 @@ from numpy import *
 # z-coordinates. Assumes Vtransform = 2 and Vstretching = 2.
 
 # Input (all straight out of grid file and *.in file):
-# h, zice, lon_rho, lat_rho = 2D arrays containing values for bathymetry,
-#                             ice shelf draft, longitude, and latitude. All
-#                             have dimension latitude x longitude. You can
-#                             also pass latitude and longitude from the u or
-#                             v grids, but make sure h and zice have been
-#                             interpolated to have the same size.
+# h, zice = 2D arrays containing values for bathymetry and ice shelf draft.
+#           Both have dimension latitude x longitude.
 # theta_s, theta_b, hc, N = scalar parameters
 # zeta = optional 2D array containing values for sea surface height
 # Output:
@@ -17,7 +13,7 @@ from numpy import *
 #     grid; dimension depth x latitude x longitude
 # s = 1D array of s-coordinate values
 # C = 1D array of stretching curve values
-def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N, zeta=None):
+def calc_z (h, zice, theta_s, theta_b, hc, N, zeta=None):
 
     # Follows the method of scoord_zice.m and stretching.m on katabatic
     # (in /ds/projects/iomp/matlab_scripts/ROMS_NetCDF/iomp_IAF/)
@@ -32,13 +28,13 @@ def calc_z (h, zice, lon_rho, lat_rho, theta_s, theta_b, hc, N, zeta=None):
 
     Csur = (-cosh(theta_s*s) + 1)/(cosh(theta_s) - 1)
     Cbot = sinh(theta_b*(s+1))/sinh(theta_b) - 1
-    weight = (s+1)**alpha*(1 + alpha/beta)*(1 - (s+1)**beta)
+    weight = (s+1)**alpha*(1 + (alpha/beta)*(1 - (s+1)**beta))
     C = weight*Csur + (1-weight)*Cbot
 
     h = h - abs(zice)
 
-    num_lon = size(lon_rho, 1)
-    num_lat = size(lon_rho, 0)
+    num_lon = size(h, 1)
+    num_lat = size(h, 0)
     z = zeros((N, num_lat, num_lon))
     for k in range(N):
         z0 = (h*C[k] + hc*s[k])/(h + hc)

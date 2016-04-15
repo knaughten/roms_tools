@@ -6,12 +6,11 @@ from os.path import *
 # Calculate and plot timeseries of basal mass loss from major ice shelves
 # during a ROMS simulation.
 # Input:
-# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def massloss (grid_path, file_path, log_path):
+def massloss (file_path, log_path):
 
     # Titles and figure names for each ice shelf
     names = ['Amery Ice Shelf', 'Ross Ice Shelf', 'Getz Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Abbot Ice Shelf', 'George VI Ice Shelf', 'Larsen C Ice Shelf', 'Ronne-Filchner Ice Shelf', 'Brunt and Riiser-Larsen Ice Shelves', 'Fimbul and Jelbart Ice Shelves']
@@ -24,7 +23,7 @@ def massloss (grid_path, file_path, log_path):
     i_min = [250, 700, 905, 1015, 1000, 1100, 1165, 1060, 1280, 1375, 1]
     i_max = [350, 872, 975, 1030, 1090, 1155, 1190, 1240, 1369, 1443, 12]
     j_min = [1,   20,  150, 140,  160,  150,  190,  1,    65,   80,   100]
-    j_max = [125, 123, 175, 160,  185,  200,  220,  135,  117,  150,  120]
+    j_max = [125, 123, 175, 160,  185,  200,  220,  135,  116,  150,  120]
     # Density of ice in kg/m^3
     rho_ice = 916
 
@@ -58,7 +57,7 @@ def massloss (grid_path, file_path, log_path):
 
     # Calculate dA (masked with ice shelf mask) and i and j coordinates
     print 'Analysing grid'
-    dA, i, j = calc_grid(grid_path)
+    dA, i, j = calc_grid(file_path)
 
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
@@ -132,11 +131,11 @@ def massloss (grid_path, file_path, log_path):
 
 # Given the path to a ROMS grid file, calculate differential of area and
 # i- and j-indices.
-# Input: grid_path = string containing path to ROMS grid file
+# Input: file_path = string containing path to ROMS history/averages file
 # Output:
 # dA = differential of area on the 2D rho-grid, masked with zice
 # i,j = i- and j- coordinates on the rho-grid, starting at 1
-def calc_grid (grid_path):
+def calc_grid (file_path):
 
     # Radius of the Earth in m
     r = 6.371e6
@@ -146,10 +145,10 @@ def calc_grid (grid_path):
     nbdry_val = -30
 
     # Read grid variables
-    id = Dataset(grid_path, 'r')
+    id = Dataset(file_path, 'r')
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
-    mask_zice = id.variables['mask_zice'][:,:]
+    zice = id.variables['zice'][:,:]
     id.close()
     # Save dimensions
     num_lat = size(lon, 0)
@@ -188,7 +187,7 @@ def calc_grid (grid_path):
     dx = r*cos(lat*deg2rad)*dlon*deg2rad
 
     # Calculate dA and mask with zice
-    dA = ma.masked_where(mask_zice==0, dx*dy)
+    dA = ma.masked_where(zice==0, dx*dy)
 
     return dA, i, j
 
@@ -196,9 +195,8 @@ def calc_grid (grid_path):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    massloss(grid_path, file_path, log_path)
+    massloss(file_path, log_path)
 

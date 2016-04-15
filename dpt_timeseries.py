@@ -1,21 +1,13 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
-from calc_z import *
 
 # Calculates zonal transport through each grid cell in the Drake Passage
 # and plots a timeseries of the result.
 # Input:
-# grid_path = path to ROMS grid file
 # file_path = path to ROMS ocean history or averages file
-# fig_name = filename for figure
-def dpt_timeseries (grid_path, file_path, fig_name):
+def dpt_timeseries (file_path):
 
-    # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
-    hc = 40
-    N = 31
     # Radius of the Earth in m
     r = 6.371e6
     # Degrees to radians conversion factor
@@ -27,23 +19,22 @@ def dpt_timeseries (grid_path, file_path, fig_name):
     # i-index of single north-south line to plot (representing a zonal slice);
     # it doesn't really matter which slice of the Drake Passage this is, due
     # to volume conservation
-    i_DP = 1175
+    i_DP = 1179
     # j-indices of the southern tip of South America (j_min) and the northern
     # tip of the Antarctic Peninsula (j_max); make sure these are far enough
     # north/south to be land points, but not so far that they pass through the
     # land and become ocean again (eg Weddell Sea)
-    j_min = 210
+    j_min = 229
     j_max = 298
 
     print 'Reading grid'
     # Read grid variables
-    id = Dataset(grid_path, 'r')
+    id = Dataset(file_path, 'r')
     h = id.variables['h'][:,:]
     zice = id.variables['zice'][:,:]
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
     mask = id.variables['mask_rho'][:,:]
-    id.close()
 
     # Interpolate latitude to the edges of each cell
     s_bdry = lat[0,:]
@@ -55,32 +46,17 @@ def dpt_timeseries (grid_path, file_path, fig_name):
 
     # Convert from spherical to Cartesian coordinates
     # dy = r*dlat where dlat is converted to radians
-    dy_2d = r*dlat*pi/180.0    
-    # Copy into a 3D array, same at each depth level
-    dy = tile(dy_2d, (N,1,1))
+    dy = r*dlat*pi/180.0
+    # Calculate water column thickness
+    wct = h + zice
 
-    # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z, sc_r, Cs_r = calc_z(h, zice, lon, lat, theta_s, theta_b, hc, N)
-    # We have z at the midpoint of each cell, now find it on the top and
-    # bottom edges of each cell
-    z_edges = zeros((size(z,0)+1, size(z,1), size(z,2)))
-    z_edges[1:-1,:,:] = 0.5*(z[0:-1,:,:] + z[1:,:,:])
-    # At surface, z = zice; at bottom, extrapolate
-    z_edges[-1,:,:] = zice[:,:]
-    z_edges[0,:,:] = 2*z[0,:,:] - z_edges[1,:,:]
-    # Now find dz
-    dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
-
-    # Get 3D land mask
-    mask = tile(mask, (N,1,1))
-    # Calculate dydz and mask with land mask
-    dydz = ma.masked_where(mask==0, dy*dz)
+    # Calculate dy_wct and mask with land mask
+    dy_wct = ma.masked_where(mask==0, dy*wct)
     # Trim to Drake Passage bounds
-    dydz_DP = dydz[:,j_min:j_max,i_DP]
+    dy_wct_DP = dy_wct[j_min:j_max,i_DP]
     lat_DP = lat[j_min:j_max,i_DP]
 
     # Read time values and convert from seconds to years
-    id = Dataset(file_path, 'r')
     time = id.variables['ocean_time'][:]/(365*24*60*60)
 
     transport = []
@@ -88,16 +64,18 @@ def dpt_timeseries (grid_path, file_path, fig_name):
     for t in range(size(time)):
 
         print 'Processing timestep ' + str(t+1) + ' of '+str(size(time))
-        # Read u and interpolate onto the rho-grid
-        u = id.variables['u'][t,:,:,:]
-        w_bdry_u = 0.5*(u[:,:,0] + u[:,:,-1])
-        middle_u = 0.5*(u[:,:,0:-1] + u[:,:,1:])
-        e_bdry_u = w_bdry_u[:,:]
-        u_rho = ma.concatenate((w_bdry_u[:,:,None], middle_u, e_bdry_u[:,:,None]), axis=2)
+        # Read ubar and interpolate onto the rho-grid
+        ubar = id.variables['ubar'][t,:,:]
+        w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
+        middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
+        e_bdry_ubar = w_bdry_ubar[:]
+        ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
         # Trim to Drake Passage bounds
-        u_rho_DP = u_rho[:,j_min:j_max,i_DP]
+        ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
         # Integrate transport and convert to Sv
-        transport.append(sum(u_rho_DP*dydz_DP)*1e-6)
+        transport.append(sum(ubar_rho_DP*dy_wct_DP)*1e-6)
+
+    id.close()
 
     # Plot
     # Bounds are set to +/- 16 Sv, adjust as needed
@@ -105,16 +83,15 @@ def dpt_timeseries (grid_path, file_path, fig_name):
     plot(time, transport)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
-    savefig(fig_name)
+    show()
+    #savefig('dpt_timeseries.png')
 
 
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_path = raw_input('Enter path to grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    fig_name = raw_input('Filename for figure: ')
-    dpt_timeseries(grid_path, file_path, fig_name)
+    dpt_timeseries(file_path)
     
 
 
