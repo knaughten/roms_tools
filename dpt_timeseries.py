@@ -15,7 +15,14 @@ def dpt_timeseries (file_path):
     # Northern boundary of ROMS grid
     nbdry_val = -30
 
-    # Bounds on Drake Passage: edit for new grids
+    # Radius of the Earth in m
+    r = 6.371e6
+    # Degrees to radians conversion factor
+    deg2rad = pi/180.0
+    # Northern boundary of ROMS grid
+    nbdry_val = -30
+
+    # Bounds on Drake Passage; edit for new grids
     # i-index of single north-south line to plot (representing a zonal slice);
     # it doesn't really matter which slice of the Drake Passage this is, due
     # to volume conservation
@@ -35,6 +42,7 @@ def dpt_timeseries (file_path):
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
     mask = id.variables['mask_rho'][:,:]
+
 
     # Interpolate latitude to the edges of each cell
     s_bdry = lat[0,:]
@@ -79,11 +87,11 @@ def dpt_timeseries (file_path):
 
     # Plot
     # Bounds are set to +/- 16 Sv, adjust as needed
-    clf()
+    figure()
     plot(time, transport)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
-    show()
+    show(block=False)
     #savefig('dpt_timeseries.png')
 
 

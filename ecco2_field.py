@@ -11,6 +11,7 @@ from netCDF4 import Dataset
 #                        average over one year of model output.
 # Output:
 # ecco2_data = 3D array of ECCO2 data, with dimension time x depth x longitude
+# ecco2_lon = 1D array containing longitude values
 # ecco2_depth = 1D array containing depth values
 def ecco2_field (var_name, start_year, end_year):
 
@@ -56,5 +57,5 @@ def ecco2_field (var_name, start_year, end_year):
             ecco2_data[posn,:,:] = (data[:,1,:]-data[:,0,:])/(ecco2_lat[1]-ecco2_lat[0])*(nbdry-ecco2_lat[0]) + data[:,0,:]
             posn +=1
 
-    return ecco2_data, ecco2_depth
+    return ecco2_data, ecco2_lon, ecco2_depth
 

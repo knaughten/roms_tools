@@ -1,5 +1,5 @@
 from cmip5_paths import *
-from cmip5_field import *
+from cmip5_field_old import *
 from eraint_field import *
 from numpy import *
 from netCDF4 import Dataset
@@ -66,7 +66,7 @@ def cmip5_eraint_skill (season):
         print 'Variable ' + var_cmip5
 
         print 'Processing ERA-Interim'
-        era_data, era_lat = eraint_field(var_era, start_year, end_year)
+        era_data, era_lon, era_lat = eraint_field(var_era, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         era_data_zonalavg = mean(era_data, axis=2)
         # Mask out months that we don't care about
@@ -91,7 +91,7 @@ def cmip5_eraint_skill (season):
             print 'Processing ' + model.name
             # Get the model output for this variable, and the model's latitude
             # axis (they are all on different grids)
-            model_data, model_lat, model_months = cmip5_field(model, expt, var_cmip5, start_year, end_year)
+            model_data, model_lat, model_months = cmip5_field_old(model, expt, var_cmip5, start_year, end_year)
 
             if model_data is not None:
                 # Zonally average - note all CMIP5 models have regular grids

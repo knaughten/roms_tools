@@ -1,72 +1,10 @@
 ***GENERATING INPUT FILES***
 
-roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
-                     some smoothing. Then overwrite the bathymetry, ice shelf
-		     draft, and masks in the ROMS grid with the new RTopo-2
-		     values.
-		     To run: Modify the user parameters near the bottom of
-		             the file. Then make sure that you have scipy
-			     version 0.14 or higher (on raijin, this means
-			     switching to python/2.7.6; instructions at the top
-			     of the file).Then open python/ipython and type
-			     "run roms_grid_rtopo2.py".
-
-update_grid.sh: After making changes to bathymetry, ice shelf draft, and masks
-                in the ROMS grid (as in roms_grid_rtopo2.py), all input files
-		which depend on water column thickness (initial conditions
-		and lateral boundary conditions) must be regenerated. If it
-		is a spinup, the lateral boundary condition file will have to
-		be altered as in romscice_nbc_rep.py. Then a new spinup will
-		have to be submitted to test the changes to the grid. It is
-		likely that this process will have to be repeated many times
-		and this bash script was created to streamline the process.
-		To run: Other users will have to alter just about every line in
-		        this script as there are a lot of paths hard-coded,
-			plus PBS flags for the raijin queue. Hopefully it will
-			still be useful. Then type "qsub update_grid.sh" to
-			submit to the queue.
-
 cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt
               (land mask) files.
 	      To run: Open python or ipython, and type "run cice_grid.py." The
 	              script will prompt you for paths to the existing ROMS
 		      grid file and the desired CICE grid and kmt files.
-
-convert_era.job: A self-submitting batch job which converts 1 year of
-                 ERA-Interim sub-daily data into a ROMS-CICE forcing file,
-		 in chunks of 100 6-hour timesteps at once (otherwise the python
-		 memory overflows because this is a LOT of data). Depends on
-		 roms_cice_atm_subdaily.py.
-		 To run: First edit user parameters in romscice_atm_subdaily.py
-		         (see below). Then edit the PBS job settings at the top
-			 of this file. Then, to get the batch jobs started for
-			 a given year (say 1992), type
-			 qsub -v YEAR=1992,COUNT=0 convert_era.job
-			 You can also submit multiple years quickly with a bash
-			 loop:
-			 for i in `seq 1992 2009`;
-			 do
-			     qsub -v YEAR=$i,COUNT=0 convert_era.job
-			 done
-
-romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
-                          atmospheric forcing file (plus 50 12-hour timesteps
-			  of ERA-Interim precipitation) to a ROMS-CICE forcing
-			  file.
-			  To run: Edit user parameters near the top of the
-			          script (mainly just file paths). This script
-				  is designed to be called by a self-submitting
-				  batch job, e.g. convert_era.job.
-
-romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
-                      temperature and salinity; starts with a motionless ocean
-		      and zero sea surface height. Depends on calc_z.py.
-		      To run: First edit user parameters (file paths and grid
-		              parameters) near the bottom of the file. Then make
-			      sure that you have scipy version 0.14 or higher
-			      (on raijin, this means switching to python/2.7.6;
-			      instructions at the top of the file). Then open
-			      python/ipython and type "run romscice_ini.py".
 
 woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
                text file (FESOM input format) to NetCDF.
@@ -89,23 +27,6 @@ romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
 			     Then open python/ipython and type "run
 			     romscice_ini_woa.py".
 
-convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
-                  northern lateral bounday conditions for ROMS. Depends on
-		  romscice_nbc.py, which depends on calc_z.py.
-		  To run: First edit user parameters in romscice_nbc.py
-		          (see below). Then edit the PBS job settings at the top
-			  of this file, and the module commands if necessary to
-			  make sure you have scipy version 0.14 or higher (on
-			  raijin this means switching to python/2.7.6).
-			  To submit for a given year (say 1992), type
-			  qsub -v YEAR=1992 convert_ecco.job
-			  You can also submit multiple years quickly with a bash
-			  loop:
-			  for i in `seq 1992 2009`;
-			  do
-			      qsub -v YEAR=$i convert_ecco.job
-			  done
-
 romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
                  year of monthly ECCO2 data for temperature, salinity, and
 		 velocity (set sea surface height to zero). Also contains useful
@@ -114,13 +35,8 @@ romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
 		         (mainly just file paths). Then make sure that you have
 			 scipy version 0.14 or higher (on raijin, this means
 			 switching to python/2.7.6; instructions at the top
-			 of the file). Then either submit using a batch job
-			 (see convert_ecco.job) or run interactively: open
-			 python or ipython and type "from romscice_nbc import *"
-			 then "convert_file(year)" where year is eg 1992.
-			 You can also easily call it in a loop, e.g.
-			 for year in range(1992, 2009+1):
-			     convert_file(year)
+			 of the file). Then open python or ipython and type
+			 "run romscice_nbc.py".
 
 calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
            curves, and z-coordinates. Assumes Vtransform=2 and Vstretching=2.
@@ -135,85 +51,12 @@ romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
 				 python or ipython and type "run
 				 romscice_atm_monthly.py".
 
-romscice_nbc_zeta.py: Interpolate one year of monthly AVISO sea surface height
-                      data to the northern boundary of the ROMS grid. Save to
-		      the existing lateral boundary condition file, created
-		      using romscice_nbc.py.
-		      To run: Edit file paths and boundary index near the top
-		              of the file. Then make sure that you have scipy
-			      version 0.14 or higher (on raijin, this means
-			      switching to python/2.7.6; instructions at the
-			      top of the file). Then open python or ipython
-			      and type "from romscice_nbc_zeta import *" then
-			      "romscice_nbc_zeta(year)" where year is eg 1992.
-			      You can also easily call it in a loop, e.g.
-			      for year in range(1995, 2005+1):
-			          romscice_nbc_zeta(year)
-
-
-***MODIFYING INPUT FILES***
-
-fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
-                missing timesteps. This script interpolates the missing
-		timesteps in a given file based on existing timesteps in that
-		file, at the same time of day and a similar time of year.
-		To run: Open python or ipython, and type "from fill_clouds
-		        import *", then "fix_file('filename')" where filename
-			is the path to the ERA-Interim file that has missing
-			timesteps. You can also easily call it in a loop, e.g.
-			for year in range(1992, 2009+1):
-			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
-
-roms_cice_atm_smooth.py: At the beginning of spinups, when the ocean is
-                         initially motionless, ROMS can blow up easily if
-			 immediately forced with sub-daily atmospheric forcing
-			 due to the strong but transient storms. To counteract
-			 this problem, this script smooths the given forcing
-			 files using a simple moving average (currently 5 days,
-			 but can be easily changed).
-			 To run: Edit the user parameters near the bottom of the
-			         file (paths to forcing files, variable names,
-				 interval to smooth over, etc) then open python
-				 or ipython and type "run
-				 roms_cice_atm_smooth.py".
-
-repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
-                   of daily- or sub-daily atmospheric forcing, the easiest
-		   option is to have ROMS and CICE follow regular calendars
-		   (1995, 1996, 1997, etc) and make 4 copies of this annually-
-		   repeating file which the models will cycle through every
-		   4 years. One of these years (depending on the start year)
-		   must be a leap year. Once you have made four copies of the
-		   one-year (non-leap-year) dataset, and named them with the
-		   same naming convention (e.g. AN_yyyy_unlim.nc), this script
-		   will 1) set the cycle_length attribute to 4 years in each
-		   file; 2) alter the time axis of the latter 3 files so they
-		   follow the first in sequence; and 3) interpolate data for
-		   Feb 29th on the leap year, as the average of the Feb 28th and
-		   March 1st records from the same time of day.
-		   To run: Edit the user parameters near the bottom of the file
-		           (paths to forcing files, years, variable names, etc)
-			   then open python or ipython and type "run
-			   repeat_forcing.py".
-
 romscice_nbc_rep.py: Given a ROMS lateral bounday condition file with one year
                      of monthly data, convert it to a file which can be used
 		     repeatedly year after year (for eg spinup).
 		     To run: Edit the user parameter (path to LBC file)
 		             near the bottom of the file. Then open python or
 			     ipython and type "run romscice_nbc_rep.py".
-
-romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
-                          (eg created with romscice_ini.py), overwrite the
-			  salinity in ice shelf cavities (which aren't in ECCO2)
-			  with salinity from Ben's original initial conditions
-			  file (not really sure where this data is from, but
-			  it's more realistic than filling the cavities with
-			  constant salinity, and certainly more stable).
-			  To run: Edit the user parameters (paths to 3 files)
-			          near the bottom of the script, then open
-				  python or ipython and type "run
-				  romscice_ini_iceshelf.py".
 
 romscice_atm_rep.py: Given a ROMS atmospheric boundary condition file with one
                      year of monthly data, convert it to a file which can be
@@ -224,20 +67,6 @@ romscice_atm_rep.py: Given a ROMS atmospheric boundary condition file with one
 
 
 ***POST-PROCESSING DIAGNOSTICS***
-
-max_vel.py: Calculate the maximum |u| and |v| at each timestep of the given
-            ocean history (or averages) file, and plot the timeseries.
-	    To run: Open python or ipython, and type "run max_vel.py". The
-	            script will prompt you for the path to the ocean history
-		    file.
-
-avg_zeta.py: Calculate the area-averaged sea surface height at each timestep of
-             the given ocean history (or averages) file, and plot the
-	     timeseries. This script also contains useful code for calculating
-	     area averages.
-	     To run: Open python or ipython, and type "run avg_zeta.py". The
-	             script will prompt you for paths to the ocean history
-		     and ROMS grid files.
 
 plot_kinetic_energy.py: Extracts the kinetic energy values written in the
                         ocean.log files (you can supply as many ocean.log files
@@ -272,22 +101,6 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 			sequential ocean.log files as you like, as well as the
 			timestep length and the output frequency for ocean.log
 			(INFOSTEP in Params.py if you are using ROMS-CICE-MCT).
-
-unesco.py: Calculates the UNESCO seawater equation of state (1980): given
-           temperature, salinity, and pressure (depth/10 is fine), returns
-	   density.
-	   To run: The function unesco is designed to be called by another
-	           script. See make_density_file.py for an example.
-
-make_density_file.py: Given an ocean history or averages file with temperature
-                      and salinity data, calculate density fields at each
-		      timestep using the 1980 UENSCO seawater equation of
-		      state. Save in a new file.
-		      To run: Open python or ipython, and type
-		              "run make_density_file.py". The script will
-			      prompt you for the paths to the ROMS grid file,
-			      the ocean history or averages file, and the
-			      desired path to the new density file.
 
 spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 8 timeseries:
                  total heat content, total salt content, area-averaged ice shelf
@@ -359,115 +172,65 @@ cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
 		output for the specified variable and experiment.
 		To run: The function build_model_list is designed to be called
 		        by other functions; see for example
-			cmip5_eraint_plot.py. Note that for the class function
-			get_directory to work, you must be running on raijin
-			and be part of the ua6 project.
-
-cmip5_field.py: Reads CMIP5 model output for the specified model, experiment,
-                variable, and date range. Returns the CMIP5 data over the
-		Southern Ocean (for atmosphere variables, i.e. time x lat x lon)
-		or at the northern boundary of ROMS (for ocean variables, i.e.
-		time x depth x lon).
-		To run: The function cmip5_field is designed to be called by
-		        other functions; see for example cmip5_eraint_plot.py.
-			Note that for this function to work, you must be
-			running on raijin and be part of the ua6 project.
-
-cmip5_field_ss.py: Like cmip5_field, but for surface ocean variables. Returns
-                   the CMIP5 data at the northern boundary of ROMS, i.e.
-		   dimension time x lon.
-		   To run: The function cmip5_field_ss is designed to be called
-		           by other functions; see for example
-			   cmip5_ecco2_plot.py. Note that for this function to
-			   work, you must be running on raijin and be part of
-			   the ua6 project.
+			cmip5_eraint_rms_errors.py. Note that for the class
+			function get_directory to work, you must be running on
+			raijin and be part of the ua6 project.
 
 eraint_field.py: Reads ERA-Interim monthly data for the given variable name,
                  between the given start and end years. Returns the data
 		 over the Southern Ocean (i.e. time x lat x lon)
                  To run: The function eraint_field is designed to be called
 		         by other functions; see for example
-			 cmip5_eraint_plot.py and cmip5_eraint_skill.py.
+			 cmip5_eraint_rms_errors.py.
 			 If you are using it, be sure to edit the parameters
 			 near the top of the file (eg paths to ERA-Interim
 			 monthly data).
-
-cmip5_eraint_skill.py: Calculates skill scores (sum of squares of residuals,
-                       divided by number of points) for each CMIP5 model
-		       compared to ERA-Interim reanalyses, for each of 11
-		       atmospheric variables, zonally averaged over the
-		       Southern Ocean (with latitude bounds corresponding to the
-		       ROMS circumpolar grid) and time-averaged between 1995 and
-		       2005. For each variable, rank the models by their skill
-		       scores and output the results in a plain text file,
-		       saved in the directory cmip5_skill_scores/ which must
-		       already exist. Do this for annual averages as well as
-		       each season (DJF, MAM, JJA, SON).
-		       To run: Edit eraint_field.py to make sure the paths to
-		               ERA-Interim monthly data are correct. Then open
-			       python or ipython and type
-			       "run cmip5_eraint_skill.py". Note that for this
-			       script to work, you must be running on raijin and
-			       be part of the ua6 project.
 
 ecco2_field.py: Reads ECCO2 data for the given variable name, between the given
                 start and end years. Interpolates to the northern boundary of
 		the circumpolar ROMS domain (currently 30S).
 		To run: The function ecco2_field is designed to be called by
-		        other functions; see for example cmip5_ecco2_plot.py and
-			cmip5_ecco2_skill.py. If you are using it, be sure to
-			edit the parameters near the top of the file (eg paths
-			to ECCO2 data, and the location of the ROMS northern
-			boundary).
+		        other functions; see for example
+			cmip5_ecco2_rms_errors.py. If you are using it, be sure
+			to edit the parameters near the top of the file (eg
+			paths to ECCO2 data, and the location of the ROMS
+			northern boundary).
 
-cmip5_ecco2_skill.py: Calculates skill scores (sum of squares of residuals,
-                      divided by number of points) for each CMIP5 model compared
-		      to ECCO2 reanalyses, for each of 4 ocean variables,
-		      zonally averaged over the northern boundary of the ROMS
-		      grid (currently 30S) and time-averaged between 1995 and
-		      2005. For each variable, rank the models by their skill
-		      scores and output the results in a plain text file, saved
-		      in the directory cmip5_skill_scores/ which must already
-		      exist. Do this for annual averages as well as each
-		      season (DJF, MAM, JJA, SON).
-		      To run: Edit ecco2_field.py to make sure the paths to
-		              ECCO2 data and the location of the ROMS northern
-			      boundary are correct. Then open python or ipython
-			      and type "run cmip5_ecco2_kill.py". Note that for
-			      this script to work, you must be running on raijin
-			      and be part of the ua6 project.
+cmip5_field.py: Reads CMIP5 output for the given model, experiment, and variable
+                name. Doesn't interpolate or trim to any domain, just selects
+		the correct time indices. Also returns the model's longitude,
+		latitude, depth (if this is an ocean variable), and the indices
+		(1 to 12) of each month in the output.
+		To run: The function cmip5_field is designed to be called by
+		        other functions; see for example
+			cmip5_eraint_rms_errors.py. Note that for this function
+			to work, you must be running on raijin and be part of
+			the ua6 project.
 
-aviso_field.py: Reads AVISO sea surface height data between the given start and
-                end years. Interpolates to the northern boundary of the
-		circumpolar ROMS domain (currently 30S).
-		To run: The function aviso_field is designed to be called by
-		        other functions; see for example cmip5_aviso_plot.py and
-			cmip5_aviso_skill.py. If you are using it, be sure to
-			edit the parameters near the top of the file (eg paths
-			to AVISO data, and the location of the ROMS northern
-			boundary).
+cmip5_eraint_rms_errors.py: Calculates root-mean-square errors (as in Gleckler
+                            et al., 2008) for each of 39 CMIP5 models and the
+			    multi-model mean, with respect to 11 ERA-Interim
+			    variables (all variables which ROMS and/or FESOM
+			    require as forcing). The domain is the Southern
+			    Ocean (all longitudes, and latitudes from the
+			    northern boundary of ROMS to the southernmost ocean
+			    point not in an ice shelf cavity) and the monthly
+			    climatology averaged over 1992-2005 inclusive.
+			    Also calculate the relative errors as in Gleckler
+			    et al. and make a "portrait plot" of coloured tiles
+			    in a model vs variable matrix. Save both rms errors
+			    and relative errors to text files.
+			    To run: Edit the path to the ROMS grid near the top
+			            of the file. Then make sure that you have
+				    scipy version 0.14 or higher (on raijin,
+				    this means switching to python/2.7.6;
+				    instructions at the top of the file). Then
+				    open python or ipython and type
+				    "run cmip5_eraint_rms_errors.py". Note that
+				    for this function to work, you must be
+				    running on raijin and be part of the ua6
+				    project.
 
-cmip5_aviso_skill.py: Calculates skill scores (square of residuals) for each
-                      CMIP5 model compared to AVISO reanalyses of sea surface
-		      height, zonally averaged over the northern boundary of the
-		      ROMS grid (currently 30S) and time-averaged between 1995
-		      and 2005. Rank the models by their skill scores and output
-		      the results in a plain text file.
-		      To run: Edit aviso_field.py to make sure the paths to
-		              AVISO data and the location of the ROMS northern
-			      boundary are correct. Then open python or ipython
-			      and type "run cmip5_aviso_skill.py". Note that for
-			      this script to work, you must be running on raijin
-			      and be part of the ua6 project.
-
-cmip5_skill_chart.py: Summarises the results of cmip5_eraint_skill.py and
-                      cmip5_ecco2_skill.py by listing the model rankings in
-		      a giant table of models x variables. Each cell in the
-		      table has 5 entries, representing the rankings for each
-		      season (annual, DJF, MAM, JJA, SON).
-		      To run: Assuming you have all the skill score files
-		              in a directory cmip5_skill_scores/, open python
-			      or ipython and type "run cmip5_skill_chart.py".
 
 ***NICE FIGURES***
 
@@ -566,6 +329,275 @@ zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
 		       as many times as you like, and you only have to
 		       specify which parameters have changed since the last
 		       plot.
+
+
+***OBSOLETE***
+
+roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
+                     some smoothing. Then overwrite the bathymetry, ice shelf
+		     draft, and masks in the ROMS grid with the new RTopo-2
+		     values.
+		     To run: Modify the user parameters near the bottom of
+		             the file. Then make sure that you have scipy
+			     version 0.14 or higher (on raijin, this means
+			     switching to python/2.7.6; instructions at the top
+			     of the file).Then open python/ipython and type
+			     "run roms_grid_rtopo2.py".
+
+update_grid.sh: After making changes to bathymetry, ice shelf draft, and masks
+                in the ROMS grid (as in roms_grid_rtopo2.py), all input files
+		which depend on water column thickness (initial conditions
+		and lateral boundary conditions) must be regenerated. If it
+		is a spinup, the lateral boundary condition file will have to
+		be altered as in romscice_nbc_rep.py. Then a new spinup will
+		have to be submitted to test the changes to the grid. It is
+		likely that this process will have to be repeated many times
+		and this bash script was created to streamline the process.
+		To run: Other users will have to alter just about every line in
+		        this script as there are a lot of paths hard-coded,
+			plus PBS flags for the raijin queue. Hopefully it will
+			still be useful. Then type "qsub update_grid.sh" to
+			submit to the queue.
+
+convert_era.job: A self-submitting batch job which converts 1 year of
+                 ERA-Interim sub-daily data into a ROMS-CICE forcing file,
+		 in chunks of 100 6-hour timesteps at once (otherwise the python
+		 memory overflows because this is a LOT of data). Depends on
+		 roms_cice_atm_subdaily.py.
+		 To run: First edit user parameters in romscice_atm_subdaily.py
+		         (see below). Then edit the PBS job settings at the top
+			 of this file. Then, to get the batch jobs started for
+			 a given year (say 1992), type
+			 qsub -v YEAR=1992,COUNT=0 convert_era.job
+			 You can also submit multiple years quickly with a bash
+			 loop:
+			 for i in `seq 1992 2009`;
+			 do
+			     qsub -v YEAR=$i,COUNT=0 convert_era.job
+			 done
+
+romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
+                          atmospheric forcing file (plus 50 12-hour timesteps
+			  of ERA-Interim precipitation) to a ROMS-CICE forcing
+			  file.
+			  To run: Edit user parameters near the top of the
+			          script (mainly just file paths). This script
+				  is designed to be called by a self-submitting
+				  batch job, e.g. convert_era.job.
+
+romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
+                      temperature and salinity; starts with a motionless ocean
+		      and zero sea surface height. Depends on calc_z.py.
+		      To run: First edit user parameters (file paths and grid
+		              parameters) near the bottom of the file. Then make
+			      sure that you have scipy version 0.14 or higher
+			      (on raijin, this means switching to python/2.7.6;
+			      instructions at the top of the file). Then open
+			      python/ipython and type "run romscice_ini.py".
+
+convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
+                  northern lateral bounday conditions for ROMS. Depends on
+		  romscice_nbc.py, which depends on calc_z.py.
+		  To run: First edit user parameters in romscice_nbc.py
+		          (see below). Then edit the PBS job settings at the top
+			  of this file, and the module commands if necessary to
+			  make sure you have scipy version 0.14 or higher (on
+			  raijin this means switching to python/2.7.6).
+			  To submit for a given year (say 1992), type
+			  qsub -v YEAR=1992 convert_ecco.job
+			  You can also submit multiple years quickly with a bash
+			  loop:
+			  for i in `seq 1992 2009`;
+			  do
+			      qsub -v YEAR=$i convert_ecco.job
+			  done
+
+romscice_nbc_zeta.py: Interpolate one year of monthly AVISO sea surface height
+                      data to the northern boundary of the ROMS grid. Save to
+		      the existing lateral boundary condition file, created
+		      using romscice_nbc.py.
+		      To run: Edit file paths and boundary index near the top
+		              of the file. Then make sure that you have scipy
+			      version 0.14 or higher (on raijin, this means
+			      switching to python/2.7.6; instructions at the
+			      top of the file). Then open python or ipython
+			      and type "from romscice_nbc_zeta import *" then
+			      "romscice_nbc_zeta(year)" where year is eg 1992.
+			      You can also easily call it in a loop, e.g.
+			      for year in range(1995, 2005+1):
+			          romscice_nbc_zeta(year)
+
+fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
+                missing timesteps. This script interpolates the missing
+		timesteps in a given file based on existing timesteps in that
+		file, at the same time of day and a similar time of year.
+		To run: Open python or ipython, and type "from fill_clouds
+		        import *", then "fix_file('filename')" where filename
+			is the path to the ERA-Interim file that has missing
+			timesteps. You can also easily call it in a loop, e.g.
+			for year in range(1992, 2009+1):
+			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
+
+roms_cice_atm_smooth.py: At the beginning of spinups, when the ocean is
+                         initially motionless, ROMS can blow up easily if
+			 immediately forced with sub-daily atmospheric forcing
+			 due to the strong but transient storms. To counteract
+			 this problem, this script smooths the given forcing
+			 files using a simple moving average (currently 5 days,
+			 but can be easily changed).
+			 To run: Edit the user parameters near the bottom of the
+			         file (paths to forcing files, variable names,
+				 interval to smooth over, etc) then open python
+				 or ipython and type "run
+				 roms_cice_atm_smooth.py".
+
+repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
+                   of daily- or sub-daily atmospheric forcing, the easiest
+		   option is to have ROMS and CICE follow regular calendars
+		   (1995, 1996, 1997, etc) and make 4 copies of this annually-
+		   repeating file which the models will cycle through every
+		   4 years. One of these years (depending on the start year)
+		   must be a leap year. Once you have made four copies of the
+		   one-year (non-leap-year) dataset, and named them with the
+		   same naming convention (e.g. AN_yyyy_unlim.nc), this script
+		   will 1) set the cycle_length attribute to 4 years in each
+		   file; 2) alter the time axis of the latter 3 files so they
+		   follow the first in sequence; and 3) interpolate data for
+		   Feb 29th on the leap year, as the average of the Feb 28th and
+		   March 1st records from the same time of day.
+		   To run: Edit the user parameters near the bottom of the file
+		           (paths to forcing files, years, variable names, etc)
+			   then open python or ipython and type "run
+			   repeat_forcing.py".
+
+romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
+                          (eg created with romscice_ini.py), overwrite the
+			  salinity in ice shelf cavities (which aren't in ECCO2)
+			  with salinity from Ben's original initial conditions
+			  file (not really sure where this data is from, but
+			  it's more realistic than filling the cavities with
+			  constant salinity, and certainly more stable).
+			  To run: Edit the user parameters (paths to 3 files)
+			          near the bottom of the script, then open
+				  python or ipython and type "run
+				  romscice_ini_iceshelf.py".
+
+max_vel.py: Calculate the maximum |u| and |v| at each timestep of the given
+            ocean history (or averages) file, and plot the timeseries.
+	    To run: Open python or ipython, and type "run max_vel.py". The
+	            script will prompt you for the path to the ocean history
+		    file.
+
+avg_zeta.py: Calculate the area-averaged sea surface height at each timestep of
+             the given ocean history (or averages) file, and plot the
+	     timeseries. This script also contains useful code for calculating
+	     area averages.
+	     To run: Open python or ipython, and type "run avg_zeta.py". The
+	             script will prompt you for paths to the ocean history
+		     and ROMS grid files.
+
+unesco.py: Calculates the UNESCO seawater equation of state (1980): given
+           temperature, salinity, and pressure (depth/10 is fine), returns
+	   density.
+	   To run: The function unesco is designed to be called by another
+	           script. See make_density_file.py for an example.
+
+make_density_file.py: Given an ocean history or averages file with temperature
+                      and salinity data, calculate density fields at each
+		      timestep using the 1980 UENSCO seawater equation of
+		      state. Save in a new file.
+		      To run: Open python or ipython, and type
+		              "run make_density_file.py". The script will
+			      prompt you for the paths to the ROMS grid file,
+			      the ocean history or averages file, and the
+			      desired path to the new density file.
+
+cmip5_field_old.py: Reads CMIP5 model output for the specified model,
+                    experiment, variable, and date range. Returns the CMIP5
+		    data over the Southern Ocean (for atmosphere variables,
+		    i.e. time x lat x lon) or at the northern boundary of ROMS
+		    (for ocean variables, i.e. time x depth x lon).
+		    To run: The function cmip5_field_old is designed to be
+		            called by other functions; see for example
+			    cmip5_eraint_plot.py. Note that for this function to
+			    work, you must be running on raijin and be part of
+			    the ua6 project.
+
+cmip5_field_ss.py: Like cmip5_field_old, but for surface ocean variables.
+                   Returns the CMIP5 data at the northern boundary of ROMS, i.e.
+		   dimension time x lon.
+		   To run: The function cmip5_field_ss is designed to be called
+		           by other functions; see for example
+			   cmip5_ecco2_plot.py. Note that for this function to
+			   work, you must be running on raijin and be part of
+			   the ua6 project.
+
+cmip5_eraint_skill.py: Calculates skill scores (sum of squares of residuals,
+                       divided by number of points) for each CMIP5 model
+		       compared to ERA-Interim reanalyses, for each of 11
+		       atmospheric variables, zonally averaged over the
+		       Southern Ocean (with latitude bounds corresponding to the
+		       ROMS circumpolar grid) and time-averaged between 1995 and
+		       2005. For each variable, rank the models by their skill
+		       scores and output the results in a plain text file,
+		       saved in the directory cmip5_skill_scores/ which must
+		       already exist. Do this for annual averages as well as
+		       each season (DJF, MAM, JJA, SON).
+		       To run: Edit eraint_field.py to make sure the paths to
+		               ERA-Interim monthly data are correct. Then open
+			       python or ipython and type
+			       "run cmip5_eraint_skill.py". Note that for this
+			       script to work, you must be running on raijin and
+			       be part of the ua6 project.
+
+cmip5_ecco2_skill.py: Calculates skill scores (sum of squares of residuals,
+                      divided by number of points) for each CMIP5 model compared
+		      to ECCO2 reanalyses, for each of 4 ocean variables,
+		      zonally averaged over the northern boundary of the ROMS
+		      grid (currently 30S) and time-averaged between 1995 and
+		      2005. For each variable, rank the models by their skill
+		      scores and output the results in a plain text file, saved
+		      in the directory cmip5_skill_scores/ which must already
+		      exist. Do this for annual averages as well as each
+		      season (DJF, MAM, JJA, SON).
+		      To run: Edit ecco2_field.py to make sure the paths to
+		              ECCO2 data and the location of the ROMS northern
+			      boundary are correct. Then open python or ipython
+			      and type "run cmip5_ecco2_kill.py". Note that for
+			      this script to work, you must be running on raijin
+			      and be part of the ua6 project.
+
+aviso_field.py: Reads AVISO sea surface height data between the given start and
+                end years. Interpolates to the northern boundary of the
+		circumpolar ROMS domain (currently 30S).
+		To run: The function aviso_field is designed to be called by
+		        other functions; see for example cmip5_aviso_plot.py and
+			cmip5_aviso_skill.py. If you are using it, be sure to
+			edit the parameters near the top of the file (eg paths
+			to AVISO data, and the location of the ROMS northern
+			boundary).
+
+cmip5_aviso_skill.py: Calculates skill scores (square of residuals) for each
+                      CMIP5 model compared to AVISO reanalyses of sea surface
+		      height, zonally averaged over the northern boundary of the
+		      ROMS grid (currently 30S) and time-averaged between 1995
+		      and 2005. Rank the models by their skill scores and output
+		      the results in a plain text file.
+		      To run: Edit aviso_field.py to make sure the paths to
+		              AVISO data and the location of the ROMS northern
+			      boundary are correct. Then open python or ipython
+			      and type "run cmip5_aviso_skill.py". Note that for
+			      this script to work, you must be running on raijin
+			      and be part of the ua6 project.
+
+cmip5_skill_chart.py: Summarises the results of cmip5_eraint_skill.py and
+                      cmip5_ecco2_skill.py by listing the model rankings in
+		      a giant table of models x variables. Each cell in the
+		      table has 5 entries, representing the rankings for each
+		      season (annual, DJF, MAM, JJA, SON).
+		      To run: Assuming you have all the skill score files
+		              in a directory cmip5_skill_scores/, open python
+			      or ipython and type "run cmip5_skill_chart.py".
 
 cmip5_aviso_plot.py: Compares AVISO sea surface height reanalyses and CMIP5
                      output, zonally averaged at the northern boundary of the

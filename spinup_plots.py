@@ -271,7 +271,7 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
     # i-index of single north-south line to plot (representing a zonal slice);
     # it doesn't really matter which slice of the Drake Passage this is, due
     # to volume conservation
-    i_DP = 1179  
+    i_DP = 1179
     # j-indices of the southern tip of South America (j_min) and the northern
     # tip of the Antarctic Peninsula (j_max); make sure these are far enough
     # north/south to be land points, but not so far that they pass through the

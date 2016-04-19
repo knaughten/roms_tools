@@ -168,7 +168,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     if save:
         savefig(fig_name)
     else:
-        show()
+        show(block=False)
 
 
 # Linearly interpolate data, z, and latitude to the specified longitude.

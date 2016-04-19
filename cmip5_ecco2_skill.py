@@ -1,5 +1,5 @@
 from cmip5_paths import *
-from cmip5_field import *
+from cmip5_field_old import *
 from ecco2_field import *
 from numpy import *
 from netCDF4 import Dataset
@@ -53,7 +53,7 @@ def cmip5_ecco2_skill (season):
         print 'Variable ' + var_cmip5
 
         print 'Processing ECCO2'
-        ecco2_data, ecco2_depth = ecco2_field(var_ecco2, start_year, end_year)
+        ecco2_data, ecco2_lon, ecco2_depth = ecco2_field(var_ecco2, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         ecco2_data_zonalavg = mean(ecco2_data, axis=2)
         # Mask out months that we don't care about
@@ -72,7 +72,7 @@ def cmip5_ecco2_skill (season):
             print 'Processing ' + model.name
             # Get the model output for this variable, and the model's depth
             # axis (they are all on different grids)
-            model_data, model_depth, model_months = cmip5_field(model, expt, var_cmip5, start_year, end_year)
+            model_data, model_depth, model_months = cmip5_field_old(model, expt, var_cmip5, start_year, end_year)
 
             if model_data is not None:
                 # Zonally average - note all CMIP5 models have regular grids

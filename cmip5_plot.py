@@ -1,5 +1,5 @@
 from cmip5_paths import *
-from cmip5_field import *
+from cmip5_field_old import *
 from eraint_field import *
 from ecco2_field import *
 from matplotlib.pyplot import *
@@ -138,7 +138,7 @@ def cmip5_plot (var, season, models, save=False, fig_name=None):
     if realm == 'atmos':
 
         print 'Processing ERA-Interim'
-        era_data, era_lat = eraint_field(var_era, start_year, end_year)
+        era_data, era_lat, era_lon = eraint_field(var_era, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         era_data_zonalavg = mean(era_data, axis=2)
         # Mask out months that we don't care about
@@ -154,7 +154,7 @@ def cmip5_plot (var, season, models, save=False, fig_name=None):
     elif realm == 'ocean':
 
         print 'Processing ECCO2'
-        ecco2_data, ecco2_depth = ecco2_field(var_ecco2, start_year, end_year)
+        ecco2_data, ecco2_lon, ecco2_depth = ecco2_field(var_ecco2, start_year, end_year)
         # Zonally average - this is easy on a regular grid
         ecco2_data_zonalavg = mean(ecco2_data, axis=2)
         # Mask out months that we don't care about
@@ -174,7 +174,7 @@ def cmip5_plot (var, season, models, save=False, fig_name=None):
         # Get the model output for this variable, the model's latitude or depth
         # axis (they are all on different grids), and the month number of each
         # time index
-        model_data, model_axis, model_months = cmip5_field(model, expt, var, start_year, end_year)
+        model_data, model_axis, model_months = cmip5_field_old(model, expt, var, start_year, end_year)
         # Check for missing data
         if model_data is not None:
             # Zonally average - note all CMIP5 models have regular grids

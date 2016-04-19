@@ -13,7 +13,8 @@ from netCDF4 import Dataset
 # era_data = 3D array of ERA-Interim data, with dimension time x latitude x
 #            longitude, possibly with units converted to be more comparable
 #            to CMIP5 models
-# era_lat = 1D array containing latitude values.
+# era_lon = 1D array containing longitude values
+# era_lat = 1D array containing latitude values
 def eraint_field (var_name, start_year, end_year):
 
     # Latitude of the northern boundary of the circumpolar ROMS domain
@@ -99,4 +100,4 @@ def eraint_field (var_name, start_year, end_year):
             era_data[posn,:,:] = data[t,:,:]
             posn += 1
 
-    return era_data, era_lat
+    return era_data, era_lon, era_lat

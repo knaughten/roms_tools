@@ -16,9 +16,6 @@ from calc_z import *
 # module load python/2.7.6
 # module load python/2.7.6-matplotlib
 
-# This script can be easily called by a batch script; see convert_ecco.job
-# for an example.
-
 def convert_file (year):
 
     # Make sure input argument is an integer (sometimes the batch script likes
@@ -353,6 +350,16 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_r
 
     return B
 
+
+# Command-line interface
+if __name__ == "__main__":
+
+    # Start and end years; other users may need to change these
+    first_year = 1992
+    last_year = 2005
+    for year in range(first_year, last_year+1):
+            print 'Processing '+str(year)
+            convert_file(year)
 
         
     

@@ -226,12 +226,12 @@ def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
 # Command-line interface
 if __name__ == "__main__":
 
-    # Start and end years; other users will need to change these
-    first_year = 1995
+    # Start and end years; other users may need to change these
+    first_year = 1992
     last_year = 2005
     for year in range(first_year, last_year+1):
-        print 'Processing '+str(year)
-        convert_file(year)
+            print 'Processing '+str(year)
+            convert_file(year)
         
         
     

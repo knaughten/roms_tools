@@ -15,7 +15,7 @@ def dpt_2d_int (file_path):
     # Northern boundary of ROMS grid
     nbdry_val = -30
 
-    # Bounds on Drake Passage: edit for new grids
+    # Bounds on Drake Passage; edit for new grids
     # i-index of single north-south line to plot (representing a zonal slice);
     # it doesn't really matter which slice of the Drake Passage this is, due
     # to volume conservation
