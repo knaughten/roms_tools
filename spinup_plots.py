@@ -4,7 +4,7 @@ from matplotlib.pyplot import *
 from os.path import *
 from calc_z import *
 
-# Analyse a ROMS spinup by calculating and plotting 8 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 9 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
@@ -13,6 +13,7 @@ from calc_z import *
 # Maximum velocity
 # Drake Passage transport
 # Total sea ice extent
+# Area-averaged bottom water temperature in ice shelf cavities
 
 
 # Given the path to a ROMS grid file, calculate differentials for later
@@ -305,7 +306,7 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
 # Input:
 # cice_path = path to CICE history file
 # dA = elements of area on the 2D rho grid (any mask will be removed)
-# t = timestep index in file_path
+# t = timestep index in cice_path
 # Output: totalice = total sea ice extent (m^2)
 def calc_totalice (cice_path, dA, t):
 
@@ -330,6 +331,26 @@ def calc_totalice (cice_path, dA, t):
     return totalice*1e-12   
 
 
+# Calculate area-averaged bottom water temperature in ice shelf cavities at the
+# given timestep t.
+# Input:
+# file_path = path to ROMS ocean history or averages file
+# dA = elements of area on the 2D rho grid, masked with zice
+# t = timestep index in file_path
+# Output: bwtemp = average bottom water temperature in ice shelf cavities (C)
+def calc_bwtemp (file_path, dA, t):
+
+    id = Dataset(file_path, 'r')
+    temp = ma.asarray(id.variables['temp'][t,0,:,:], dtype=float128)
+    zice = id.variables['zice'][:,:]
+    id.close()
+
+    cavity_temp = ma.masked_where(zice==0, temp)
+
+    bwtemp = sum(cavity_temp*dA)/sum(dA)
+    return bwtemp
+
+
 # Main routine
 # Input:
 # file_path = path to ocean history/averages file
@@ -348,6 +369,7 @@ def spinup_plots (file_path, cice_path, log_path):
     maxvel = []
     drakepsgtrans = []
     totalice = []
+    bwtemp = []
     # Check if the log file exists
     if exists(log_path):
         print 'Reading previously calculated values'
@@ -396,7 +418,12 @@ def spinup_plots (file_path, cice_path, log_path):
             except (ValueError):
                 break
         for line in f:
-            totalice.append(float(line))
+            try:
+                totalice.append(float(line))
+            except(ValueError):
+                break
+        for line in f:
+            bwtemp.append(float(line))
         f.close()
 
     # Calculate differentials
@@ -432,6 +459,8 @@ def spinup_plots (file_path, cice_path, log_path):
         drakepsgtrans.append(calc_drakepsgtrans(file_path, dy_wct, t))
         print 'Calculating total sea ice extent'
         totalice.append(calc_totalice(cice_path, dA, t))
+        print 'Calculating average bottom water temperature in ice shelf cavities'
+        bwtemp.append(calc_bwtemp(file_path, dA, t))
 
     # Plot each timeseries in sequence
     print 'Plotting ocean heat content'
@@ -482,6 +511,12 @@ def spinup_plots (file_path, cice_path, log_path):
     xlabel('Years')
     ylabel(r'Total Sea Ice Extent (million km$^2$)')
     savefig('totalice.png')
+    print 'Plotting bottom water temperature'
+    clf()
+    plot(time, bwtemp)
+    xlabel('Years')
+    ylabel(r'Average Bottom Water Temperature in Ice Shelf Cavities ($^{\circ}$C)')
+    savefig('bwtemp.png')
 
     print 'Saving results to log file'
     f = open(log_path, 'w')
@@ -511,6 +546,9 @@ def spinup_plots (file_path, cice_path, log_path):
         f.write(str(elm) + '\n')
     f.write('Total Sea Ice Extent (million km^2):\n')
     for elm in totalice:
+        f.write(str(elm) + '\n')
+    f.write('Average Bottom Water Temperature in Ice Shelf Cavities (C):\n')
+    for elm in bwtemp:
         f.write(str(elm) + '\n')
     f.close()
 

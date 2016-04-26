@@ -154,6 +154,7 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
 
     if save:
         savefig(fig_name)
+        close()
     else:
         show()
 

@@ -79,11 +79,13 @@ def dpt_2d (file_path):
 
     id.close()
 
+    bound = amax(abs(transport))
+
     # Plot
     # Bounds are set to +/- 16 Sv, adjust as needed
     figure()
-    pcolormesh(time, lat_DP, transpose(transport), vmin=-16, vmax=16, cmap='RdYlBu_r')
-    colorbar(ticks=arange(-16, 16+1, 4))
+    pcolormesh(time, lat_DP, transpose(transport), vmin=-bound, vmax=bound, cmap='RdYlBu_r')
+    colorbar()
     title('Drake Passage Transport (Sv)')
     xlabel('Years')
     ylabel('Latitude')

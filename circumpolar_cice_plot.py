@@ -64,6 +64,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, save=False, fig_name=None
 
     if save:
         savefig(fig_name)
+        close()
     else:
         show()
 

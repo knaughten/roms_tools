@@ -133,7 +133,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
 
     # Plot
     figure(figsize=(18,6))
-    contourf(lat, z, data, lev, cmap=colour_map)
+    contourf(lat, z, data, lev, cmap=colour_map, extend='both')
     colorbar()
 
     title(long_name + ' (' + units + ')\n' + lon_string)
@@ -167,8 +167,20 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
 
     if save:
         savefig(fig_name)
+        close()
     else:
-        show(block=False)
+        show()
+
+    # Reset lon0 or lon_bounds to (-180, 180) range in case we
+    # use them again for the next plot
+    if lon_key == 0:
+        if lon0 > 180:
+            lon0 -= 360
+    elif lon_key == 2:
+        if lon_bounds[0] > 180:
+            lon_bounds[0] -= 360
+        if lon_bounds[1] > 180:
+            lon_bounds[1] -= 360
 
 
 # Linearly interpolate data, z, and latitude to the specified longitude.

@@ -252,7 +252,7 @@ def convert_file (year):
         uvel[1:-1,:,1:-1] = ma.copy(uvel_raw)
         uvel[0,:,1:-1] = ma.copy(uvel_raw[-1,:,:])
         uvel[-1,:,1:-1] = ma.copy(uvel_raw[0,:,:])
-        uvel[:,:,0] = ma.copy(uvel[:,:,1])
+        uvel[:,:,0] = ma.copy(uvel_raw[:,:,1])
         uvel[:,:,-1] = ma.copy(uvel[:,:,-2])
         vvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
         vvel[1:-1,:,1:-1] = ma.copy(vvel_raw)

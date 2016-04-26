@@ -2,23 +2,22 @@ from numpy import *
 from netCDF4 import Dataset
 
 # Read ERA-Interim monthly data for the given variable name, between the given
-# start and end years. Return the data over the Southern Ocean.
+# start and end years. Return the monthly climatology.
 # Input:
 # var_name = string containing name of variable, eg 't2m'
-# start_year, end_year = integers containing years to average over, from the
-#                        beginning of start_year to the end of end_year.
-#                        Therefore, if start_year = end_year, this script will
-#                        average over one year of model output.
+# start_year, end_year = integers containing years over which to calculate the
+#                        monthly climatology, from the beginning of start_year
+#                        to the end of end_year. Therefore, if start_year = 
+#                        end year, this script will read one year of output
+#                        with no climatological averaging.
 # Output:
-# era_data = 3D array of ERA-Interim data, with dimension time x latitude x
+# era_data = 3D array of ERA-Interim data, with dimension month x latitude x
 #            longitude, possibly with units converted to be more comparable
 #            to CMIP5 models
 # era_lon = 1D array containing longitude values
 # era_lat = 1D array containing latitude values
 def eraint_field (var_name, start_year, end_year):
 
-    # Latitude of the northern boundary of the circumpolar ROMS domain
-    nbdry = -30
     # Directory where ERA-Interim monthly averaged data is stored
     era_dir = '/short/y99/kaa561/FESOM/ERA_Interim_monthly/'
     # String that ERA-Interim files end with
@@ -38,12 +37,6 @@ def eraint_field (var_name, start_year, end_year):
     era_lat = id.variables['lat'][:]
     era_lon = id.variables['lon'][:]
     id.close()
-    # Latitude values are decreasing for some reason, i.e. 90 to -90
-    # Find the first index south of nbdry, and subtract 1 to find the last
-    # index north of nbdry
-    j_min = nonzero(era_lat < nbdry)[0][0] - 1
-    # Save only the values from j_min southward
-    era_lat = era_lat[j_min:]
 
     # Figure out how ERA-Interim filename will start; the atmospheric
     # variables for each year are split between 3 different files
@@ -54,10 +47,7 @@ def eraint_field (var_name, start_year, end_year):
     elif var_name in ['e', 'ssrd', 'strd']:
         era_head = era_dir + 'ER_'
 
-    # Create empty array of dimension time x latitude x longitude
-    era_data = ma.empty([12*(end_year-start_year+1), size(era_lat), size(era_lon)])
-    # Initialise next available time index in this array
-    posn = 0
+    era_data = None
     # Loop over years
     for year in range(start_year, end_year+1):
 
@@ -65,7 +55,7 @@ def eraint_field (var_name, start_year, end_year):
         era_file = era_head + str(year) + era_tail
         # Read data
         id = Dataset(era_file, 'r')
-        data = id.variables[var_name][:,j_min:,:]
+        data = id.variables[var_name][:,:,:]
 
         # Perform conversions if necessary
         if var_name == 'sp':
@@ -78,7 +68,7 @@ def eraint_field (var_name, start_year, end_year):
             # Calculate specific humidity from dewpoint temperature
             # and surface pressure
             d2m = data
-            sp = id.variables['sp'][:,j_min:,:]
+            sp = id.variables['sp'][:,:,:]
             # Intermediate step to calculate vapour pressure
             e = 611*exp(Lv/Rv*(1/273.0 - 1/d2m))
             data = 0.622*e/(sp - 0.378*e)
@@ -94,10 +84,16 @@ def eraint_field (var_name, start_year, end_year):
         elif var_name in ['ssrd', 'strd']:
             # Convert from J/m^2, integrated over 12 hours, to W/m^2
             data = data/(12*60*60)
+        id.close()
 
-        # Save each timestep to master era_data array
-        for t in range(size(data, 0)):
-            era_data[posn,:,:] = data[t,:,:]
-            posn += 1
+        # Add to master array
+        if era_data is None:
+            era_data = data
+        else:
+            era_data += data
+
+    # Divide master array by number of years to convert from monthly sums to
+    # monthly averages
+    era_data /= (end_year-start_year+1)
 
     return era_data, era_lon, era_lat

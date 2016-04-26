@@ -102,11 +102,12 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 			timestep length and the output frequency for ocean.log
 			(INFOSTEP in Params.py if you are using ROMS-CICE-MCT).
 
-spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 8 timeseries:
+spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 9 timeseries:
                  total heat content, total salt content, area-averaged ice shelf
 		 melt rate, ice shelf basal mass loss, total kinetic energy,
-		 maximum velocity, Drake Passage transport, and total sea ice
-		 extent. Also write the timeseries to a log file so they don't
+		 maximum velocity, Drake Passage transport, total sea ice
+		 extent, and average bottom water temperature in ice shelf
+		 cavities. Also write the timeseries to a log file so they don't
 		 have to be recomputed if the run is extended; at the beginning
 		 of this script, previous values will be read from the same
 		 log file if it exists. Note that to run this file, density
@@ -163,6 +164,14 @@ massloss.py: Calculates and plots timeseries of basal mass loss from major ice
 		     the paths to the ROMS grid file, the ocean history or
 		     averages file, and the log file.
 
+avg_ismr.py: Like massloss.py, but calculates the area-averaged melt rates of
+             each ice shelf rather than the mass loss.
+	     To run: First editthe limits on i- and j- coordinates for each
+	             ice shelf to suit your grid. Then open python or ipython,
+		     and type "run avg_ismr.py". The script will prompt you for
+		     the paths to the ROMS grid file, the ocean history or
+		     averages file, and the log file.
+
 ***CMIP5 ANALYSIS***
 
 cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
@@ -177,59 +186,139 @@ cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
 			raijin and be part of the ua6 project.
 
 eraint_field.py: Reads ERA-Interim monthly data for the given variable name,
-                 between the given start and end years. Returns the data
-		 over the Southern Ocean (i.e. time x lat x lon)
+                 between the given start and end years. Returns the monthly
+		 climatology.
                  To run: The function eraint_field is designed to be called
 		         by other functions; see for example
-			 cmip5_eraint_rms_errors.py.
-			 If you are using it, be sure to edit the parameters
-			 near the top of the file (eg paths to ERA-Interim
-			 monthly data).
+			 eraint_climatology_netcdf.py. If you are using it,
+			 be sure to edit the parameters near the top of the
+			 file (eg paths to ERA-Interim monthly data).
 
 ecco2_field.py: Reads ECCO2 data for the given variable name, between the given
                 start and end years. Interpolates to the northern boundary of
-		the circumpolar ROMS domain (currently 30S).
+		the circumpolar ROMS domain (currently 30S). Returns the monthly
+		climatology.
 		To run: The function ecco2_field is designed to be called by
 		        other functions; see for example
-			cmip5_ecco2_rms_errors.py. If you are using it, be sure
-			to edit the parameters near the top of the file (eg
-			paths to ECCO2 data, and the location of the ROMS
+			ecco2_climatology_netcdf.py. If you are using it, be
+			sure to edit the parameters near the top of the file
+			(eg paths to ECCO2 data, and the location of the ROMS
 			northern boundary).
 
 cmip5_field.py: Reads CMIP5 output for the given model, experiment, and variable
-                name. Doesn't interpolate or trim to any domain, just selects
-		the correct time indices. Also returns the model's longitude,
-		latitude, depth (if this is an ocean variable), and the indices
-		(1 to 12) of each month in the output.
+                name. Returns the monthly climatology as well as the grid
+		(longitude, latitude, and depth arrays).
 		To run: The function cmip5_field is designed to be called by
 		        other functions; see for example
-			cmip5_eraint_rms_errors.py. Note that for this function
-			to work, you must be running on raijin and be part of
-			the ua6 project.
+			cmip5_atmos_climatology_netcdf.py. Note that for this
+			function to work, you must be running on raijin and be
+			part of the ua6 project.
+
+eraint_climatology_netcdf.py: Calculates the ERA-Interim monthly climatology
+                              from 1992-2005 inclusive, for 11 atmospheric
+			      variables (all the variables which ROMS and/or
+			      FESOM depend on). Save to a NetCDF file.
+			      To run: First edit the variable output_file, near
+			              the top of the file, to suit your
+				      filesystem. Then open python or ipython
+				      and type
+				      "run eraint_climatology_netcdf.py".
+
+ecco2_climatology_netcdf.py: Like eraint_climatology_netcdf.py, but for ECCO2
+                             ocean variables rather than ERA-Interim atmoshperic
+			     variables, interpolated to the northern boundary
+			     of the ROMS domain (set in ecco2_field.py).
+			     To run: First edit the variable output_file, near
+			             the top of the file, to suit your
+				     filesystem. Then open python or ipython and
+				     type "run ecco2_climatology_netcdf.py".
+
+cmip5_atmos_climatology_netcdf.py: For the given CMIP5 model, calculates the
+                        monthly climatology from 1992-2005 inclusive for 11
+			atmospheric variables. Interpolates to the ERA-Interim
+			grid and saves to a NetCDF file. Note that to run this
+			script, you must have previously run
+			eraint_climatology_netcdf.py.
+			To run: First edit the variables output_file and
+			        eraint_file, near the top of the file, to suit
+				your filesystem. Then make sure that you have
+				scipy version 0.14 or higher (on raijin, this
+				means switching to python/2.7.6; instructions
+				at the top of the file). To call this function
+				for all CMIP5 models, open python or ipython and
+				type "run cmip5_atmos_climatology_netcdf.py".
+				To call this function for just one model, e.g.
+				ACCESS1-0, open python or ipython and type
+				"from cmip5_atmos_climatology_netcdf import *"
+				and then
+				"cmip5_atmos_climatology_netcdf('ACCESS1-0')".
+
+cmip5_ocean_climatology_netcdf.py: For the given CMIP5 model, calculates the
+                       monthly climatology from 1992-2005 inclusive for 4 ocean
+		       variables. Interpolates to the ECCO2 grid at the northern
+		       boundary of ROMS and saves to a NetCDF file. Note that to
+		       run this script, you must have previously run
+		       ecco2_climatology_netcdf.py.
+		       To run: First edit the variables output_file and
+		               ecco2_file, near the top of the file, to suit
+			       your filesystem. Then make sure that you have
+			       scipy version 0.14 or higher (on raijin, this
+			       means switching to python/2.7.6; instructions at
+			       the top of the file). To call this function for
+			       all CMIP5 models, open python or ipython and type
+			       "run cmip5_ocean_climatology_netcdf.py".
+			       To call this function for just one model, e.g.
+			       ACCESS1-0, open python or ipython and type
+			       "from cmip5_ocean_climatology_netcdf import *"
+			       and then
+			       "cmip5_ocean_climatology_netcdf('ACCESS1-0')".
+
+mmm_atmos_netcdf.py: Calculate the multi-model mean of atmospheric climatology
+                     files created using cmip5_atmos_climatology_netcdf.py.
+		     To run: First edit the variable "directory" near the top
+		             of the file. Then open python or ipython and type
+			     "run mmm_atmos_netcdf.py".
+
+mmm_ocean_netcdf.py: Calculate the multi-model mean of ocean climatology files
+                     created using cmip5_ocean_climatology_netcdf.py.
+		     To run: First edit the variable "directory" near the top of
+		             the file. Then open python or ipython and type
+			     "run mmm_ocean_netcdf.py".
 
 cmip5_eraint_rms_errors.py: Calculates root-mean-square errors (as in Gleckler
                             et al., 2008) for each of 39 CMIP5 models and the
 			    multi-model mean, with respect to 11 ERA-Interim
-			    variables (all variables which ROMS and/or FESOM
-			    require as forcing). The domain is the Southern
+			    atmospheric variables. The domain is the Southern
 			    Ocean (all longitudes, and latitudes from the
 			    northern boundary of ROMS to the southernmost ocean
 			    point not in an ice shelf cavity) and the monthly
 			    climatology averaged over 1992-2005 inclusive.
 			    Also calculate the relative errors as in Gleckler
 			    et al. and make a "portrait plot" of coloured tiles
-			    in a model vs variable matrix. Save both rms errors
-			    and relative errors to text files.
-			    To run: Edit the path to the ROMS grid near the top
-			            of the file. Then make sure that you have
-				    scipy version 0.14 or higher (on raijin,
-				    this means switching to python/2.7.6;
-				    instructions at the top of the file). Then
-				    open python or ipython and type
-				    "run cmip5_eraint_rms_errors.py". Note that
-				    for this function to work, you must be
-				    running on raijin and be part of the ua6
-				    project.
+			    in a model vs. variable matrix. Save both rms errors
+			    and relative errors into text files. Note that to
+			    run this script, you must have previously run
+			    eraint_climatology_netcdf.py,
+			    cmip5_atmos_climatology_netcdf.py, and
+			    mmm_atmos_netcdf.py.
+			    To run: First edit the variable "directory", near
+			            the top of the file, to suit your
+				    filesystem, and "roms_grid" to point to the
+				    roms grid file. Then open python or ipython
+				    and type "run cmip5_eraint_rms_errors.py".
+
+cmip5_ecco2_rms_errors.py: Same as cmip5_eraint_rms_errors.py, but for ECCO2
+                           ocean variables rather than ERA-Interim atmospheric
+			   variables, at the northern boundary of ROMS
+			   (currently 30S). Note that to run this script, you
+			   must have previously run
+			   ecco2_climatology_netcdf.py,
+			   cmip5_ocean_climatology_netcdf.py, and
+			   mmm_ocean_netcdf.py.
+			   To run: First edit the variable "directory", near
+			           the top of the file, to suit your filesystem.
+				   Then open python or ipython and type
+				   "run cmip5_ecco2_rms_errors.py".
 
 
 ***NICE FIGURES***
@@ -329,6 +418,49 @@ zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
 		       as many times as you like, and you only have to
 		       specify which parameters have changed since the last
 		       plot.
+
+cmip5_plot.py: Compare output from CMIP5 models to ERA-Interim (for atmosphere
+               variables) or ECCO2 (for ocean variables) by plotting the given
+	       variable, time-averaged over the given season and zonally
+	       averaged over the Southern Ocean (for atmosphere variables) or
+	       the northern boundary of ROMS (for ocean variables). The plot
+	       will have the given variable on the x-axis and latitude (for
+	       atmosphere variables) or depth (for ocean variables) on the
+	       y-axis. Note that in order to run this script, you must first
+	       run eraint_climatology_netcdf.py, ecco2_climatology_netcdf.py,
+	       cmip5_atmos_climatology_netcdf.py,
+	       cmip5_ocean_climatology_netcdf.py, mmm_atmos_netcdf.py, and
+	       mmm_ocean_netcdf.py to generate the necessary NetCDF files.
+	       To run: First edit the variable "directory", near the top of the
+	               file, to suit your filesystem, and the variable
+		       "roms_grid" to point to your ROMS grid file. (Note that
+		       your choice of roms_grid will affect the latitude bounds
+		       on atmosphere plots but not ocean plots, which read
+		       NetCDF files which have already been interpolated to
+		       the northern boundary of ROMS). Then open python or
+		       ipython and type "run cmip5_plot.py". The script will
+		       prompt you for the variable name, season code, models
+		       to include ('MMM' is an option for multi-model mean),
+		       and whether to save the plot (and if so, what the
+		       filename should be) or display it on the screen.
+		       As with circumpolar_plot.py, circumpolar_cice_plot.py,
+		       and zonal_plot.py, the interface will repeat as many
+		       times as you like, and you only have to specify which
+		       parameters have changed since the last plot.
+
+
+
+cmip5_all_plots.py: Call cmip5_plot.py for all models (including the multi-model
+                    mean), all variables (atmosphere and ocean), and all
+		    seasons. Note that in order to run this script, you must
+		    first run eraint_climatology_netcdf.py,
+		    ecco2_climatology_netcdf.py,
+		    cmip5_atmos_climatology_netcdf.py,
+		    cmip5_ocean_climatology_netcdf.py, mmm_atmos_netcdf.py, and
+		    mmm_ocean_netcdf.py. Also, the directory "cmip5/" must
+		    exist.
+		    To run: Open python or ipython and type
+		            "run cmip5_all_plots.py".
 
 
 ***OBSOLETE***
@@ -511,133 +643,6 @@ make_density_file.py: Given an ocean history or averages file with temperature
 			      prompt you for the paths to the ROMS grid file,
 			      the ocean history or averages file, and the
 			      desired path to the new density file.
-
-cmip5_field_old.py: Reads CMIP5 model output for the specified model,
-                    experiment, variable, and date range. Returns the CMIP5
-		    data over the Southern Ocean (for atmosphere variables,
-		    i.e. time x lat x lon) or at the northern boundary of ROMS
-		    (for ocean variables, i.e. time x depth x lon).
-		    To run: The function cmip5_field_old is designed to be
-		            called by other functions; see for example
-			    cmip5_eraint_plot.py. Note that for this function to
-			    work, you must be running on raijin and be part of
-			    the ua6 project.
-
-cmip5_field_ss.py: Like cmip5_field_old, but for surface ocean variables.
-                   Returns the CMIP5 data at the northern boundary of ROMS, i.e.
-		   dimension time x lon.
-		   To run: The function cmip5_field_ss is designed to be called
-		           by other functions; see for example
-			   cmip5_ecco2_plot.py. Note that for this function to
-			   work, you must be running on raijin and be part of
-			   the ua6 project.
-
-cmip5_eraint_skill.py: Calculates skill scores (sum of squares of residuals,
-                       divided by number of points) for each CMIP5 model
-		       compared to ERA-Interim reanalyses, for each of 11
-		       atmospheric variables, zonally averaged over the
-		       Southern Ocean (with latitude bounds corresponding to the
-		       ROMS circumpolar grid) and time-averaged between 1995 and
-		       2005. For each variable, rank the models by their skill
-		       scores and output the results in a plain text file,
-		       saved in the directory cmip5_skill_scores/ which must
-		       already exist. Do this for annual averages as well as
-		       each season (DJF, MAM, JJA, SON).
-		       To run: Edit eraint_field.py to make sure the paths to
-		               ERA-Interim monthly data are correct. Then open
-			       python or ipython and type
-			       "run cmip5_eraint_skill.py". Note that for this
-			       script to work, you must be running on raijin and
-			       be part of the ua6 project.
-
-cmip5_ecco2_skill.py: Calculates skill scores (sum of squares of residuals,
-                      divided by number of points) for each CMIP5 model compared
-		      to ECCO2 reanalyses, for each of 4 ocean variables,
-		      zonally averaged over the northern boundary of the ROMS
-		      grid (currently 30S) and time-averaged between 1995 and
-		      2005. For each variable, rank the models by their skill
-		      scores and output the results in a plain text file, saved
-		      in the directory cmip5_skill_scores/ which must already
-		      exist. Do this for annual averages as well as each
-		      season (DJF, MAM, JJA, SON).
-		      To run: Edit ecco2_field.py to make sure the paths to
-		              ECCO2 data and the location of the ROMS northern
-			      boundary are correct. Then open python or ipython
-			      and type "run cmip5_ecco2_kill.py". Note that for
-			      this script to work, you must be running on raijin
-			      and be part of the ua6 project.
-
-aviso_field.py: Reads AVISO sea surface height data between the given start and
-                end years. Interpolates to the northern boundary of the
-		circumpolar ROMS domain (currently 30S).
-		To run: The function aviso_field is designed to be called by
-		        other functions; see for example cmip5_aviso_plot.py and
-			cmip5_aviso_skill.py. If you are using it, be sure to
-			edit the parameters near the top of the file (eg paths
-			to AVISO data, and the location of the ROMS northern
-			boundary).
-
-cmip5_aviso_skill.py: Calculates skill scores (square of residuals) for each
-                      CMIP5 model compared to AVISO reanalyses of sea surface
-		      height, zonally averaged over the northern boundary of the
-		      ROMS grid (currently 30S) and time-averaged between 1995
-		      and 2005. Rank the models by their skill scores and output
-		      the results in a plain text file.
-		      To run: Edit aviso_field.py to make sure the paths to
-		              AVISO data and the location of the ROMS northern
-			      boundary are correct. Then open python or ipython
-			      and type "run cmip5_aviso_skill.py". Note that for
-			      this script to work, you must be running on raijin
-			      and be part of the ua6 project.
-
-cmip5_skill_chart.py: Summarises the results of cmip5_eraint_skill.py and
-                      cmip5_ecco2_skill.py by listing the model rankings in
-		      a giant table of models x variables. Each cell in the
-		      table has 5 entries, representing the rankings for each
-		      season (annual, DJF, MAM, JJA, SON).
-		      To run: Assuming you have all the skill score files
-		              in a directory cmip5_skill_scores/, open python
-			      or ipython and type "run cmip5_skill_chart.py".
-
-cmip5_aviso_plot.py: Compares AVISO sea surface height reanalyses and CMIP5
-                     output, zonally averaged at the northern boundary of the
-		     circumpolar ROMS domain (currently 30S) and time-averaged
-		     between 1995 and 2005. Creates a plot with model on the
-		     x-axis and sea surface height on the y-axis.
-		     To run: Edit aviso_field.py to make sure the paths to AVISO
-		             data and teh location of the ROMS northern boundary
-			     are correct. Then open python or ipython and type
-			     "run cmip5_aviso_plot.py". Note that for this
-			     script to work, you must be running on raijin
-			     and be part of the ua6 project.
-
-cmip5_plot.py: Compares CMIP5 output from the given models to reanalyses
-               (ERA-Interim for atmosphere variables, ECCO2 for ocean variables)
-	       by creating a plot of the given variable, zonally averaged over
-	       the ROMS domain and time-averaged between 1992 and 2005, with
-	       the given variable on the x-axis and latitude (for atmospheric
-	       surface variables) or depth (for ocean northern boundary
-	       variables) on the y-axis.
-	       To run: Open python or ipython and type "cmip5_plot.py". The
-	               script will prompt you for the CMIP5 variable name,
-		       season, list of model names, and whether to save the
-		       file (and if so, the filename) or display it on the
-		       screen. As with circumpolar_plot.py, the interface will
-		       repeat as many times as you like, and you only have to
-		       specify which parameters have changed since the last
-		       plot. You can also call the function cmip5_plot directly;
-		       see cmip5_all_plots.py for an example. Note that for this
-		       script to work, you must be running on raijin and be
-		       part of the ua6 project.
-
-cmip5_all_plots.py: Calls cmip5_plot for all variables, all seasons, and all
-                    models. Saves the figures in the directory cmip5_figures/
-		    which must already exist.
-		    To run: Open python or ipython and type
-		            "cmip5_all_plots.py". Note that for this script to
-			    work, you must be running on raijin and be part of
-			    the ua6 project.
-
                
 
 

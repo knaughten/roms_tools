@@ -3,14 +3,16 @@ from netCDF4 import Dataset
 
 # Read ECCO2 data for the given variable name, between the given start and end
 # years. Interpolate to the northern boundary of the circumpolar ROMS domain.
+# Return the monthly climatology.
 # Input:
 # var_name = string containing name of variable, eg 'THETA'
-# start_year, end_year = integers containing years to average over, from the
-#                        beginning of start_year to the end of end_year.
-#                        Therefore, if start_year = end_year, this script will
-#                        average over one year of model output.
+# start_year, end_year = integers containing years over which to calculate the
+#                        monthly climatology, from the beginning of start_year
+#                        to the end of end_year. Therefore, if start_year = 
+#                        end year, this script will read one year of output
+#                        with no climatological averaging.
 # Output:
-# ecco2_data = 3D array of ECCO2 data, with dimension time x depth x longitude
+# ecco2_data = 3D array of ECCO2 data, with dimension month x depth x longitude
 # ecco2_lon = 1D array containing longitude values
 # ecco2_depth = 1D array containing depth values
 def ecco2_field (var_name, start_year, end_year):
@@ -35,10 +37,7 @@ def ecco2_field (var_name, start_year, end_year):
     # Only save the ECCO2 latitude values at these indices
     ecco2_lat = ecco2_lat[j_min:j_max+1]
 
-    # Create empty array of dimension time x depth x longitude
-    ecco2_data = ma.empty([12*(end_year-start_year+1), size(ecco2_depth), size(ecco2_lon)])
-    # Initialise next available time index in this array
-    posn = 0
+    ecco2_data = None    
     # Loop over years and months
     for year in range(start_year, end_year+1):
         for month in range(12):
@@ -53,9 +52,20 @@ def ecco2_field (var_name, start_year, end_year):
             data = id.variables[var_name][0,:,j_min:j_max+1,:]
             id.close()
 
-            # Linearly interpolate to nbdry and save to master array
-            ecco2_data[posn,:,:] = (data[:,1,:]-data[:,0,:])/(ecco2_lat[1]-ecco2_lat[0])*(nbdry-ecco2_lat[0]) + data[:,0,:]
-            posn +=1
+            # Linearly interpolate to nbdry
+            data_interp = (data[:,1,:]-data[:,0,:])/(ecco2_lat[1]-ecco2_lat[0])*(nbdry-ecco2_lat[0]) + data[:,0,:]
+            if ecco2_data is None:
+                # Create empty array of dimension time x depth x longitude
+                ecco2_data = ma.empty([12, size(ecco2_depth), size(ecco2_lon)])
+                # Initialise with zeros and mask with land mask
+                for t in range(12):
+                    ecco2_data[t,:,:] = data_interp[:,:]*0.0
+            # Add to master array
+            ecco2_data[month,:,:] += data_interp[:,:]
+
+    # Divide master array by number of years to convert from monthly sums to
+    # monthly averages
+    ecco2_data /= (end_year-start_year+1)        
 
     return ecco2_data, ecco2_lon, ecco2_depth
 

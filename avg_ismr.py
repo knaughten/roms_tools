@@ -3,18 +3,18 @@ from numpy import *
 from matplotlib.pyplot import *
 from os.path import *
 
-# Calculate and plot timeseries of basal mass loss from major ice shelves
-# during a ROMS simulation.
+# Calculate and plot timeseries of area-averaged ice shelf melt rates from 
+# major ice shelves during a ROMS simulation.
 # Input:
 # file_path = path to ocean history/averages file
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def massloss (file_path, log_path):
+def avg_ismr (file_path, log_path):
 
     # Titles and figure names for each ice shelf
     names = ['Amery Ice Shelf', 'Ross Ice Shelf', 'Getz Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Abbot Ice Shelf', 'George VI Ice Shelf', 'Larsen C Ice Shelf', 'Ronne-Filchner Ice Shelf', 'Brunt and Riiser-Larsen Ice Shelves', 'Fimbul and Jelbart Ice Shelves']
-    fig_names = ['amery_massloss.png', 'ross_massloss.png', 'getz_massloss.png', 'pig_massloss.png', 'abbot_massloss.png', 'george_vi_massloss.png', 'larsen_c_massloss.png', 'ronne_filchner_massloss.png', 'brunt_riiser_larsen_massloss.png', 'fimbul_jelbart_massloss.png']
+    fig_names = ['amery_ismr.png', 'ross_ismr.png', 'getz_ismr.png', 'pig_ismr.png', 'abbot_ismr.png', 'george_vi_ismr.png', 'larsen_c_ismr.png', 'ronne_filchner_ismr.png', 'brunt_riiser_larsen_ismr.png', 'fimbul_jelbart_ismr.png']
     # Limits on i- and j- coordinates for each ice shelf; this will vary
     # depending on the grid
     # Note there is one extra index at the end of each array; this is because
@@ -40,15 +40,15 @@ def massloss (file_path, log_path):
             except(ValueError):
                 # Reached the header for the next variable
                 break
-        # Set up array for mass loss values at each ice shelf
-        old_massloss = empty([len(names), len(old_time)])
+        # Set up array for melt rate values at each ice shelf
+        old_ismr = empty([len(names), len(old_time)])
         index = 0
         # Loop over ice shelves
         while index < len(names):
             t = 0
             for line in f:
                 try:
-                    old_massloss[index, t] = float(line)
+                    old_ismr[index, t] = float(line)
                     t += 1
                 except(ValueError):
                     # Reached the header for the next ice shelf
@@ -72,11 +72,11 @@ def massloss (file_path, log_path):
     else:
         start_t = 0
         time = new_time
-    # Set up array of mass loss values
-    massloss = empty([len(names), size(time)])
+    # Set up array of melt rate values
+    avg_ismr = empty([len(names), size(time)])
     if exists(log_path):
         # Fill first start_t timesteps with existing values
-        massloss[:,0:start_t] = old_massloss[:,:]
+        avg_ismr[:,0:start_t] = old_ismr[:,:]
 
     # Process each timestep separately to prevent memory overflow
     for t in range(start_t, size(time)):
@@ -100,10 +100,8 @@ def massloss (file_path, log_path):
             else:
                 dA_tmp = ma.masked_where((i < i_min[index]) + (i > i_max[index]) + (j < j_min[index]) + (j > j_max[index]), dA)
 
-            # Integrate ice shelf melt rate over area to get volume loss
-            volumeloss = sum(ismr*dA_tmp)
-            # Convert to mass loss in Gt/y
-            massloss[index, t] = 1e-12*rho_ice*volumeloss
+            # Calculate area-weighted average
+            avg_ismr[index, t] = sum(ismr*dA_tmp)/sum(dA_tmp)
 
     id.close()
 
@@ -111,9 +109,9 @@ def massloss (file_path, log_path):
     print 'Plotting'
     for index in range(len(names)):
         clf()
-        plot(time, massloss[index,:])
+        plot(time, avg_ismr[index,:])
         xlabel('Years')
-        ylabel('Basal Mass Loss (Gt/y)')
+        ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)')
         title(names[index])
         savefig(fig_names[index])
         
@@ -125,7 +123,7 @@ def massloss (file_path, log_path):
     for index in range(len(names)):
         f.write(names[index] + '\n')
         for t in range(size(time)):
-            f.write(str(massloss[index, t]) + '\n')
+            f.write(str(avg_ismr[index, t]) + '\n')
     f.close()
 
 
@@ -198,5 +196,5 @@ if __name__ == "__main__":
     file_path = raw_input('Enter path to ocean history/averages file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    massloss(file_path, log_path)
+    avg_ismr(file_path, log_path)
 

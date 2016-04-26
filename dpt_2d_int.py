@@ -83,10 +83,9 @@ def dpt_2d_int (file_path):
     transport_cs = fliplr(cumsum(fliplr(transport), axis=1))
 
     # Plot
-    # Bounds are set to 0-150 Sv, adjust as needed
     figure()
-    pcolormesh(time, lat_DP, transpose(transport_cs), vmin=0, vmax=150, cmap='jet')
-    colorbar(ticks=arange(0, 150+1, 20))
+    pcolormesh(time, lat_DP, transpose(transport_cs), cmap='jet')
+    colorbar()
     title('Drake Passage Transport (Sv), indefinite N-S integral')
     xlabel('Years')
     ylabel('Latitude')
