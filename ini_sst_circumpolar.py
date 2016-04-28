@@ -49,7 +49,8 @@ def ini_sst_circumpolar (grid_path, file_path, fig_name):
     title(r'Initial SST ($^{\circ}$C)', fontsize=30)
     axis('off')
 
-    savefig(fig_name)
+    #savefig(fig_name)
+    show()
 
 
 # Command-line interface

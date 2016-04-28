@@ -169,7 +169,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         savefig(fig_name)
         close()
     else:
-        show()
+        show(block=False)
 
     # Reset lon0 or lon_bounds to (-180, 180) range in case we
     # use them again for the next plot

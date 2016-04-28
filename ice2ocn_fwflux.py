@@ -35,7 +35,8 @@ def ice2ocn_fwflux (file_path, tstep, fig_name):
     title('CICE-to-ROMS net freshwater flux (cm/day)', fontsize=30)
     axis('off')
 
-    savefig(fig_name)
+    #savefig(fig_name)
+    show()
 
 
 # Command-line interface

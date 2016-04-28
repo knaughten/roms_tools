@@ -63,7 +63,7 @@ def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdr
     print 'Interpolating temperature'
     temp = interp_woa2roms(temp_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
     print 'Interpolating salinity'
-    salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
+    salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 35)
 
     # Set the temperature in ice shelf cavities to the local freezing point
     mask_zice_3d = tile(mask_zice, (N,1,1))

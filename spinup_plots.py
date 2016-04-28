@@ -120,8 +120,7 @@ def calc_grid (file_path):
 def get_rho (file_path, t):
 
     # Reference density
-    # New users: edit this based on the value in your .in ROMS configuration file
-    rho0 = 1025.0
+    rho0 = 1000.0
 
     id = Dataset(file_path, 'r')
     # Read density anomalies, add rho0 to get absolute density

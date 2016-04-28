@@ -45,7 +45,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, save=False, fig_name=None
     y = (lat+90)*sin(lon*deg2rad+pi/2)
 
     # Center levels on 0 for certain variables, with a blue-to-red colourmap
-    if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn']:
+    if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'frzmlt']:
         max_val = amax(abs(data))
         lev = linspace(-max_val, max_val, num=40)
         colour_map = 'RdYlBu_r'
@@ -66,7 +66,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, save=False, fig_name=None
         savefig(fig_name)
         close()
     else:
-        show()
+        show(block=False)
 
 
 # Command-line interface

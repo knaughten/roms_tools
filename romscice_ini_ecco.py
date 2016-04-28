@@ -20,6 +20,13 @@ from calc_z import *
 # Main routine
 def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_ecco):
 
+    # Parameters for freezing point of seawater; taken from Ben's PhD thesis
+    a = -5.73e-2
+    b = 8.32e-2
+    c = -7.61e-8
+    rho = 1035.0
+    g = 9.81    
+
     # Read ECCO2 data and grid
     print 'Reading ECCO2 data'
     theta_fid = Dataset(theta_file, 'r')
@@ -92,7 +99,20 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
     print 'Interpolating temperature'
     temp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, -0.5)
     print 'Interpolating salinity'
-    salt = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, 34.5)
+    salt = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, 35)
+
+    # Identify the continental shelf
+    h_3d = tile(h, (N,1,1))
+    index = nonzero((lat_roms_3d <= -60)*(h_3d <= 1200))
+    # Set salinity over the continental shelf to a constant value, and
+    # temperature to the local freezing point
+    salt[index] = 35
+    temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
+    # Make sure the ice shelf cavities got this too
+    mask_zice_3d = tile(mask_zice, (N,1,1))
+    index = mask_zice_3d == 1
+    salt[index] = 35
+    temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
 
     # Set initial velocities and sea surface height to zero
     u = zeros((N, num_lat, num_lon-1))
@@ -186,8 +206,8 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
     print 'Finished'
 
 
-# Given an array on the ECCO2 grid, fill in the land mask with constant values,
-# and then interpolate to the ROMS grid.
+# Given an array on the ECCO2 grid, fill land mask with constant values
+# and interpolate onto the ROMS grid.
 # Input:
 # A = array of size nxmxo containing values on the ECCO2 grid (dimension
 #     longitude x latitude x depth)
@@ -203,10 +223,8 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 # z_roms_3d = array of size pxqxr containing ROMS depth values in negative
 #             z-coordinates (converted from grid file using calc_z.py, as
 #             shown below in the main script)
-# fill_value = scalar containing the value with which to fill the ECCO2 land
-#              mask: something close to the mean value of A so that the
-#              splines don't freak out (suggest -0.5 for temperature and 34.5
-#              for salinity)
+# fill_value = scalar containing the value with which to fill the ROMS land mask
+#              and ice shelf cavities (doesn't really matter, don't use NaN)
 # Output:
 # B = array of size pxqxr containing values on the ROMS grid (dimension depth x
 #     latitude x longitude)
@@ -215,24 +233,21 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3
     # Calculate N based on size of ROMS grid
     N = size(lon_roms_3d, 0)
 
-    # Fill the ECCO2 land mask with a constant value close to the mean of A.
-    # This is less than ideal because it will skew the interpolation slightly
-    # along the coast, and the land masks won't exactly line up between the
-    # grids. However it allows us to use the MUCH faster RegularGridInterpolator
-    # (which requires data on a regular grid i.e. no missing values) and this
-    # initialisation file is designed for a partial spinup after all!
+    # Fill the ECCO2 land mask with a constant value close to the mean of A
+    # This is less than ideal, but we will overwrite the continental shelf
+    # values anyway later
     Afill = A
     Afill[A.mask] = fill_value
 
-    # Build a function for linear interpolation of Afill
+    # Build a function for linear interpolation of A
     interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), Afill)
     B = zeros(shape(lon_roms_3d))
-    # Call this function once at each grid level - 3D vectorisation uses too
+    # Interpolate each z-level individually - 3D vectorisation uses too
     # much memory!
     for k in range(N):
         print '...vertical level ', str(k+1), ' of ', str(N)
         # Pass positive values for ROMS depth
-        B[k,:,:] = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))    
+        B[k,:,:] = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))
         
     return B
 
@@ -242,12 +257,12 @@ if __name__ == "__main__":
 
     # File paths to edit here:
     # Path to ROMS grid file
-    grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
     # Path to ECCO2 files for temperature and salinity in January 1995
-    theta_file = '../data/ECCO2/THETA.1440x720x50.199501.nc'
-    salt_file = '../data/ECCO2/SALT.1440x720x50.199501.nc'
+    theta_file = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.199501.nc'
+    salt_file = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.199501.nc'
     # Path to desired output file
-    output_file = '../data/caisom001_ini_1995.nc'
+    output_file = '../ROMS-CICE-MCT/data/ecco2_ini.nc'
 
     # Grid parameters; check grid_file and *.in file to make sure these are correct
     Tcline = 40

@@ -463,6 +463,15 @@ cmip5_all_plots.py: Call cmip5_plot.py for all models (including the multi-model
 		            "run cmip5_all_plots.py".
 
 
+overturning_plot.py: Calculate the meridional overturning streamfunction at the
+                     last timestep of the given ROMS history/averages file and
+		     make a contour plot in z-space.
+		     To run: Open python or ipython and type
+		             "run overturning_plot.py". You will be prompted
+			     for the path to the ROMS history/averages file
+			     and the filename with which to save the plot.
+
+
 ***OBSOLETE***
 
 roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
