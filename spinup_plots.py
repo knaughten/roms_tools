@@ -2,7 +2,7 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 from os.path import *
-from calc_z import *
+from cartesian_grid_3d import *
 
 # Analyse a ROMS spinup by calculating and plotting 9 timeseries:
 # Total heat content
@@ -32,12 +32,6 @@ def calc_grid (file_path):
     theta_b = 4.0
     hc = 40
     N = 31
-    # Radius of the Earth in m
-    r = 6.371e6
-    # Degrees to radians conversion factor
-    deg2rad = pi/180.0
-    # Northern boundary of ROMS grid
-    nbdry_val = -30
 
     # Read grid variables
     id = Dataset(file_path, 'r')
@@ -47,67 +41,21 @@ def calc_grid (file_path):
     lat = id.variables['lat_rho'][:,:]
     mask = id.variables['mask_rho'][:,:]
     id.close()
-    # Save dimensions
-    num_lat = size(lon, 0)
-    num_lon = size(lon, 1)
 
     # Calculate water column thickness
     wct = h + zice
 
-    # Add or subtract 360 from longitude values which wrap around
-    # so that longitude increases monotonically from west to east
-    i = tile(arange(1, num_lon+1), (num_lat, 1))
-    index1 = nonzero((i > 1200)*(lon < 100))
-    lon[index1] = lon[index1] + 360
-    index2 = nonzero((i < 200)*(lon > 300))
-    lon[index2] = lon[index2] - 360
+    # Calculate Cartesian integrands and z-coordinates
+    dx, dy, dz, z = cartesian_grid_3d(lon, lat, h, zice, theta_s, theta_b, hc, N)
 
-    # Interpolate to get longitude at the edges of each cell
-    w_bdry = 0.5*(lon[:,0] + lon[:,-1] - 360)
-    middle_lon = 0.5*(lon[:,0:-1] + lon[:,1:])
-    e_bdry = 0.5*(lon[:,0] + 360 + lon[:,-1])
-    lon_edges = ma.concatenate((w_bdry[:,None], middle_lon, e_bdry[:,None]), axis=1)
-    # Subtract to get the change in longitude over each cell
-    dlon = abs(lon_edges[:,1:] - lon_edges[:,0:-1])
-
-    # Similarly for latitude
-    s_bdry = lat[0,:]
-    middle_lat = 0.5*(lat[0:-1,:] + lat[1:,:])
-    n_bdry = lat[-1,:]*0 + nbdry_val
-    lat_edges = ma.concatenate((s_bdry[None,:], middle_lat, n_bdry[None,:]))
-    dlat = lat_edges[1:,:] - lat_edges[0:-1,:]
-
-    # Convert from spherical to Cartesian coordinates
-    # dy = r*dlat where dlat is converted to radians
-    dy_2d = r*dlat*deg2rad
-    # dx = r*cos(lat)*dlon where lat and dlon are converted to radians
-    dx_2d = r*cos(lat*deg2rad)*dlon*deg2rad
-
-    # Calculate dA and mask with zice
-    dA = dx_2d*dy_2d
-    dA = ma.masked_where(zice==0, dA)
-
-    # Copy dx and dy into 3D arrays, same at each depth level
-    dy = tile(dy_2d, (N,1,1))
-    dx = tile(dx_2d, (N,1,1))
-
-    # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
-    # We have z at the midpoint of each cell, now find it on the top and
-    # bottom edges of each cell
-    z_edges = zeros((size(z,0)+1, size(z,1), size(z,2)))
-    z_edges[1:-1,:,:] = 0.5*(z[0:-1,:,:] + z[1:,:,:])
-    # At surface, z = zice; at bottom, extrapolate
-    z_edges[-1,:,:] = zice[:,:]
-    z_edges[0,:,:] = 2*z[0,:,:] - z_edges[1,:,:]
-    # Now find dz
-    dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
-
-    mask_3d = tile(mask, (N,1,1))
+    # Calculate dA (2D) and mask with zice
+    dA = ma.masked_where(zice==0, dx[0,:,:]*dy[0,:,:])
+    
     # Calculate dV and mask with land mask
+    mask_3d = tile(mask, (N,1,1))
     dV = ma.masked_where(mask_3d==0, dx*dy*dz)
-    # Similarly for dy_wct
-    dy_wct = ma.masked_where(mask==0, dy_2d*wct)
+    # Similarly for dy_wct (2D)
+    dy_wct = ma.masked_where(mask==0, dy[0,:,:]*wct)
 
     return dA, dV, dy_wct
 

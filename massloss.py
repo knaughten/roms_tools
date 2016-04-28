@@ -2,6 +2,7 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 from os.path import *
+from cartesian_grid_2d import *
 
 # Calculate and plot timeseries of basal mass loss from major ice shelves
 # during a ROMS simulation.
@@ -137,57 +138,26 @@ def massloss (file_path, log_path):
 # i,j = i- and j- coordinates on the rho-grid, starting at 1
 def calc_grid (file_path):
 
-    # Radius of the Earth in m
-    r = 6.371e6
-    # Degrees to radians conversion factor
-    deg2rad = pi/180.0
-    # Northern boundary of ROMS grid
-    nbdry_val = -30
-
     # Read grid variables
     id = Dataset(file_path, 'r')
     lon = id.variables['lon_rho'][:,:]
     lat = id.variables['lat_rho'][:,:]
     zice = id.variables['zice'][:,:]
     id.close()
+
+    # Calculate dx and dy in another script
+    dx, dy = cartesian_grid_2d(lon, lat)
+
+    # Calculate dA and mask with zice
+    dA = ma.masked_where(zice==0, dx*dy)
+
     # Save dimensions
     num_lat = size(lon, 0)
     num_lon = size(lon, 1)
 
-    # Add or subtract 360 from longitude values which wrap around
-    # so that longitude increases monotonically from west to east
+    # Calculate i- and j-coordinates
     i = tile(arange(1, num_lon+1), (num_lat, 1))
-    index1 = nonzero((i > 1200)*(lon < 100))
-    lon[index1] = lon[index1] + 360
-    index2 = nonzero((i < 200)*(lon > 300))
-    lon[index2] = lon[index2] - 360
-
-    # Interpolate to get longitude at the edges of each cell
-    w_bdry = 0.5*(lon[:,0] + lon[:,-1] - 360)
-    middle_lon = 0.5*(lon[:,0:-1] + lon[:,1:])
-    e_bdry = 0.5*(lon[:,0] + 360 + lon[:,-1])
-    lon_edges = ma.concatenate((w_bdry[:,None], middle_lon, e_bdry[:,None]), axis=1)
-    # Subtract to get the change in longitude over each cell
-    dlon = abs(lon_edges[:,1:] - lon_edges[:,0:-1])
-
-    # Similarly for latitude
-    s_bdry = lat[0,:]
-    middle_lat = 0.5*(lat[0:-1,:] + lat[1:,:])
-    n_bdry = lat[-1,:]*0 + nbdry_val
-    lat_edges = ma.concatenate((s_bdry[None,:], middle_lat, n_bdry[None,:]))
-    dlat = lat_edges[1:,:] - lat_edges[0:-1,:]
-
-    # Also calculate j-coordinates
     j = transpose(tile(arange(1, num_lat+1), (num_lon, 1)))
-
-    # Convert from spherical to Cartesian coordinates
-    # dy = r*dlat where dlat is converted to radians
-    dy = r*dlat*deg2rad    
-    # dx = r*cos(lat)*dlon where lat and dlon are converted to radians
-    dx = r*cos(lat*deg2rad)*dlon*deg2rad
-
-    # Calculate dA and mask with zice
-    dA = ma.masked_where(zice==0, dx*dy)
 
     return dA, i, j
 

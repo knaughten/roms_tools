@@ -1,7 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
-from calc_z import *
+from cartesian_grid_3d import *
 
 # Make a circumpolar Antarctic plot of the given (horizontal) ROMS variable.
 # Input:
@@ -111,28 +111,17 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
             # Bottom layer
             data = data_full[0,:,:]
         else:
-            # We will need to calculate z-coordinates
-            z, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
+            # We will need z-coordinates and possibly dz
+            dx, dy, dz, z = cartesian_grid_3d(lon, lat, h, zice, theta_s, theta_b, hc, N)
             if depth_key == 2:
                 # Interpolate to given depth
                 data = interp_depth(data_full, z, depth)
-            elif depth_key in [3, 4]:
-                # We need dz for averaging
-                # We have z on the midpoint of each cell, now find it on the top and bottom edges
-                # of each cell
-                z_edges = zeros((size(z,0)+1, size(z,1), size(z,2)))
-                z_edges[1:-1,:,:] = 0.5*(z[0:-1,:,:] + z[1:,:,:])
-                # At the surface, z=zice; at bottom, extrapolate
-                z_edges[-1,:,:] = zice[:,:]
-                z_edges[0,:,:] = 2*z[0,:,:] - z_edges[1,:,:]
-                # Now find dz
-                dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]
-                if depth_key == 3:
-                    # Vertically average entire water column
-                    data = sum(data_full*dz, axis=0)/sum(dz, axis=0)
-                elif depth_key == 4:                    
-                    # Vertically average between given depths
-                    data = average_btw_depths (data_full, z, dz, depth_bounds)
+            elif depth_key == 3:
+                # Vertically average entire water column
+                data = sum(data_full*dz, axis=0)/sum(dz, axis=0)
+            elif depth_key == 4:
+                # Vertically average between given depths
+                data = average_btw_depths(data_full, z, dz, depth_bounds)
 
     # Center levels on 0 for certain variables, with a blue-to-red colourmap
     if var_name in ['u', 'v', 'ubar', 'vbar', 'm']:

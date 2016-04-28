@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from scipy.interpolate import RegularGridInterpolator
+from cartesian_grid_3d import *
 from calc_z import *
 
 # Build a ROMS lateral boundary condition file from ECCO2 temperature, salinity,
@@ -38,10 +39,6 @@ def convert_file (year):
     theta_b = 4
     hc = 40
     N = 31
-    # Radius of the Earth (needed for spherical coordinates transformations)
-    r = 6.371e6
-    # Constant to convert from degrees to radians
-    deg2rad = pi/180.0
     # Northernmost index of ECCO2 grid to read (1-based)
     nbdry_ecco = 241
 
@@ -84,7 +81,7 @@ def convert_file (year):
     zice = grid_fid.variables['zice'][:,:]
     mask_rho = grid_fid.variables['mask_rho'][:,:]
     mask_zice = grid_fid.variables['mask_zice'][:,:]
-    grid_fid.close()
+    grid_fid.close()    
 
     # Save the lengths of the longitude axis for each grid
     num_lon_rho = size(lon_rho, 1)
@@ -99,54 +96,49 @@ def convert_file (year):
     zice_u = 0.5*(zice[:,0:-1] + zice[:,1:])
     zice_v = 0.5*(zice[0:-1,:] + zice[1:,:])
 
-    # Find thickness of northern boundary cells in latitude-direction
-    dlat = lat_v[-1,:] - lat_v[-2,:]
-    # dy = r*dlat where dlat is converted to radians
-    # Also copy this into an array of dimension depth x longitude
-    dy = tile(r*dlat*deg2rad, (N,1))
-    # dlon is constant at this latitude
-    dlon = 0.25
-    lat = lat_v[-1,:]
-    # dx = r*cos(lat)*dlon where lat and dlon are converted to radians
-    # Also copy this into an array of dimension depth x longitude
-    dx = tile(r*cos(lat*deg2rad)*dlon*deg2rad, (N,1))
-
-    # Get a 3D array of ROMS z-coordinates on the rho-grid, as well as 1D
-    # arrays of s-coordinates and stretching curves
+    # Calculate Cartesian integrands and z-coordinates for each grid
+    dx_rho, dy_rho, dz_rho, z_rho = cartesian_grid_3d(lon_rho, lat_rho, h, zice, theta_s, theta_b, hc, N)
+    dx_u, dy_u, dz_u, z_u = cartesian_grid_3d(lon_u, lat_u, h_u, zice_u, theta_s, theta_b, hc, N)
+    dx_v, dy_v, dz_v, z_v = cartesian_grid_3d(lon_v, lat_v, h_v, zice_v, theta_s, theta_b, hc, N)
+    # Also call calc_z for the rho_grid just so we get sc_r and Cs_r
     z_rho, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N)
-    # Only keep the depth x longitude slice of z_rho at the northern boundary
+
+    # Select just the northern boundary for each field
+    dx_rho = dx_rho[:,-1,:]
+    dy_rho = dy_rho[:,-1,:]
+    dz_rho = dz_rho[:,-1,:]
     z_rho = z_rho[:,-1,:]
-
-    # Repeat for the u grid
-    z_u, sc_r, Cs_r = calc_z(h_u, zice_u, theta_s, theta_b, hc, N)
+    dx_u = dx_u[:,-1,:]
+    dy_u = dy_u[:,-1,:]
+    dz_u = dz_u[:,-1,:]
     z_u = z_u[:,-1,:]
-    # Now calculate dz on the u grid
-    # We have z at the midpoint of each cell, now find it on the top and
-    # bottom edges
-    z_edges_u = zeros((size(z_u, 0)+1, size(z_u, 1)))
-    z_edges_u[1:-1,:] = 0.5*(z_u[0:-1,:] + z_u[1:,:])
-    # At surface, z = zice; at bottom, extrapolate
-    z_edges_u[-1,:] = zice_u[-1,:]    
-    z_edges_u[0,:] = 2*z_u[0,:] - z_edges_u[1,:]
-    # Now find dz
-    dz_u = z_edges_u[1:,:] - z_edges_u[0:-1,:]
-
-    # Repeat for the v grid
-    z_v, sc_r, Cs_r = calc_z(h_v, zice_v, theta_s, theta_b, hc, N)
+    dx_v = dx_v[:,-1,:]
+    dy_v = dy_v[:,-1,:]
+    dz_v = dz_v[:,-1,:]
     z_v = z_v[:,-1,:]
-    z_edges_v = zeros((size(z_v, 0)+1, size(z_v, 1)))
-    z_edges_v[1:-1,:] = 0.5*(z_v[0:-1,:] + z_v[1:,:])
-    z_edges_v[-1,:] = zice_v[-1,:]
-    z_edges_v[0,:] = 2*z_v[0,:] - z_edges_v[1,:]
-    dz_v = z_edges_v[1:,:] - z_edges_v[0:-1,:]
 
-    # Copy longitude and latitude into arrays of dimension depth x longitude
+    # Copy longitude and latitude at the northern boundary into arrays of
+    # dimension depth x longitude
     lon_rho = tile(lon_rho[-1,:], (N,1))
     lat_rho = tile(lat_rho[-1,:], (N,1))
     lon_u = tile(lon_u[-1,:], (N,1))
     lat_u = tile(lat_u[-1,:], (N,1))
     lon_v = tile(lon_v[-1,:], (N,1))
     lat_v = tile(lat_v[-1,:], (N,1))
+
+    # Make sure ROMS longitudes are between 0 and 360
+    index = lon_rho < 0
+    lon_rho[index] += 360
+    index = lon_rho > 360
+    lon_rho[index] -= 360
+    index = lon_u < 0
+    lon_u[index] += 360
+    index = lon_u > 360
+    lon_u[index] -= 360
+    index = lon_v < 0
+    lon_v[index] += 360
+    index = lon_v > 360
+    lon_v[index] -= 360
 
     # Set up output file
     print 'Setting up ', output_file
@@ -252,7 +244,7 @@ def convert_file (year):
         uvel[1:-1,:,1:-1] = ma.copy(uvel_raw)
         uvel[0,:,1:-1] = ma.copy(uvel_raw[-1,:,:])
         uvel[-1,:,1:-1] = ma.copy(uvel_raw[0,:,:])
-        uvel[:,:,0] = ma.copy(uvel_raw[:,:,1])
+        uvel[:,:,0] = ma.copy(uvel[:,:,1])
         uvel[:,:,-1] = ma.copy(uvel[:,:,-2])
         vvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
         vvel[1:-1,:,1:-1] = ma.copy(vvel_raw)
@@ -271,23 +263,15 @@ def convert_file (year):
         print 'Interpolating v'
         v_interp = interp_ecco2roms(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0)
 
-        # Find the volume-average of v
-        #v_int = sum(v_interp*dx*dy*dz_v)
-        #volume = sum(dx*dy*dz_v)
-        #v_avg = v_int/volume
-        # Subtract this average from the data to make sure that volume is
-        # conserved at the northern boundary
-        #v_interp = v_interp - v_avg
-
         # Calculate vertical averages of u and v to get ubar and vbar
         # Be sure to treat land mask carefully so we don't divide by 0
         ubar_interp = sum(u_interp*dz_u, axis=0)
-        wct_u = h_u[-1,:]
+        wct_u = h_u[-1,:] + zice_u[-1,:]
         index = wct_u == 0
         ubar_interp[~index] = ubar_interp[~index]/wct_u[~index]
         ubar_interp[index] = 0.0
         vbar_interp = sum(v_interp*dz_v, axis=0)
-        wct_v = h_v[-1,:]
+        wct_v = h_v[-1,:] + zice_v[-1,:]
         index = wct_v == 0
         vbar_interp[~index] = vbar_interp[~index]/wct_v[~index]
         vbar_interp[index] = 0.0

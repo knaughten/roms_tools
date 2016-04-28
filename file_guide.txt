@@ -16,9 +16,9 @@ romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
                      data for temperature and salinity; starts with a motionless
 		     ocean and zero sea surface height. Under ice shelves, sets
 		     the salinity to a constant value (34.5 psu) and the
-		     temperature to the local freezing point. Depends on
-		     calc_z.py, and uses WOA data assumed to be converted from
-		     FESOM input using woa_netcdf.py
+		     temperature to the local freezing point. Uses WOA data
+		     assumed to be converted from FESOM input using
+		     woa_netcdf.py
 		     To run: First edit user parameters (file paths and grid
 		             parameters) near the bottom of the file (after the
 			     Then make sure that you have scipy version 0.14 or
@@ -30,18 +30,13 @@ romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
 romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
                  year of monthly ECCO2 data for temperature, salinity, and
 		 velocity (set sea surface height to zero). Also contains useful
-		 code for calculating volume averages. Depends on calc_z.py.
+		 code for calculating volume averages.
 		 To run: Edit user parameters near the top of the script
 		         (mainly just file paths). Then make sure that you have
 			 scipy version 0.14 or higher (on raijin, this means
 			 switching to python/2.7.6; instructions at the top
 			 of the file). Then open python or ipython and type
 			 "run romscice_nbc.py".
-
-calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
-           curves, and z-coordinates. Assumes Vtransform=2 and Vstretching=2.
-	   To run: This is a function designed to be called from other
-	           scripts. 
 
 romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
                          atmospheric forcing to ROMS-CICE input forcing files
@@ -472,6 +467,24 @@ overturning_plot.py: Calculate the meridional overturning streamfunction at the
 			     and the filename with which to save the plot.
 
 
+***UTILITY FUNCTIONS***
+
+calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
+           curves, and z-coordinates. Assumes Vtransform=2 and Vstretching=2.
+	   To run: This is a function designed to be called from other
+	           scripts. See for example romscice_nbc.py.
+
+cartesian_grid_2d.py: Given ROMS grid variables, calculate 2D Cartesian
+                      integrands dx and dy.
+		      To run: This is a function designed to be called from
+		              other scripts. See for example massloss.py
+
+cartesian_grid_3d.py: Given ROMS grid variables, calculate 3D Cartesian
+                      integrands dx, dy, and dz, as well as 3D z-coordinates.
+		      To run: This is a function designed to be called from
+		              other scripts. See for example spinup_plots.py.
+
+
 ***OBSOLETE***
 
 roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
@@ -528,7 +541,7 @@ romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
 
 romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
                       temperature and salinity; starts with a motionless ocean
-		      and zero sea surface height. Depends on calc_z.py.
+		      and zero sea surface height.
 		      To run: First edit user parameters (file paths and grid
 		              parameters) near the bottom of the file. Then make
 			      sure that you have scipy version 0.14 or higher
@@ -537,8 +550,7 @@ romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
 			      python/ipython and type "run romscice_ini.py".
 
 convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
-                  northern lateral bounday conditions for ROMS. Depends on
-		  romscice_nbc.py, which depends on calc_z.py.
+                  northern lateral bounday conditions for ROMS.
 		  To run: First edit user parameters in romscice_nbc.py
 		          (see below). Then edit the PBS job settings at the top
 			  of this file, and the module commands if necessary to

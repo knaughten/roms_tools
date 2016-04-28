@@ -130,6 +130,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     else:
         lev = linspace(amin(data), amax(data), num=40)
         colour_map = 'jet'
+    #lev = linspace(-3, 5, num=40)
 
     # Plot
     figure(figsize=(18,6))
