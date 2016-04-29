@@ -17,10 +17,13 @@ from calc_z import *
 # lon_bounds = if lon_key=2, the specific longitudes to average between,
 #              stored as an array of size 2 with the western bound first
 # depth_min = deepest depth to plot (negative, metres)
+# colour_bounds = optional bounds on colour scale, stored as an array of size
+#                 2 with the lower bound first. If colour_bounds = None, then
+#                 determine colour scale bounds automatically.
 # save = optional boolean flag; if True, the figure will be saved with file name
 #        fig_name, if False, the figure will display on the screen
 # fig_name = optional string containing filename for figure, if save=True
-def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save=False, fig_name=None):
+def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds=None, save=False, fig_name=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -122,15 +125,26 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         # Zonally average between lon_bounds
         data, z, lat = average_btw_lons(data_3d, z_3d, lat_2d, lon_2d, lon_bounds)
 
-    # Center levels on 0 for u and v, with a blue-to-red colourmap
-    if var_name in ['u', 'v']:
-        max_val = amax(abs(data))
-        lev = linspace(-max_val, max_val, num=40)
-        colour_map = 'RdYlBu_r'
+    if colour_bounds is not None:
+        # User has set bounds on colour scale
+        lev = linspace(colour_bounds[0], colour_bounds[1], num=40)
+        if colour_bounds[0] == -colour_bounds[1]:
+            # Bounds are centered on zero, so choose a blue-to-red colourmap
+            # centered on yellow
+            colour_map = 'RdYlBu_r'
+        else:
+            colour_map = 'jet'
     else:
-        lev = linspace(amin(data), amax(data), num=40)
-        colour_map = 'jet'
-    #lev = linspace(-3, 5, num=40)
+        # Determine bounds automatically
+        if var_name in ['u', 'v']:
+            # Center levels on 0 for certain variables, with a blue-to-red
+            # colourmap
+            max_val = amax(abs(data))
+            lev = linspace(-max_val, max_val, num=40)
+            colour_map = 'RdYlBu_r'
+        else:
+            lev = linspace(amin(data), amax(data), num=40)
+            colour_map = 'jet'
 
     # Plot
     figure(figsize=(18,6))
@@ -431,6 +445,15 @@ if __name__ == "__main__":
             lon_bounds = [w_bound, e_bound]
 
     depth_min = -1*float(raw_input("Deepest depth to plot (positive, metres): "))
+
+    # Get colour bounds if necessary
+    colour_bounds = None
+    get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+    if get_bounds == 'y':
+        lower_bound = float(raw_input("Lower bound: "))
+        upper_bound = float(raw_input("Upper bound: "))
+        colour_bounds = [lower_bound, upper_bound]
+    
     action = raw_input("Save figure (s) or display in window (d)? ")
     if action == 's':
         save = True
@@ -438,7 +461,8 @@ if __name__ == "__main__":
     elif action == 'd':
         save = False
         fig_name = None
-    zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
+
+    zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name)
 
     # Repeat until the user wants to exit
     while True:
@@ -446,7 +470,7 @@ if __name__ == "__main__":
         if repeat == 'y':
             while True:
                 # Ask for changes to the input parameters; repeat until the user is finished
-                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) timestep number, (4) longitude, (5) deepest depth, (6) save/display; or enter to continue: ")
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) timestep number, (4) longitude, (5) deepest depth, (6) colour bounds, (7) save/display; or enter to continue: ")
                 if len(changes) == 0:
                     # No more changes to parameters
                     break
@@ -483,6 +507,14 @@ if __name__ == "__main__":
                         # New depth bound
                         depth_min = -1*float(raw_input("Deepest depth to plot (positive, metres): "))
                     elif int(changes) == 6:
+                        # Get colour bounds if necessary
+                        colour_bounds = None
+                        get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+                        if get_bounds == 'y':
+                            lower_bound = float(raw_input("Lower bound: "))
+                            upper_bound = float(raw_input("Upper bound: "))
+                            colour_bounds = [lower_bound, upper_bound]
+                    elif int(changes) == 7:
                         # Change from display to save, or vice versa
                         save = not save
             if save:
@@ -490,7 +522,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, save, fig_name)
+            zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name)
 
         else:
             break

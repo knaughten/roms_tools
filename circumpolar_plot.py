@@ -17,10 +17,13 @@ from cartesian_grid_3d import *
 # depth_bounds = if depth_key=4, the specific depths to average between 
 #                (negative, in metres), stored as an array of size 2 with the 
 #                shallow bound first.
+# colour_bounds = optional bounds on colour scale, stored as an array of size
+#                 2 with the lower bound first. If colour_bounds = None, then
+#                 determine colour scale bounds automatically.
 # save = optional boolean flag indicating that the plot should be saved to a 
 #        file rather than displayed on the screen
 # fig_name = if save=True, filename for figure
-def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, save=False, fig_name=None):
+def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds=None, save=False, fig_name=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -123,19 +126,31 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
                 # Vertically average between given depths
                 data = average_btw_depths(data_full, z, dz, depth_bounds)
 
-    # Center levels on 0 for certain variables, with a blue-to-red colourmap
-    if var_name in ['u', 'v', 'ubar', 'vbar', 'm']:
-        max_val = amax(abs(data))
-        lev = linspace(-max_val, max_val, num=40)
-        colour_map = 'RdYlBu_r'
+    if colour_bounds is not None:
+        # User has set bounds on colour scale
+        lev = linspace(colour_bounds[0], colour_bounds[1], num=40)
+        if colour_bounds[0] == -colour_bounds[1]:
+            # Bounds are centered on zero, so choose a blue-to-red colourmap
+            # centered on yellow
+            colour_map = 'RdYlBu_r'
+        else:
+            colour_map = 'jet'
     else:
-        lev = linspace(amin(data), amax(data), num=40)
-        colour_map = 'jet'
+        # Determine bounds automatically
+        if var_name in ['u', 'v', 'ubar', 'vbar', 'm']:
+            # Center levels on 0 for certain variables, with a blue-to-red
+            # colourmap
+            max_val = amax(abs(data))
+            lev = linspace(-max_val, max_val, num=40)
+            colour_map = 'RdYlBu_r'
+        else:
+            lev = linspace(amin(data), amax(data), num=40)
+            colour_map = 'jet'
 
     # Plot
     fig = figure(figsize=(16,12))
     fig.add_subplot(1,1,1, aspect='equal')
-    contourf(x, y, data, lev, cmap=colour_map)
+    contourf(x, y, data, lev, cmap=colour_map, extend='both')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
     title(long_name+' ('+units+')\n'+depth_string, fontsize=30)
@@ -323,6 +338,14 @@ if __name__ == "__main__":
     # Get index of time axis in ROMS history/averages file
     tstep = int(raw_input("Timestep number (starting at 1): "))
 
+    # Get colour bounds if necessary
+    colour_bounds = None
+    get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+    if get_bounds == 'y':
+        lower_bound = float(raw_input("Lower bound: "))
+        upper_bound = float(raw_input("Upper bound: "))
+        colour_bounds = [lower_bound, upper_bound]
+
     # Get save/display choice
     action = raw_input("Save figure (s) or display in window (d)? ")
     if action == 's':
@@ -333,7 +356,7 @@ if __name__ == "__main__":
         fig_name = None
 
     # Make the plot
-    circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
+    circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name)
 
     # Repeat until the user wants to exit
     while True:
@@ -341,7 +364,7 @@ if __name__ == "__main__":
         if repeat == 'y':
             while True:
                 # Ask for changes to the input parameters; repeat until the user is finished
-                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) depth, (4) timestep number, (5) save/display; or enter to continue: ")
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) depth, (4) timestep number, (5) colour bounds, (6) save/display; or enter to continue: ")
                 if len(changes) == 0:
                     # No more changes to parameters.
                     break
@@ -422,6 +445,14 @@ if __name__ == "__main__":
                         # New timestep
                         tstep = int(raw_input("Timestep number (starting at 1): "))
                     elif int(changes) == 5:
+                        # Get colour bounds if necessary
+                        colour_bounds = None
+                        get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+                        if get_bounds == 'y':
+                            lower_bound = float(raw_input("Lower bound: "))
+                            upper_bound = float(raw_input("Upper bound: "))
+                            colour_bounds = [lower_bound, upper_bound]
+                    elif int(changes) == 6:
                         # Change from display to save, or vice versa
                         save = not save
             if save:
@@ -429,7 +460,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, save, fig_name)
+            circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name)
 
         else:
             break
