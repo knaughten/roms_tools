@@ -58,7 +58,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
             colour_map = 'jet'
     else:
         # Determine bounds automatically
-        if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'frzmlt']:
+        if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'frzmlt', 'fresh_ai', 'fsalt_ai', 'fhocn_ai', 'strairx', 'strairy', 'strtltx', 'strtlty', 'strcorx', 'strcory', 'strocnx', 'strocny', 'strintx', 'strinty']:
             # Center levels on 0 for certain variables, with a blue-to-red
             # colourmap
             max_val = amax(abs(data))

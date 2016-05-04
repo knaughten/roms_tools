@@ -4,8 +4,8 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_2d import *
 
-# Calculate and plot timeseries of basal mass loss from major ice shelves
-# during a ROMS simulation.
+# Calculate and plot timeseries of basal mass loss and area-averaged ice shelf
+# melt rates from major ice shelves during a ROMS simulation.
 # Input:
 # file_path = path to ocean history/averages file
 # log_path = path to log file (if it exists, previously calculated values will
@@ -24,7 +24,8 @@ def massloss (file_path, log_path):
     i_min = [250, 700, 905, 1015, 1000, 1100, 1165, 1060, 1280, 1375, 1]
     i_max = [350, 872, 975, 1030, 1090, 1155, 1190, 1240, 1369, 1443, 12]
     j_min = [1,   20,  150, 140,  160,  150,  187,  1,    65,   80,   100]
-    j_max = [125, 123, 175, 160,  185,  200,  220,  135,  116,  150,  120]                
+    j_max = [125, 123, 175, 160,  185,  200,  220,  135,  116,  150,  120]
+      
     # Density of ice in kg/m^3
     rho_ice = 916
 
@@ -79,6 +80,10 @@ def massloss (file_path, log_path):
         # Fill first start_t timesteps with existing values
         massloss[:,0:start_t] = old_massloss[:,:]
 
+    # Set up array of conversion factors from mass loss to area-averaged melt
+    # rate for each ice shelf
+    factors = empty(12)
+
     # Process each timestep separately to prevent memory overflow
     for t in range(start_t, size(time)):
         print 'Processing timestep ' + str(t-start_t+1) + ' of ' + str(size(time)-start_t)
@@ -106,17 +111,30 @@ def massloss (file_path, log_path):
             # Convert to mass loss in Gt/y
             massloss[index, t] = 1e-12*rho_ice*volumeloss
 
+            if t == start_t:
+                # Calculate conversion factor on first timestep
+                factors[index] = 1e12/(rho_ice*sum(dA_tmp))
+
     id.close()
 
     # Plot each timeseries
     print 'Plotting'
     for index in range(len(names)):
-        clf()
-        plot(time, massloss[index,:])
-        xlabel('Years')
-        ylabel('Basal Mass Loss (Gt/y)')
+        fig, ax1 = subplots()
+        # Mass loss and melt rate are directly proportional (with a different
+        # constant of proportionality for each ice shelf depending on its area)
+        # so plot one line with two y-axes scales.
+        ax1.plot(time, massloss[index,:])        
+        ax1.set_xlabel('Years')
+        ax1.set_ylabel('Basal Mass Loss (Gt/y)')
+        ax2 = ax1.twinx()
+        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)')
+        # Make sure the scales line up
+        limits = ax1.get_ylim()        
+        ax2.set_ylim([limits[0]*factors[index], limits[1]*factors[index]])
         title(names[index])
         savefig(fig_names[index])
+        close()
         
     print 'Saving results to log file'
     f = open(log_path, 'w')
@@ -124,7 +142,7 @@ def massloss (file_path, log_path):
     for t in range(size(time)):
         f.write(str(time[t]) + '\n')
     for index in range(len(names)):
-        f.write(names[index] + '\n')
+        f.write(names[index] + ' Basal Mass Loss\n')
         for t in range(size(time)):
             f.write(str(massloss[index, t]) + '\n')
     f.close()

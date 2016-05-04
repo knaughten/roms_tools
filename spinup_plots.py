@@ -4,7 +4,7 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_3d import *
 
-# Analyse a ROMS spinup by calculating and plotting 9 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 10 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
@@ -13,6 +13,7 @@ from cartesian_grid_3d import *
 # Maximum velocity
 # Drake Passage transport
 # Total sea ice extent
+# Net sea ice-to-ocean freshwater flux
 # Area-averaged bottom water temperature in ice shelf cavities
 
 
@@ -278,6 +279,34 @@ def calc_totalice (cice_path, dA, t):
     return totalice*1e-12   
 
 
+# Calculate total sea ice-to-ocean freshwater flux at the given timestep t.
+# Input:
+# cice_path = path to CICE history file
+# dA = elements of area on the 2D rho grid (any mask will be removed)
+# t = timestep index in cice_path
+# Output: fwflux = total sea ice-to-ocean freshwater flux (Sv)
+def calc_totalfwflux (cice_path, dA, t):
+
+    id = Dataset(cice_path, 'r')
+    # Read freshwater and salt fluxes at each grid cell
+    fresh = ma.asarray(id.variables['fresh_ai'][t,:,:], dtype=float128)/100./24./60./60
+    fsalt = ma.asarray(id.variables['fsalt_ai'][t,:,:], dtype=float128)/1000.
+    fwflux = fresh - fsalt    
+    id.close()
+
+    # Remove masks on net_fwflux and dA, and fill aice with zeros on land mask
+    # (numpy was throwing weird masking errors originally, and it doesn't
+    # matter if dA is unmasked because we are integrating not averaging)
+    fwflux_nomask = fwflux.data
+    fwflux_nomask[fwflux.mask] = 0.0
+    dA_nomask = dA.data
+
+    # Integrate
+    total_fwflux = sum(fwflux_nomask*dA_nomask)
+    # Convert to Sv and return
+    return total_fwflux*1e-6
+
+
 # Calculate area-averaged bottom water temperature in ice shelf cavities at the
 # given timestep t.
 # Input:
@@ -308,14 +337,15 @@ def calc_bwtemp (file_path, dA, t):
 def spinup_plots (file_path, cice_path, log_path):
 
     time = []
-    ohc = []
-    totalsalt = []
+    #ohc = []
+    #totalsalt = []
     avgismr = []
     massloss = []
-    tke = []
-    maxvel = []
+    #tke = []
+    #maxvel = []
     drakepsgtrans = []
     totalice = []
+    totalfwflux = []
     bwtemp = []
     # Check if the log file exists
     if exists(log_path):
@@ -329,16 +359,16 @@ def spinup_plots (file_path, cice_path, log_path):
             except (ValueError):
                 # Reached the header for the next variable
                 break
-        for line in f:
-            try:
-                ohc.append(float(line))
-            except (ValueError):
-                break
-        for line in f:
-            try:
-                totalsalt.append(float(line))
-            except (ValueError):
-                break
+        #for line in f:
+        #    try:
+        #        ohc.append(float(line))
+        #    except (ValueError):
+        #        break
+        #for line in f:
+        #    try:
+        #        totalsalt.append(float(line))
+        #    except (ValueError):
+        #        break
         for line in f:
             try:
                 avgismr.append(float(line))
@@ -349,16 +379,16 @@ def spinup_plots (file_path, cice_path, log_path):
                 massloss.append(float(line))
             except (ValueError):
                 break
-        for line in f:
-            try:
-                tke.append(float(line))
-            except (ValueError):
-                break
-        for line in f:
-            try:
-                maxvel.append(float(line))
-            except (ValueError):
-                break
+        #for line in f:
+        #    try:
+        #        tke.append(float(line))
+        #    except (ValueError):
+        #        break
+        #for line in f:
+        #    try:
+        #        maxvel.append(float(line))
+        #    except (ValueError):
+        #        break
         for line in f:
             try:
                 drakepsgtrans.append(float(line))
@@ -367,6 +397,11 @@ def spinup_plots (file_path, cice_path, log_path):
         for line in f:
             try:
                 totalice.append(float(line))
+            except(ValueError):
+                break
+        for line in f:
+            try:
+                totalfwflux.append(float(line))
             except(ValueError):
                 break
         for line in f:
@@ -388,40 +423,42 @@ def spinup_plots (file_path, cice_path, log_path):
     for t in range(size(new_time)):
         print 'Processing timestep '+str(t+1)+' of '+str(size(new_time))
         rho = get_rho(file_path, t)
-        print 'Calculating ocean heat content'
-        ohc.append(calc_ohc(file_path, dV, rho, t))
-        print 'Calculating total salt content'
-        totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
+        #print 'Calculating ocean heat content'
+        #ohc.append(calc_ohc(file_path, dV, rho, t))
+        #print 'Calculating total salt content'
+        #totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
         print 'Calculating average ice shelf melt rate'
         avgismr_tmp, ismr = calc_avgismr(file_path, dA, t)
         avgismr.append(avgismr_tmp)
         print 'Calculating basal mass loss'
         massloss.append(calc_massloss(ismr, dA))
-        print 'Calculating total kinetic energy'
-        tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
-        tke.append(tke_tmp)
-        print 'Calculating maximum velocity'
-        maxvel.append(calc_maxvel(u_rho, v_rho))
+        #print 'Calculating total kinetic energy'
+        #tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
+        #tke.append(tke_tmp)
+        #print 'Calculating maximum velocity'
+        #maxvel.append(calc_maxvel(u_rho, v_rho))
         print 'Calculating Drake Passage transport'
         drakepsgtrans.append(calc_drakepsgtrans(file_path, dy_wct, t))
         print 'Calculating total sea ice extent'
         totalice.append(calc_totalice(cice_path, dA, t))
+        print 'Calculating total sea ice-to-ocean freshwater flux'
+        totalfwflux.append(calc_totalfwflux(cice_path, dA, t))
         print 'Calculating average bottom water temperature in ice shelf cavities'
         bwtemp.append(calc_bwtemp(file_path, dA, t))
 
     # Plot each timeseries in sequence
-    print 'Plotting ocean heat content'
-    clf()
-    plot(time, ohc)
-    xlabel('Years')
-    ylabel('Southern Ocean Heat Content (J)')
-    savefig('ohc.png')
-    print 'Plotting total salt content'
-    clf()
-    plot(time, totalsalt)
-    xlabel('Years')
-    ylabel('Southern Ocean Salt Content (kg)')
-    savefig('totalsalt.png')
+    #print 'Plotting ocean heat content'
+    #clf()
+    #plot(time, ohc)
+    #xlabel('Years')
+    #ylabel('Southern Ocean Heat Content (J)')
+    #savefig('ohc.png')
+    #print 'Plotting total salt content'
+    #clf()
+    #plot(time, totalsalt)
+    #xlabel('Years')
+    #ylabel('Southern Ocean Salt Content (kg)')
+    #savefig('totalsalt.png')
     print 'Plotting average ice shelf melt rate'
     clf()
     plot(time, avgismr)
@@ -434,18 +471,18 @@ def spinup_plots (file_path, cice_path, log_path):
     xlabel('Years')
     ylabel('Ice Shelf Basal Mass Loss (Gt/y)')
     savefig('massloss.png')
-    print 'Plotting total kinetic energy'
-    clf()
-    plot(time, tke)
-    xlabel('Years')
-    ylabel('Southern Ocean Total Kinetic Energy (J)')
-    savefig('tke.png')
-    print 'Plotting maximum velocity'
-    clf()
-    plot(time, maxvel)
-    xlabel('Years')
-    ylabel('Maximum Southern Ocean Velocity (m/s)')
-    savefig('maxvel.png')
+    #print 'Plotting total kinetic energy'
+    #clf()
+    #plot(time, tke)
+    #xlabel('Years')
+    #ylabel('Southern Ocean Total Kinetic Energy (J)')
+    #savefig('tke.png')
+    #print 'Plotting maximum velocity'
+    #clf()
+    #plot(time, maxvel)
+    #xlabel('Years')
+    #ylabel('Maximum Southern Ocean Velocity (m/s)')
+    #savefig('maxvel.png')
     print 'Plotting Drake Passage transport'
     clf()
     plot(time, drakepsgtrans)
@@ -458,6 +495,12 @@ def spinup_plots (file_path, cice_path, log_path):
     xlabel('Years')
     ylabel(r'Total Sea Ice Extent (million km$^2$)')
     savefig('totalice.png')
+    print 'Plotting total sea ice-to-ocean freshwater flux'
+    clf()
+    plot(time, totalfwflux)
+    xlabel('Years')
+    ylabel('Sea Ice-to-Ocean Freshwater Flux (Sv)')
+    savefig('totalfwflux.png')
     print 'Plotting bottom water temperature'
     clf()
     plot(time, bwtemp)
@@ -470,29 +513,32 @@ def spinup_plots (file_path, cice_path, log_path):
     f.write('Time (years):\n')
     for elm in time:
         f.write(str(elm) + '\n')
-    f.write('Southern Ocean Heat Content (J):\n')
-    for elm in ohc:
-        f.write(str(elm) + '\n')
-    f.write('Southern Ocean Salt Content (kg):\n')
-    for elm in totalsalt:
-        f.write(str(elm) + '\n')
+    #f.write('Southern Ocean Heat Content (J):\n')
+    #for elm in ohc:
+    #    f.write(str(elm) + '\n')
+    #f.write('Southern Ocean Salt Content (kg):\n')
+    #for elm in totalsalt:
+    #    f.write(str(elm) + '\n')
     f.write('Area-averaged Ice Shelf Melt Rate (m/y):\n')
     for elm in avgismr:
         f.write(str(elm) + '\n')
     f.write('Ice Shelf Basal Mass Loss (Gt/y):\n')
     for elm in massloss:
         f.write(str(elm) + '\n')
-    f.write('Southern Ocean Total Kinetic Energy (J):\n')
-    for elm in tke:
-        f.write(str(elm) + '\n')
-    f.write('Maximum Southern Ocean Velocity (m/s):\n')
-    for elm in maxvel:
-        f.write(str(elm) + '\n')
+    #f.write('Southern Ocean Total Kinetic Energy (J):\n')
+    #for elm in tke:
+    #    f.write(str(elm) + '\n')
+    #f.write('Maximum Southern Ocean Velocity (m/s):\n')
+    #for elm in maxvel:
+    #    f.write(str(elm) + '\n')
     f.write('Drake Passage Transport (Sv):\n')
     for elm in drakepsgtrans:
         f.write(str(elm) + '\n')
     f.write('Total Sea Ice Extent (million km^2):\n')
     for elm in totalice:
+        f.write(str(elm) + '\n')
+    f.write('Total Sea Ice-to-Ocean Freshwater Flux (Sv):\n')
+    for elm in totalfwflux:
         f.write(str(elm) + '\n')
     f.write('Average Bottom Water Temperature in Ice Shelf Cavities (C):\n')
     for elm in bwtemp:

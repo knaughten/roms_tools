@@ -229,7 +229,7 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
         savefig(fig_name)
         close()
     else:
-        show()    
+        show(block=False)    
 
 
 # Command-line interface

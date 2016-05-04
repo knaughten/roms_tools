@@ -137,7 +137,7 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
             colour_map = 'jet'
     else:
         # Determine bounds automatically
-        if var_name in ['u', 'v', 'ubar', 'vbar', 'm']:
+        if var_name in ['u', 'v', 'ubar', 'vbar', 'm', 'zeta', 'shflux', 'ssflux', 'sustr', 'svstr', 'bustr', 'bvstr']:
             # Center levels on 0 for certain variables, with a blue-to-red
             # colourmap
             max_val = amax(abs(data))
