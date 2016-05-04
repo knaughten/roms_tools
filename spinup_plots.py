@@ -413,7 +413,7 @@ def spinup_plots (file_path, cice_path, log_path):
     dA, dV, dy_wct = calc_grid(file_path)
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
-    new_time = id.variables['ocean_time'][:]/(365*24*60*60)
+    new_time = id.variables['ocean_time'][:]/(365.25*24*60*60)
     id.close()
     # Concatenate with time values from log file
     for t in range(size(new_time)):

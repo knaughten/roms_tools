@@ -63,7 +63,7 @@ def massloss (file_path, log_path):
 
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
-    new_time = id.variables['ocean_time'][:]/(365*25*60*60)
+    new_time = id.variables['ocean_time'][:]/(365.25*24*60*60)
     if exists(log_path):
         # Concatenate with time values from log file
         start_t = len(old_time)
