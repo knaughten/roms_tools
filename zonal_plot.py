@@ -147,7 +147,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
             colour_map = 'jet'
 
     # Plot
-    figure(figsize=(18,6))
+    fig = figure(figsize=(18,6))
     contourf(lat, z, data, lev, cmap=colour_map, extend='both')
     colorbar()
 
@@ -181,10 +181,9 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     ylim([depth_min, 0])
 
     if save:
-        savefig(fig_name)
-        close()
+        fig.savefig(fig_name)
     else:
-        show(block=False)
+        fig.show()
 
     # Reset lon0 or lon_bounds to (-180, 180) range in case we
     # use them again for the next plot

@@ -133,8 +133,7 @@ def massloss (file_path, log_path):
         limits = ax1.get_ylim()        
         ax2.set_ylim([limits[0]*factors[index], limits[1]*factors[index]])
         title(names[index])
-        savefig(fig_names[index])
-        close()
+        fig.savefig(fig_names[index])
         
     print 'Saving results to log file'
     f = open(log_path, 'w')

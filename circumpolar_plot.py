@@ -157,10 +157,9 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
     axis('off')
 
     if save:
-        savefig(fig_name)
-        close()
+        fig.savefig(fig_name)
     else:
-        show(block=False)
+        fig.show()
 
 
 # Linearly interpolate data to the specified depth at each horizontal point.

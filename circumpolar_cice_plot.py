@@ -78,10 +78,9 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
     axis('off')
 
     if save:
-        savefig(fig_name)
-        close()
+        fig.savefig(fig_name)
     else:
-        show(block=False)
+        fig.show()
 
 
 # Command-line interface

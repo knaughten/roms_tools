@@ -10,7 +10,7 @@ from matplotlib.font_manager import FontProperties
 # variables) or the northern boundary of ROMS, (for ocean variables). 
 # The plot will have the given variable on the x-axis and latitude
 # (for atmosphere variables) or depth (for ocean variables) on the y-axis.
-# Note that in order to run this script, you must first run:
+# Note that in order to run this script, you must have previously run:
 # eraint_climatology_netcdf.py, ecco2_climatology_netcdf.py,
 # cmip5_atmos_climatology_netcdf.py, cmip5_ocean_climatology_netcdf.py,
 # mmm_atmos_netcdf.py, and mmm_ocean_netcdf.py
@@ -101,7 +101,7 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
         index = int(ceil(i*float(num_colours)/num_models))
         cmip5_colours.append(all_cmip5_colours[index])
 
-    # Choose the month keys we are interested on, based on the season
+    # Choose the month indices we are interested in, based on the season
     if season == 'djf':
         months = [12, 1, 2]
     elif season == 'mam':
@@ -125,8 +125,7 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
     latN = amax(lat_roms)
 
     # Initialise figure
-    figure(figsize=(12,9))
-    ax = subplot(111)
+    fig, ax = subplots(figsize=(12,9))
 
     if realm == 'atmos':
         # Read ERA-Interim data and latitude axis
@@ -164,9 +163,9 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
         # Add to plot (setting zorder means it will be on top)
         ax.plot(ecco_data, depth, label='ECCO2', color='black', linewidth=3, zorder=num_models+1)
 
-    # Loop over models with a manual counter j
-    j = 0
-    for model_name in model_names:
+    # Loop over models
+    for j in range(len(model_names)):
+        model_name = model_names[j]
         print 'Processing ' + model_name
         # Read model data
         id = Dataset(directory + model_name + '.nc', 'r')
@@ -203,10 +202,6 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
                 realm_axis = depth
             # Add to plot
             ax.plot(model_data, realm_axis, label=model_name, color=cmip5_colours[j], linewidth=lw)
-        # Increment j whether or not the data was missing, so that colour
-        # choices are consistent between models if the user calls this script
-        # again with the same list of models
-        j += 1
 
     # Configure plot
     title(plot_title)
@@ -226,10 +221,9 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
     ax.legend(loc='center left', bbox_to_anchor=(1,0.5), prop=fontP)
 
     if save:
-        savefig(fig_name)
-        close()
+        fig.savefig(fig_name)
     else:
-        show(block=False)    
+        fig.show()    
 
 
 # Command-line interface
