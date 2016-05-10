@@ -498,6 +498,8 @@ def spinup_plots (file_path, cice_path, log_path):
     print 'Plotting total sea ice-to-ocean freshwater flux'
     clf()
     plot(time, totalfwflux)
+    # Add a line at zero
+    plot(time, zeros(len(totalfwflux)), color='black')
     xlabel('Years')
     ylabel('Sea Ice-to-Ocean Freshwater Flux (Sv)')
     savefig('totalfwflux.png')

@@ -5,7 +5,6 @@ cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt
 	      To run: Open python or ipython, and type "run cice_grid.py." The
 	              script will prompt you for paths to the existing ROMS
 		      grid file and the desired CICE grid and kmt files.
-
 woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
                text file (FESOM input format) to NetCDF.
 	       To run: First edit user parameters (file paths) near the top of
@@ -148,24 +147,18 @@ dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
 			   The script will prompt you for paths to the ROMS
 			   grid file and the ocean history or averages file.
 
-massloss.py: Calculates and plots timeseries of basal mass loss from major ice
-             shelves during a ROMS simulation. Also writes the timeseries to a
-	     log file so they don't have to be recomputed if the run is
-	     extended; at the beginning of this script, previous values will be
-	     read from the same log file if it exists.
+massloss.py: Calculates and plots timeseries of basal mass loss and
+             area-averaged melt rates from major ice shelves during a ROMS
+             simulation. Also writes the timeseries to a log file so they don't
+	     have to be recomputed if the run is extended; at the beginning of
+	     this script, previous values will be read from the same log file
+	     if it exists.
 	     To run: First edit the limits on i- and j- coordinates for each
 	             ice shelf to suit your grid. Then open python or ipython,
 		     and type "run massloss.py". The script will prompt you for
 		     the paths to the ROMS grid file, the ocean history or
 		     averages file, and the log file.
 
-avg_ismr.py: Like massloss.py, but calculates the area-averaged melt rates of
-             each ice shelf rather than the mass loss.
-	     To run: First editthe limits on i- and j- coordinates for each
-	             ice shelf to suit your grid. Then open python or ipython,
-		     and type "run avg_ismr.py". The script will prompt you for
-		     the paths to the ROMS grid file, the ocean history or
-		     averages file, and the log file.
 
 ***CMIP5 ANALYSIS***
 
@@ -444,12 +437,10 @@ cmip5_plot.py: Compare output from CMIP5 models to ERA-Interim (for atmosphere
 		       times as you like, and you only have to specify which
 		       parameters have changed since the last plot.
 
-
-
 cmip5_all_plots.py: Call cmip5_plot.py for all models (including the multi-model
                     mean), all variables (atmosphere and ocean), and all
 		    seasons. Note that in order to run this script, you must
-		    first run eraint_climatology_netcdf.py,
+		    have previously run eraint_climatology_netcdf.py,
 		    ecco2_climatology_netcdf.py,
 		    cmip5_atmos_climatology_netcdf.py,
 		    cmip5_ocean_climatology_netcdf.py, mmm_atmos_netcdf.py, and
@@ -458,7 +449,6 @@ cmip5_all_plots.py: Call cmip5_plot.py for all models (including the multi-model
 		    To run: Open python or ipython and type
 		            "run cmip5_all_plots.py".
 
-
 overturning_plot.py: Calculate the meridional overturning streamfunction at the
                      last timestep of the given ROMS history/averages file and
 		     make a contour plot in z-space.
@@ -466,6 +456,55 @@ overturning_plot.py: Calculate the meridional overturning streamfunction at the
 		             "run overturning_plot.py". You will be prompted
 			     for the path to the ROMS history/averages file
 			     and the filename with which to save the plot.
+
+cmip5_max_uwind.py: Create two plots: (1) the maximum zonal wind speed between
+                    30S and 65S, and (2) the latitude of that maximum zonal
+		    wind speed, both against longitude. Plot results for
+		    ERA-Interim as well as the given CMIP5 models, averaged
+		    over the given season, for the 1992-2005 climatology.
+		    Note that in order to run this script, you must have
+		    previously run eraint_climatology_netcdf.py,
+		    cmip5_atmos_climatology_netcdf.py, and mmm_atmos_netcdf.py.
+		    To run: First edit the variable "directory", near the top
+		            of the file, to suit your filesystem. Then open
+			    python or ipython and type "run cmip5_max_uwind.py".
+			    The script will prompt you for the models to include
+			    ('MMM' is an option for multi-model-mean), the
+			    season code, and whether to save the plots (and if
+			    so, what the filenames should be) or display them
+			    on the screen. As with circumpolar_plot.py,
+			    circumpolar_cice_plot.py, zonal_plot.py, and
+			    cmip5_plot.py, the interface will repeat as many
+			    times as you like, and you only have to specify
+			    which parameters have changed since the last plot.
+
+uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
+                  velocity vectors at the given depth (surface, bottom, or
+		  vertically aveaged).
+		  To run: Open python or ipython and type
+		          "run uv_vectorplot.py". You will be prompted for the
+			  path to the ROMS history/averages file; the timestep;
+			  whether to plot the surface, bottom, or vertically
+			  averaged velocities; and whether to save the figure
+			  (and if so, what filename to save it under) or display
+			  it on the screen. As with the other interactive
+			  plotting scripts, the interface will repeat as many
+			  times as you like, and you only have to specify which
+			  parameters have changed since the last plot.
+
+
+***ANIMATIONS***
+
+aice_animation.py: Create an animation of sea ice concentration for the given
+                   simulation, and save as an mp4 file.
+		   To run: If you are on raijin, first type "module load ffmpeg"
+		           to make sure you will be able to write the mp4 file.
+			   Then edit the variables "directory", "num_ts", and
+			   "start_file" near the top of the file to suit your
+			   simulation. Then open python or ipython and type
+			   "run aice_animation.py". Note that this isn't an
+			   encapsulated function but rather just a script, so
+			   be careful with existing variable names.
 
 
 ***UTILITY FUNCTIONS***
