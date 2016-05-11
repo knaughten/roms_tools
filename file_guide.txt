@@ -59,6 +59,15 @@ romscice_atm_rep.py: Given a ROMS atmospheric boundary condition file with one
 		             of the file. Then open python or ipython and type
 			     "run romscice_atm_rep.py".
 
+romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
+                   components interpolated from TPXO 7.2.
+		   To run: Edit the paths to input and output files near the
+		           top of the script. Then make sure that you have
+			   scipy version 0.14 or higher (on raijin, this means
+			   switching to python/2.7.6; instructions at the top
+			   of the file). Then open python or ipython and type
+			   "run romscice_tides.py".
+
 
 ***POST-PROCESSING DIAGNOSTICS***
 
