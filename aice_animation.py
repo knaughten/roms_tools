@@ -14,16 +14,16 @@ from matplotlib.animation import *
 # Directory containing CICE output files
 directory = '/short/y99/kaa561/roms_spinup_newest/cice/'
 # Number of time indices in each file
-num_ts = [73]
+num_ts = [18, 270, 270, 270, 252]
 # File number to start with for the animation (1-based)
-start_file = 1
+start_file = 5
 # Degrees to radians conversion factor
 deg2rad = pi/180
 # Names of each month for making titles
 month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 # Read grid from the first file
-id = Dataset(directory + 'iceh1.nc', 'r')
+id = Dataset(directory + 'iceh' + str(start_file) + '.nc', 'r')
 lon = id.variables['TLON'][:,:]
 lat = id.variables['TLAT'][:,:]
 id.close()
@@ -62,10 +62,10 @@ def animate(i):
     img = contourf(x, y, data, lev, cmap='jet', extend='both')
     axis('off')
     # Add a title containing the date
-    title(str(time.day) + ' ' + month_names[time.month-1] + ' ' + str(time.year), fontsize=30)
+    title(str(time.day) + ' ' + month_names[time.month-1], fontsize=30) # + ' ' + str(time.year), fontsize=30)
     return img
 
 # Animate once every time index from start_file to the last file
-anim = FuncAnimation(fig, func=animate, frames=sum(array(num_ts[start_file-1:])))
+anim = FuncAnimation(fig, func=animate, frames=range(179,252)) #sum(array(num_ts[start_file-1:])))
 # Save as an mp4 with one frame per second
 anim.save('aice.mp4', fps=1)

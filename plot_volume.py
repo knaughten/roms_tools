@@ -73,6 +73,7 @@ def plot_volume (files, dt, freq):
     plot(time, vol_all)
     xlabel('Years')
     ylabel('Volume Percent Anomalies')
+    grid(True)
     show()
 
 

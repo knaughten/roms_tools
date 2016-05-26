@@ -108,18 +108,18 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 9 timeseries:
                  total heat content, total salt content, area-averaged ice shelf
 		 melt rate, ice shelf basal mass loss, total kinetic energy,
-		 maximum velocity, Drake Passage transport, total sea ice
-		 extent, and average bottom water temperature in ice shelf
-		 cavities. Also write the timeseries to a log file so they don't
-		 have to be recomputed if the run is extended; at the beginning
-		 of this script, previous values will be read from the same
-		 log file if it exists. Note that to run this file, density
-		 anomalies (variable name "rho") must be written to the ocean
-		 history/averages file. This option can be activated in the .in
-		 ROMS configuration file with Hout(idDano) and Aout(idDano).
-		 Otherwise, you can use make_density_file.py to calculate
-		 absolute density based on the seawater equation of state;
-		 however, this process is quite slow.
+		 Drake Passage transport, total sea ice extent, net sea ice-to-
+		 ocean freshwater flux, and area-averaged bottom water
+		 temperature in ice shelf cavities. Also write the timeseries to
+		 a log file so they don't have to be recomputed if the run is
+		 extended; at the beginning of this script, previous values will
+		 be read from the same log file if it exists. Note that to run
+		 this file, density anomalies (variable name "rho") must be
+		 written to the ocean history/averages file. This option can be
+		 activated in the .in ROMS configuration file with Hout(idDano)
+		 and Aout(idDano). Otherwise, you can use make_density_file.py
+		 to calculate absolute density based on the seawater equation of
+		 state; however, this process is quite slow.
 		 To run: First edit the i and j coordinates of the Drake Passage
 		         (in the function calc_drakepsgtrans) for your grid, and
 			 the value of rho0 (in the function get_rho) to match

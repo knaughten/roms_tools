@@ -3,17 +3,19 @@ from numpy import *
 from scipy.interpolate import LinearNDInterpolator, RectBivariateSpline
 
 # Convert two ERA-Interim files:
-# AN_yyyy_unlim_orig.nc: one year of 6-hour measurements for surface pressure 
-#                        (sp), 2-metre temperature (t2m) and dew point (d2m),
-#                        total cloud cover (tcc), and 10-metre winds (u10, v10)
-# FC_yyyy_unlim_orig.nc: one year of 12-hour measurements for total 
-#                        precipitation (tp) 
+# AN_yyyy_subdaily_orig.nc: one year of 6-hour measurements for surface pressure
+#                           (sp), 2-metre temperature (t2m) and dew point (d2m),
+#                           total cloud cover (tcc), and 10-metre winds (u10, 
+#                           v10)
+# FC_yyyy_subdaily_orig.nc: one year of 12-hour measurements for total 
+#                           precipitation (tp) and snowfall (sf) 
 # to two ROMS-CICE input forcing files with the correct units and naming 
 # conventions:
-# AN_yyyy_unlim.nc: one year of 6-hour measurements for surface pressure
+# AN_yyyy_subdaily.nc: one year of 6-hour measurements for surface pressure
 #                   (Pair), temperature (Tair), specific humidity (Qair), 
 #                   cloud fraction (cloud), and winds (Uwind, Vwind)
-# FC_yyyy_unlim.nc: one year of 12-hour measurements for rainfall (rain)
+# FC_yyyy_subdaily.nc: one year of 12-hour measurements for rainfall (rain) and
+#                   snowfall (snow)
 # Input: year = integer containing the year to process
 #        count = time record in the given year to start with
 
@@ -30,11 +32,11 @@ def convert_file (year, count):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/roms_circumpolar/data/caisom001_OneQuartergrd.nc'
-    input_atm_file = '../data/ERA_Interim/AN_' + str(year) + '_unlim_orig.nc'
-    input_ppt_file = '../data/ERA_Interim/FC_' + str(year) + '_unlim_orig.nc'
-    output_atm_file = '../data/ERA_Interim/AN_' + str(year) + '_unlim.nc'
-    output_ppt_file = '../data/ERA_Interim/FC_' + str(year) + '_unlim.nc'
+    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    input_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily_orig.nc'
+    input_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/FC_' + str(year) + '_subdaily_orig.nc'
+    output_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily.nc'
+    output_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/FC_' + str(year) + '_subdaily.nc'
     logfile = str(year) + '.log'
 
     Lv = 2.5e6 # Latent heat of vapourisation, J/kg
@@ -139,6 +141,9 @@ def convert_file (year, count):
         tair = interp_era2roms(t2m, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Tair'][t,:,:] = tair-273.15
         qair = interp_era2roms(rh, lon_era, lat_era, lon_roms, lat_roms)
+        # Constrain humidity values to be between 0 and 1
+        qair[qair < 0] = 0.0
+        qair[qair > 1] = 1.0
         oatm_fid.variables['Qair'][t,:,:] = qair
         cloud = interp_era2roms(tcc, lon_era, lat_era, lon_roms, lat_roms)
         # Constrain cloud fractions to be between 0 and 1
@@ -183,6 +188,9 @@ def convert_file (year, count):
         oppt_fid.createVariable('rain', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oppt_fid.variables['rain'].long_name = 'rain fall rate'
         oppt_fid.variables['rain'].units = 'm_per_12hr'
+        oppt_fid.createVariable('snow', 'f8', ('time', 'eta_rho', 'xi_rho'))
+        oppt_fid.variables['snow'].long_name = 'snow fall rate'
+        oppt_fid.variables['snow'].units = 'm_per_12hr'
         oppt_fid.close()
 
     log = open(logfile, 'a')
@@ -198,15 +206,19 @@ def convert_file (year, count):
         log.close()
         # Write the current time value to output FC file
         oppt_fid.variables['time'][t] = ppt_time[t]
-        # Read rainfall for this timestep
+        # Read data for this timestep
         ippt_fid = Dataset(input_ppt_file, 'r')
         tp = transpose(ippt_fid.variables['tp'][t,:,:])
+        sf = transpose(ippt_fid.variables['sf'][t,:,:])
         ippt_fid.close()
         # Interpolate to ROMS grid and write to output FC file
         rain = interp_era2roms(tp, lon_era, lat_era, lon_roms, lat_roms)
+        snow = interp_era2roms(sf, lon_era, lat_era, lon_roms, lat_roms)
         # Make sure there are no negative values
         rain[rain < 0] = 0.0
         oppt_fid.variables['rain'][t,:,:] = rain
+        snow[snow < 0] = 0.0
+        oppt_fid.variables['snow'][t,:,:] = snow
         oppt_fid.close()
 
     log = open(logfile, 'a')

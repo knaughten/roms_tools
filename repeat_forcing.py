@@ -74,12 +74,12 @@ def process (directory, head, tail, year_start, perday, var_list):
 # User parameters to edit here
 
 # Data where files <an_head>yyyy<tail> and <fc_head>yyyy<tail> exist
-directory = '../data/ERA_Interim/'
+directory = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/'
 # First part of filename for AN and FC files
 an_head = 'AN_'
 fc_head = 'FC_'
 # Last part of filename (common to both AN and FC)
-tail = '_unlim.nc'
+tail = '_subdaily.nc'
 # Year to build data from
 year_start = 1995
 # Number of records per day

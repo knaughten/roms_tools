@@ -4,13 +4,12 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_3d import *
 
-# Analyse a ROMS spinup by calculating and plotting 10 timeseries:
+# Analyse a ROMS spinup by calculating and plotting 9 timeseries:
 # Total heat content
 # Total salt content
 # Area-averaged ice shelf melt rate
 # Ice shelf basal mass loss
 # Total kinetic energy
-# Maximum velocity
 # Drake Passage transport
 # Total sea ice extent
 # Net sea ice-to-ocean freshwater flux
@@ -126,33 +125,13 @@ def calc_totalsalt (file_path, dV, rho, t):
     return totalsalt    
 
 
-# Calculate area-averaged ice shelf melt rate at the given timestep t.
-# Input:
-# file_path = path to ocean history/averages file
-# dA = elements of area on the rho grid, masked with zice
-# t = timestep index in file_path
-# Output: avgismr = area-averaged ice shelf melt rate (m/y)
-#         ismr = 2D ice shelf melt rate field (m/y) at this timestep
-def calc_avgismr (file_path, dA, t):
-
-    # Read ice shelf melt rate, converting to float128 to prevent overflow
-    # during integration
-    id = Dataset(file_path, 'r')
-    ismr = ma.asarray(id.variables['m'][t,:,:], dtype=float128)
-    # Convert from m/s to m/y
-    ismr = ismr*365.25*24*60*60
-    id.close()    
-
-    # Integrate ismr over area and divide by total area to get average
-    avgismr = sum(ismr*dA)/sum(dA)
-    return avgismr, ismr
-
-
 # Calculate net basal mass loss based on the given ice shelf melt rate field.
 # Input:
 # ismr = 2D ice shelf melt rate field (m/y)
 # dA = elements of area on the rho grid, masked with zice
-# Output: massloss = net basal mass loss (Gt/y)
+# Output: 
+# massloss = net basal mass loss (Gt/y)
+# massloss_factor = conversion factor from mass loss to area-averaged melt rate
 def calc_massloss (ismr, dA):
 
     # Density of ice in kg/m^3
@@ -162,7 +141,8 @@ def calc_massloss (ismr, dA):
     volumeloss = sum(ismr*dA)
     # Convert to mass loss in Gt/y
     massloss = 1e-12*rho_ice*volumeloss
-    return massloss
+    massloss_factor = 1e12/(rho_ice*sum(dA))
+    return massloss, massloss_factor
 
 
 # Calculate total kinetic energy at the given timestep t.
@@ -195,15 +175,7 @@ def calc_tke (file_path, dV, rho, t):
 
     # Integrate 0.5*rho*(u^2 + v^2) over volume to get TKE
     tke = sum(0.5*rho*(u_rho**2 + v_rho**2)*dV)
-    return tke, u_rho, v_rho
-
-
-# Calculate the maximum velocity.
-# Input: u_rho, v_rho = u and v at timestep t, interpolated to the rho-grid
-# Output: maxvel = maximum velocity (m/s)
-def calc_maxvel (u_rho, v_rho):
-
-    return amax(sqrt(u_rho**2 + v_rho**2))
+    return tke
 
 
 # Calculate zonal transport through the Drake Passage.
@@ -336,13 +308,18 @@ def calc_bwtemp (file_path, dA, t):
 #            calculated values following computation)
 def spinup_plots (file_path, cice_path, log_path):
 
+    # Observed basal mass loss (Rignot 2013) and uncertainty
+    obs_massloss = 1325
+    obs_massloss_error = 235
+    # Observed ice shelf melt rates and uncertainty
+    obs_ismr = 0.85
+    obs_ismr_error = 0.1
+
     time = []
     ohc = []
     totalsalt = []
-    avgismr = []
     massloss = []
     tke = []
-    maxvel = []
     drakepsgtrans = []
     totalice = []
     totalfwflux = []
@@ -371,22 +348,12 @@ def spinup_plots (file_path, cice_path, log_path):
                 break
         for line in f:
             try:
-                avgismr.append(float(line))
-            except (ValueError):
-                break
-        for line in f:
-            try:
                 massloss.append(float(line))
             except (ValueError):
                 break
         for line in f:
             try:
                 tke.append(float(line))
-            except (ValueError):
-                break
-        for line in f:
-            try:
-                maxvel.append(float(line))
             except (ValueError):
                 break
         for line in f:
@@ -427,16 +394,11 @@ def spinup_plots (file_path, cice_path, log_path):
         ohc.append(calc_ohc(file_path, dV, rho, t))
         print 'Calculating total salt content'
         totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
-        print 'Calculating average ice shelf melt rate'
-        avgismr_tmp, ismr = calc_avgismr(file_path, dA, t)
-        avgismr.append(avgismr_tmp)
         print 'Calculating basal mass loss'
-        massloss.append(calc_massloss(ismr, dA))
+        massloss_tmp, massloss_factor = calc_massloss(ismr, dA)
+        massloss.append(massloss_tmp)
         print 'Calculating total kinetic energy'
-        tke_tmp, u_rho, v_rho = calc_tke(file_path, dV, rho, t)
-        tke.append(tke_tmp)
-        print 'Calculating maximum velocity'
-        maxvel.append(calc_maxvel(u_rho, v_rho))
+        tke.append(calc_tke(file_path, dV, rho, t))
         print 'Calculating Drake Passage transport'
         drakepsgtrans.append(calc_drakepsgtrans(file_path, dy_wct, t))
         print 'Calculating total sea ice extent'
@@ -452,49 +414,79 @@ def spinup_plots (file_path, cice_path, log_path):
     plot(time, ohc)
     xlabel('Years')
     ylabel('Southern Ocean Heat Content (J)')
+    grid(True)
     savefig('ohc.png')
+
     print 'Plotting total salt content'
     clf()
     plot(time, totalsalt)
     xlabel('Years')
     ylabel('Southern Ocean Salt Content (kg)')
+    grid(True)
     savefig('totalsalt.png')
-    print 'Plotting average ice shelf melt rate'
+
+    print 'Plotting basal mass loss and area-averaged ice shelf melt rate'
     clf()
-    plot(time, avgismr)
-    xlabel('Years')
-    ylabel('Area-averaged Ice Shelf Melt Rate (m/y)')
-    savefig('avgismr.png')
-    print 'Plotting basal mass loss'
-    clf()
-    plot(time, massloss)
-    xlabel('Years')
-    ylabel('Ice Shelf Basal Mass Loss (Gt/y)')
+    # Calculate the bounds on observed mass loss and melt rate
+    massloss_low = obs_massloss - obs_massloss_error
+    massloss_high = obs_massloss + obs_massloss_error
+    ismr_low = obs_ismr - obs_ismr_error
+    ismr_high = obs_ismr + obs_ismr_error
+    # Set up plot: mass loss and melt rate are directly proportional, so plot
+    # one line with two y-axes
+    ax1 = subplot(111)
+    ax1.plot(time, massloss, color='black')
+    # In blue, add dashed lines for observed mass loss
+    ax1.axhline(massloss_low, color='b', linestyle='dashed')
+    ax1.axhline(massloss_high, color='b', linestyle='dashed')
+    # Make sure y-limits won't cut off observed melt rate
+    ymin = min(0.95*ismr_low/massloss_factor, ax1.get_ylim()[0])
+    ymax = max(1.05*ismr_high/massloss_factor, ax1.get_ylim()[1])
+    ax1.set_ylim([ymin, ymax])
+    # Title and ticks in blue for this side of the plot
+    ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
+    for t1 in ax1.get_yticklabels():
+        t1.set_color('b')        
+    ax1.set_xlabel('Years')
+    ax1.grid(True)
+    # Twin axis for melt rates
+    ax2 = ax1.twinx()
+    # Make sure the scales line up
+    limits = ax1.get_ylim()
+    ax2.set_ylim([limits[0]*massloss_factor, limits[1]*massloss_factor])
+    # In red, add dashed lines for observed ice shelf melt rates
+    ax2.axhline(ismr_low, color='r', linestyle='dashed')
+    ax2.axhline(ismr_high, color='r', linestyle='dashed')
+    # Title and ticks in red for this side of the plot
+    ax2.set_ylabel('Area-averaged Ice Shelf Melt Rate (m/y)', color='r')
+    for t2 in ax2.get_yticklabels():
+        t2.set_color('r')
     savefig('massloss.png')
+
     print 'Plotting total kinetic energy'
     clf()
     plot(time, tke)
     xlabel('Years')
     ylabel('Southern Ocean Total Kinetic Energy (J)')
+    grid(True)
     savefig('tke.png')
-    print 'Plotting maximum velocity'
-    clf()
-    plot(time, maxvel)
-    xlabel('Years')
-    ylabel('Maximum Southern Ocean Velocity (m/s)')
-    savefig('maxvel.png')
+
     print 'Plotting Drake Passage transport'
     clf()
     plot(time, drakepsgtrans)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
+    grid(True)
     savefig('drakepsgtrans.png')
+
     print 'Plotting total sea ice extent'
     clf()
     plot(time, totalice)
     xlabel('Years')
     ylabel(r'Total Sea Ice Extent (million km$^2$)')
+    grid(True)
     savefig('totalice.png')
+
     print 'Plotting total sea ice-to-ocean freshwater flux'
     clf()
     plot(time, totalfwflux)
@@ -502,12 +494,15 @@ def spinup_plots (file_path, cice_path, log_path):
     plot(time, zeros(len(totalfwflux)), color='black')
     xlabel('Years')
     ylabel('Sea Ice-to-Ocean Freshwater Flux (Sv)')
+    grid(True)
     savefig('totalfwflux.png')
+
     print 'Plotting bottom water temperature'
     clf()
     plot(time, bwtemp)
     xlabel('Years')
     ylabel(r'Average Bottom Water Temperature in Ice Shelf Cavities ($^{\circ}$C)')
+    grid(True)
     savefig('bwtemp.png')
 
     print 'Saving results to log file'
@@ -521,17 +516,11 @@ def spinup_plots (file_path, cice_path, log_path):
     f.write('Southern Ocean Salt Content (kg):\n')
     for elm in totalsalt:
         f.write(str(elm) + '\n')
-    f.write('Area-averaged Ice Shelf Melt Rate (m/y):\n')
-    for elm in avgismr:
-        f.write(str(elm) + '\n')
     f.write('Ice Shelf Basal Mass Loss (Gt/y):\n')
     for elm in massloss:
         f.write(str(elm) + '\n')
     f.write('Southern Ocean Total Kinetic Energy (J):\n')
     for elm in tke:
-        f.write(str(elm) + '\n')
-    f.write('Maximum Southern Ocean Velocity (m/s):\n')
-    for elm in maxvel:
         f.write(str(elm) + '\n')
     f.write('Drake Passage Transport (Sv):\n')
     for elm in drakepsgtrans:

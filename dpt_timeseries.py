@@ -91,6 +91,7 @@ def dpt_timeseries (file_path):
     plot(time, transport)
     xlabel('Years')
     ylabel('Drake Passage Transport (Sv)')
+    grid(True)
     show(block=False)
     #savefig('dpt_timeseries.png')
 

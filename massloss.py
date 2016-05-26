@@ -25,7 +25,13 @@ def massloss (file_path, log_path):
     i_max = [350, 872, 975, 1030, 1090, 1155, 1190, 1240, 1369, 1443, 12]
     j_min = [1,   20,  150, 140,  160,  150,  187,  1,    65,   80,   100]
     j_max = [125, 123, 175, 160,  185,  200,  220,  135,  116,  150,  120]
-      
+    # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf
+    obs_massloss = [35.5, 47.7, 144.9, 101.2, 51.8, 89, 20.7, 155.4, 9.7, 22.5]
+    obs_massloss_error = [23, 34, 14, 8, 19, 17, 67, 45, 16, 12]
+    # Observed ice shelf melt rates and uncertainty
+    obs_ismr = [0.6, 0.1, 4.3, 16.2, 1.7, 3.8, 0.4, 0.3, 0.1, 0.5]
+    obs_ismr_error = [0.4, 0.1, 0.4, 1, 0.6, 0.7, 1, 0.1, 0.2, 0.2]
+          
     # Density of ice in kg/m^3
     rho_ice = 916
 
@@ -82,7 +88,7 @@ def massloss (file_path, log_path):
 
     # Set up array of conversion factors from mass loss to area-averaged melt
     # rate for each ice shelf
-    factors = empty(12)
+    factors = empty(len(names))
 
     # Process each timestep separately to prevent memory overflow
     for t in range(start_t, size(time)):
@@ -120,18 +126,42 @@ def massloss (file_path, log_path):
     # Plot each timeseries
     print 'Plotting'
     for index in range(len(names)):
+        # Calculate the bounds on observed mass loss and melt rate
+        massloss_low = obs_massloss[index] - obs_massloss_error[index]
+        massloss_high = obs_massloss[index] + obs_massloss_error[index]
+        ismr_low = obs_ismr[index] - obs_ismr_error[index]
+        ismr_high = obs_ismr[index] + obs_ismr_error[index]
+        # Set up plot: mass loss and melt rate are directly proportional (with
+        # a different constant of proportionality for each ice shelf depending
+        # on its area) so plot one line with two y-axes
         fig, ax1 = subplots()
-        # Mass loss and melt rate are directly proportional (with a different
-        # constant of proportionality for each ice shelf depending on its area)
-        # so plot one line with two y-axes scales.
-        ax1.plot(time, massloss[index,:])        
+        ax1.plot(time, massloss[index,:], color='black')
+        # In blue, add dashed lines for observed mass loss
+        ax1.axhline(massloss_low, color='b', linestyle='dashed')
+        ax1.axhline(massloss_high, color='b', linestyle='dashed')
+        # Make sure y-limits won't cut off observed melt rate
+        ymin = min(0.95*ismr_low/factors[index], ax1.get_ylim()[0])
+        ymax = max(1.05*ismr_high/factors[index], ax1.get_ylim()[1])
+        ax1.set_ylim([ymin, ymax])
+        # Title and ticks in blue for this side of the plot
+        ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
+        for t1 in ax1.get_yticklabels():
+            t1.set_color('b')
         ax1.set_xlabel('Years')
-        ax1.set_ylabel('Basal Mass Loss (Gt/y)')
+        ax1.grid(True)
+        # Twin axis for melt rates
         ax2 = ax1.twinx()
-        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)')
         # Make sure the scales line up
-        limits = ax1.get_ylim()        
+        limits = ax1.get_ylim()
         ax2.set_ylim([limits[0]*factors[index], limits[1]*factors[index]])
+        # In red, add dashed lines for observed ice shelf melt rates
+        ax2.axhline(ismr_low, color='r', linestyle='dashed')
+        ax2.axhline(ismr_high, color='r', linestyle='dashed')
+        # Title and ticks in red for this side of the plot
+        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)', color='r')
+        for t2 in ax2.get_yticklabels():
+            t2.set_color('r')
+        # Name of the ice shelf for the main title
         title(names[index])
         fig.savefig(fig_names[index])
         

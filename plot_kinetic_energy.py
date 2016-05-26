@@ -69,6 +69,7 @@ def plot_kinetic_energy (files, dt, freq):
     plot(time, ke_all)
     xlabel('Years')
     ylabel('Kinetic energy')
+    grid(True)
     show()
 
 

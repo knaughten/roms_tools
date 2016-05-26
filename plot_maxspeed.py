@@ -75,6 +75,7 @@ def plot_maxspeed (files, dt, freq):
     plot(time, maxv_all)
     xlabel('Years')
     ylabel('Maximum speed')
+    grid(True)
     show(block=False)
 
 
