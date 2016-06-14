@@ -71,35 +71,38 @@ def process (directory, head, tail, year_start, perday, var_list):
     id.close()
 
 
-# User parameters to edit here
+# Command-line interface
+if __name__ == '__main__':
 
-# Data where files <an_head>yyyy<tail> and <fc_head>yyyy<tail> exist
-directory = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/'
-# First part of filename for AN and FC files
-an_head = 'AN_'
-fc_head = 'FC_'
-# Last part of filename (common to both AN and FC)
-tail = '_subdaily.nc'
-# Year to build data from
-year_start = 1995
-# Number of records per day
-an_perday = 4
-fc_perday = 2
-# Variables to interpolate Feb 29th for each file
-an_var = ['Pair', 'Tair', 'Qair', 'cloud', 'Uwind', 'Vwind']
-fc_var = ['rain']
+    # User parameters to edit here
 
-if year_start % 4 == 0:
-    # This script assumes year_start has 365 days and then the leap year
-    # 1, 2, or 3 years after that will have Feb 29th added in by interpolation.
-    # However you could rework this script to remove Feb 29th from year_start
-    # and every following year except the leap year.
-    print 'year_start cannot be a leap year. Either choose a different year_start or rework this script.'
-    exit
+    # Data where files <an_head>yyyy<tail> and <fc_head>yyyy<tail> exist
+    directory = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/30day_smoothed/'
+    # First part of filename for AN and FC files
+    an_head = 'AN_'
+    fc_head = 'FC_'
+    # Last part of filename (common to both AN and FC)
+    tail = '_subdaily.nc'
+    # Year to build data from
+    year_start = 1995
+    # Number of records per day
+    an_perday = 4
+    fc_perday = 2
+    # Variables to interpolate Feb 29th for each file
+    an_var = ['Pair', 'Tair', 'Qair', 'cloud', 'Uwind', 'Vwind']
+    fc_var = ['rain', 'snow']
 
-# Run the actual script
-process(directory, an_head, tail, year_start, an_perday, an_var)
-process(directory, fc_head, tail, year_start, fc_perday, fc_var)
+    if year_start % 4 == 0:
+        # This script assumes year_start has 365 days and then the leap year
+        # 1, 2, or 3 years after that will have Feb 29th added in by interpolation.
+        # However you could rework this script to remove Feb 29th from year_start
+        # and every following year except the leap year.
+        print 'year_start cannot be a leap year. Either choose a different year_start or rework this script.'
+        exit
+
+    # Run the actual script
+    process(directory, an_head, tail, year_start, an_perday, an_var)
+    process(directory, fc_head, tail, year_start, fc_perday, fc_var)
                 
                 
                 

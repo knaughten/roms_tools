@@ -127,15 +127,24 @@ def calc_totalsalt (file_path, dV, rho, t):
 
 # Calculate net basal mass loss based on the given ice shelf melt rate field.
 # Input:
-# ismr = 2D ice shelf melt rate field (m/y)
+# file_path = path to ocean history/averages ilfe
 # dA = elements of area on the rho grid, masked with zice
+# t = timestep index in file_path
 # Output: 
 # massloss = net basal mass loss (Gt/y)
 # massloss_factor = conversion factor from mass loss to area-averaged melt rate
-def calc_massloss (ismr, dA):
+def calc_massloss (file_path, dA, t):
 
     # Density of ice in kg/m^3
     rho_ice = 916
+
+    # Read ice shelf melt rate, converting to float128 to prevent overflow
+    # during integration
+    id = Dataset(file_path, 'r')
+    ismr = ma.asarray(id.variables['m'][t,:,:], dtype=float128)
+    # Convert from m/s to m/y
+    ismr = ismr*365.25*24*60*60
+    id.close()
 
     # Integrate over area to get volume loss
     volumeloss = sum(ismr*dA)
@@ -309,8 +318,8 @@ def calc_bwtemp (file_path, dA, t):
 def spinup_plots (file_path, cice_path, log_path):
 
     # Observed basal mass loss (Rignot 2013) and uncertainty
-    obs_massloss = 1325
-    obs_massloss_error = 235
+    obs_massloss = 1500
+    obs_massloss_error = 237
     # Observed ice shelf melt rates and uncertainty
     obs_ismr = 0.85
     obs_ismr_error = 0.1
@@ -395,7 +404,7 @@ def spinup_plots (file_path, cice_path, log_path):
         print 'Calculating total salt content'
         totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
         print 'Calculating basal mass loss'
-        massloss_tmp, massloss_factor = calc_massloss(ismr, dA)
+        massloss_tmp, massloss_factor = calc_massloss(file_path, dA, t)
         massloss.append(massloss_tmp)
         print 'Calculating total kinetic energy'
         tke.append(calc_tke(file_path, dV, rho, t))

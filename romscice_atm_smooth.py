@@ -61,7 +61,7 @@ def smooth_var (filename, var, interval):
         else:
             # Easy, just moving ahead by 1 timestep with no wrapping around
             data[-1,:,:] = id.variables[var][t+margin,:,:]
-        # Overwrite this timestep to be the time-avearge of data
+        # Overwrite this timestep to be the time-average of data
         id.variables[var][t,:,:] = mean(data, axis=0)
 
     id.close()        
@@ -70,12 +70,12 @@ def smooth_var (filename, var, interval):
 # User-defined values here
 if __name__ == "__main__":
 
-    an_file = '../data/ERA_Interim/AN_1995_unlim.nc'
-    fc_file = '../data/ERA_Interim/FC_1995_unlim.nc'
+    an_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/30day_smoothed/AN_1995_subdaily.nc'
+    fc_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/30day_smoothed/FC_1995_subdaily.nc'
     # Names of variables to process in each file
     an_var = ['Pair', 'Tair', 'Qair', 'cloud', 'Uwind', 'Vwind']
-    fc_var = ['rain']
-    sdays = 5  # 5-day moving average
+    fc_var = ['rain', 'snow']
+    sdays = 30  # 30-day moving average
 
     # Loop over each listed variable in each file
     for var in an_var:

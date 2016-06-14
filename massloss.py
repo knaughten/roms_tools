@@ -14,23 +14,22 @@ from cartesian_grid_2d import *
 def massloss (file_path, log_path):
 
     # Titles and figure names for each ice shelf
-    names = ['Amery Ice Shelf', 'Ross Ice Shelf', 'Getz Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Abbot Ice Shelf', 'George VI Ice Shelf', 'Larsen C Ice Shelf', 'Ronne-Filchner Ice Shelf', 'Brunt and Riiser-Larsen Ice Shelves', 'Fimbul and Jelbart Ice Shelves']
-    fig_names = ['amery_massloss.png', 'ross_massloss.png', 'getz_massloss.png', 'pig_massloss.png', 'abbot_massloss.png', 'george_vi_massloss.png', 'larsen_c_massloss.png', 'ronne_filchner_massloss.png', 'brunt_riiser_larsen_massloss.png', 'fimbul_jelbart_massloss.png']
-    # Limits on i- and j- coordinates for each ice shelf; this will vary
-    # depending on the grid
+    names = ['Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
+    fig_names = ['larsen_d.png', 'larsen_c.png', 'wilkins_georgevi_stange.png', 'ronne_filchner.png', 'abbot.png', 'pig.png', 'thwaites.png', 'dotson.png', 'getz.png', 'nickerson.png', 'sulzberger.png', 'mertz.png', 'totten_moscowuni.png', 'shackleton.png', 'west.png', 'amery.png', 'princeharald.png', 'baudouin_borchgrevink.png', 'lazarev.png', 'nivl.png', 'fimbul_jelbart_ekstrom.png', 'brunt_riiserlarsen.png', 'ross.png']
+    # Limits on longitude and latitude for each ice shelf
+    # These depend on the source geometry, in this case RTopo 1.05
     # Note there is one extra index at the end of each array; this is because
-    # the Fimbul-Jelbart region crosses the periodic boundary and therefore
-    # is split into two
-    i_min = [250, 700, 905, 1015, 1000, 1100, 1165, 1060, 1280, 1375, 1]
-    i_max = [350, 872, 975, 1030, 1090, 1155, 1190, 1240, 1369, 1443, 12]
-    j_min = [1,   20,  150, 140,  160,  150,  187,  1,    65,   80,   100]
-    j_max = [125, 123, 175, 160,  185,  200,  220,  135,  116,  150,  120]
-    # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf
-    obs_massloss = [35.5, 47.7, 144.9, 101.2, 51.8, 89, 20.7, 155.4, 9.7, 22.5]
-    obs_massloss_error = [23, 34, 14, 8, 19, 17, 67, 45, 16, 12]
+    # the Ross region crosses the line 180W and therefore is split into two
+    lon_min = [-62.67, -65.5, -79.17, -85, -104.17, -102.5, -108.33, -114.5, -135.67, -149.17, -155, 144, 115, 94.17, 80.83, 65, 33.83, 19, 12.9, 9.33, -10.05, -28.33, -180, 158.33]
+    lon_max = [-59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 180]
+    lat_min = [-73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
+    lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
+    # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
+    obs_massloss = [1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
+    obs_massloss_error = [14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
     # Observed ice shelf melt rates and uncertainty
-    obs_ismr = [0.6, 0.1, 4.3, 16.2, 1.7, 3.8, 0.4, 0.3, 0.1, 0.5]
-    obs_ismr_error = [0.4, 0.1, 0.4, 1, 0.6, 0.7, 1, 0.1, 0.2, 0.2]
+    obs_ismr = [0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
+    obs_ismr_error = [0.6, 1, 0.8, 0.1, 0.6, 1, 1, 0.6, 0.4, 0.3, 0.3, 0.6, 0.7, 0.6, 0.7, 0.4, 0.6, 0.4, 0.2, 0.2, 0.2, 0.2, 0.1]
           
     # Density of ice in kg/m^3
     rho_ice = 916
@@ -63,9 +62,9 @@ def massloss (file_path, log_path):
                     break
             index += 1
 
-    # Calculate dA (masked with ice shelf mask) and i and j coordinates
+    # Calculate dA (masked with ice shelf mask) and lon and lat coordinates
     print 'Analysing grid'
-    dA, i, j = calc_grid(file_path)
+    dA, lon, lat = calc_grid(file_path)
 
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
@@ -104,13 +103,13 @@ def massloss (file_path, log_path):
         for index in range(len(names)):
 
             # Mask dA for the current ice shelf (note dA is already masked
-            # with the global ice shelf mask, so just restrict the i and j
+            # with the global ice shelf mask, so just restrict the indices
             # to isolate the given ice shelf)
             if index == len(names)-1:
-                # Fimbul-Jelbart region is split into two
-                dA_tmp = ma.masked_where(((i < i_min[index]) + (i > i_max[index]) + (j < j_min[index]) + (j > j_max[index]))*((i < i_min[index+1]) + (i > i_max[index+1]) + (j < j_min[index+1]) + (j > j_max[index+1])), dA)
+                # Ross region is split into two
+                dA_tmp = ma.masked_where(((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]))*((lon < lon_min[index+1]) + (lon > lon_max[index+1]) + (lat < lat_min[index+1]) + (lat > lat_max[index+1])), dA)
             else:
-                dA_tmp = ma.masked_where((i < i_min[index]) + (i > i_max[index]) + (j < j_min[index]) + (j > j_max[index]), dA)
+                dA_tmp = ma.masked_where((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]), dA)
 
             # Integrate ice shelf melt rate over area to get volume loss
             volumeloss = sum(ismr*dA_tmp)
@@ -140,8 +139,16 @@ def massloss (file_path, log_path):
         ax1.axhline(massloss_low, color='b', linestyle='dashed')
         ax1.axhline(massloss_high, color='b', linestyle='dashed')
         # Make sure y-limits won't cut off observed melt rate
-        ymin = min(0.95*ismr_low/factors[index], ax1.get_ylim()[0])
-        ymax = max(1.05*ismr_high/factors[index], ax1.get_ylim()[1])
+        ymin = amin([ismr_low/factors[index], massloss_low, amin(massloss[index,:])])
+        ymax = amax([ismr_high/factors[index], massloss_high, amax(massloss[index,:])])
+        if ymin < 0:
+            ymin = 1.05*ymin
+        else:
+            ymin = 0.95*ymin
+        if ymax < 0:
+            ymax = 0.95*ymax
+        else:
+            ymax = 1.05*ymax
         ax1.set_ylim([ymin, ymax])
         # Title and ticks in blue for this side of the plot
         ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
@@ -178,11 +185,12 @@ def massloss (file_path, log_path):
 
 
 # Given the path to a ROMS grid file, calculate differential of area and
-# i- and j-indices.
+# longitude and latitude.
 # Input: file_path = string containing path to ROMS history/averages file
 # Output:
 # dA = differential of area on the 2D rho-grid, masked with zice
-# i,j = i- and j- coordinates on the rho-grid, starting at 1
+# lon = longitude values on the rho-grid, from -180 to 180
+# lat = latitude values on the rho-grid
 def calc_grid (file_path):
 
     # Read grid variables
@@ -202,11 +210,11 @@ def calc_grid (file_path):
     num_lat = size(lon, 0)
     num_lon = size(lon, 1)
 
-    # Calculate i- and j-coordinates
-    i = tile(arange(1, num_lon+1), (num_lat, 1))
-    j = transpose(tile(arange(1, num_lat+1), (num_lon, 1)))
+    # Make longitude values go from -180 to 180, not 0 to 360
+    index = lon > 180
+    lon[index] = lon[index] - 360
 
-    return dA, i, j
+    return dA, lon, lat
 
 
 # Command-line interface
