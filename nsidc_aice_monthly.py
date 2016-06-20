@@ -189,8 +189,8 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     lev = linspace(0, 1, num=50)
 
     # Plot
-    # NSIDC
     fig = figure(figsize=(20,9))
+    # NSIDC
     fig.add_subplot(1,2,1, aspect='equal')
     contourf(nsidc_x, nsidc_y, nsidc_data, lev)
     title('NSIDC', fontsize=24)

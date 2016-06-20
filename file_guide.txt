@@ -529,6 +529,19 @@ nsidc_aice_monthly.py: Make a figure comparing sea ice concentration from NSIDC
 			      like, and you only have to specify which
 			      parameters have changed since the last plot.
 
+nsidc_aice_seasonal.py: Like nsidc_aice_monthly.py, but creates a 4x2 plot
+                        comparing NSIDC and CICE sea ice concentration averaged
+			over each season (DJF, MAM, JJA, SON).
+			Input: First edit the variables nsidc_head,
+			       nsidc_head_0, nsidc_head_1, and nsidc_tail (near
+			       the top of the file) to suit the paths to NSIDC
+			       output on your filesystem. Then open python or
+			       ipython and type "run nsidc_aice_seasonal.py".
+			       The script will prompt you for the CICE output
+			       file and whether you want to save the figure (and
+			       if so, what filename) or display it on the
+			       screen. This script does not repeat.
+
 
 ***ANIMATIONS***
 
