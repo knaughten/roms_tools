@@ -32,7 +32,7 @@ def convert_file (year, count):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     input_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily_orig.nc'
     input_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/FC_' + str(year) + '_subdaily_orig.nc'
     output_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily.nc'

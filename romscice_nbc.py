@@ -26,7 +26,7 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     theta_base = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.' + str(year)
     salt_base = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.' + str(year)
     uvel_base = '../ROMS-CICE-MCT/data/ECCO2/raw/UVEL.1440x720x50.' + str(year)

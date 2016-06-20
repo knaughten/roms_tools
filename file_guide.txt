@@ -162,11 +162,12 @@ massloss.py: Calculates and plots timeseries of basal mass loss and
 	     have to be recomputed if the run is extended; at the beginning of
 	     this script, previous values will be read from the same log file
 	     if it exists.
-	     To run: First edit the limits on i- and j- coordinates for each
-	             ice shelf to suit your grid. Then open python or ipython,
-		     and type "run massloss.py". The script will prompt you for
-		     the paths to the ROMS grid file, the ocean history or
-		     averages file, and the log file.
+	     To run: Open python or ipython, and type "run massloss.py". The
+	             script will prompt you for the paths to the ROMS grid file,
+		     the ocean history or averages file, and the log file. If
+		     you are using ice shelf draft data from something other
+		     than RTopo 1.05 you might need to tweak the lat and lon
+		     limits.
 
 
 ***CMIP5 ANALYSIS***
@@ -500,6 +501,33 @@ uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
 			  plotting scripts, the interface will repeat as many
 			  times as you like, and you only have to specify which
 			  parameters have changed since the last plot.
+
+massloss_map.py: Make a map of unexplained error in annually averaged simulated
+                 basal mass loss from each ice shelf that is over 5,000 km^2 in
+		 Rignot et al., 2013.
+		 To run: First make sure your logfile from massloss.py is up to
+		         date, as this script reads simulated basal mass loss
+			 timeseries from this logfile. Then open python or
+			 ipython and type "run massloss_map.py". The script will
+			 prompt you for paths to the ROMS grid file and the
+			 mass loss logfile, and whether to save the figure (and
+			 if so, what filename) or display it on the screen.
+
+nsidc_aice_monthly.py: Make a figure comparing sea ice concentration from NSIDC
+                       (1995 data) and CICE (latest year of spinup under
+		       repeated 1995 forcing), for the given month.
+		       Input: First edit the variables nsidc_head, nsidc_head_0,
+		              nsidc_head_1, and nsidc_tail (near the top of the
+			      file) to suit the paths to NSIDC output on your
+			      filesystem. Then open python or ipython and type
+			      "run nsidc_aice_monthly.py". The script will
+			      prompt you for the CICE output file, the month
+			      to plot, and whether to save the figure (and if
+			      so, what filename) or display it on the screen.
+			      As with the other interactive plotting scripts,
+			      the interface will repeat as many times as you
+			      like, and you only have to specify which
+			      parameters have changed since the last plot.
 
 
 ***ANIMATIONS***

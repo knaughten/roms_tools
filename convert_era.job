@@ -1,8 +1,8 @@
 #!/bin/bash
 #PBS -N convert_era
-#PBS -P gh8
-#PBS -q normal
-#PBS -l walltime=3:00:00,ncpus=1,mem=31gb
+#PBS -P y99
+#PBS -q express
+#PBS -l walltime=3:00:00,ncpus=1,mem=30gb
 #PBS -j oe
 #PBS -v YEAR,COUNT
 
@@ -12,6 +12,11 @@
 
 # To get it started for eg 1992, type
 # qsub -v YEAR=1992,COUNT=0 convert_era.job
+
+module unload python/2.7.3
+module unload python/2.7.3-matplotlib
+module load python/2.7.6
+module load python/2.7.6-matplotlib
 
 echo "YEAR = $YEAR"
 echo "COUNT = $COUNT"

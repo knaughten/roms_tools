@@ -31,7 +31,7 @@ def cmip5_plot (var, season, model_names, save=False, fig_name=None):
     # and "ocean/"
     directory = '/short/y99/kaa561/CMIP5_forcing/'
     # Path to ROMS grid file
-    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
 
     # Figure out whether this is an atmosphere or ocean variable
     if var in ['Pair', 'Tair', 'Hair', 'cloud', 'Uwind', 'Vwind', 'precip', 'snow', 'evap', 'swrad', 'lwrad']:

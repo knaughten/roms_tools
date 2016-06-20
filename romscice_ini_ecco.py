@@ -257,7 +257,7 @@ if __name__ == "__main__":
 
     # File paths to edit here:
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Path to ECCO2 files for temperature and salinity in January 1995
     theta_file = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.199501.nc'
     salt_file = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.199501.nc'

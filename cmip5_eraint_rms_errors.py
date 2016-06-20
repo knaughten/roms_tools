@@ -22,7 +22,7 @@ def cmip5_eraint_rms_errors():
     # Variable names in NetCDF files
     var_names = ['Pair', 'Tair', 'Hair', 'cloud', 'Uwind', 'Vwind', 'precip', 'snow', 'evap', 'swrad', 'lwrad']
     # Path to ROMS grid
-    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    roms_grid = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Radius of the Earth in metres
     r = 6.371e6
     # Degrees to radians conversion factor

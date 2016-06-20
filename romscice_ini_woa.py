@@ -63,11 +63,12 @@ def run (grid_file, woa_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdr
     print 'Interpolating temperature'
     temp = interp_woa2roms(temp_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
     print 'Interpolating salinity'
-    salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 35)
+    salt = interp_woa2roms(salt_woa, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
 
-    # Set the temperature in ice shelf cavities to the local freezing point
+    # Set the salinity in ice shelf cavities to 34.5 psu, and the temperature to the local freezing point
     mask_zice_3d = tile(mask_zice, (N,1,1))
     index = mask_zice_3d == 1
+    salt[index] = 34.5
     temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
 
     # Set initial velocities and sea surface height to zero
@@ -211,7 +212,7 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
 if __name__ == "__main__":
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
     # woa_netcdf.py)
     woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'

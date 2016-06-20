@@ -16,7 +16,7 @@ from scipy.spatial import KDTree
 def romscice_tides ():
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_rp5.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Path to TPXO file
     tpxo_file = '../ROMS-CICE-MCT/data/h_tpxo7.2.nc'
     # Desired path to output file

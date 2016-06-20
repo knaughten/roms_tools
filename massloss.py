@@ -141,15 +141,15 @@ def massloss (file_path, log_path):
         # Make sure y-limits won't cut off observed melt rate
         ymin = amin([ismr_low/factors[index], massloss_low, amin(massloss[index,:])])
         ymax = amax([ismr_high/factors[index], massloss_high, amax(massloss[index,:])])
-        if ymin < 0:
-            ymin = 1.05*ymin
-        else:
-            ymin = 0.95*ymin
-        if ymax < 0:
-            ymax = 0.95*ymax
-        else:
-            ymax = 1.05*ymax
-        ax1.set_ylim([ymin, ymax])
+        ticks = ax1.get_yticks()
+        min_tick = ticks[0]
+        max_tick = ticks[-1]
+        dtick = ticks[1]-ticks[0]
+        while min_tick >= ymin:
+            min_tick -= dtick
+        while max_tick <= ymax:
+            max_tick += dtick
+        ax1.set_ylim([min_tick, max_tick])
         # Title and ticks in blue for this side of the plot
         ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
         for t1 in ax1.get_yticklabels():

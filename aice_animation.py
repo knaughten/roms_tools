@@ -4,8 +4,7 @@ from matplotlib.pyplot import *
 from matplotlib.animation import *
 
 # Create an animation of sea ice concentration for the given simulation.
-# Save as an mp4 file. (This doesn't run well on the CCRC desktops so use
-# something like a MacBook instead.)
+# Save as an mp4 file.
 # In order for the mp4 saving to work, you must first type "module load ffmpeg"
 # on raijin before opening ipython.
 # Couldn't work out how to make this an encapsulated function so it is just
@@ -14,9 +13,9 @@ from matplotlib.animation import *
 # Directory containing CICE output files
 directory = '/short/y99/kaa561/roms_spinup_newest/cice/'
 # Number of time indices in each file
-num_ts = [288]
+num_ts = [288, 288, 270, 288, 270, 90]
 # File number to start with for the animation (1-based)
-start_file = 1
+start_file = 6
 # Degrees to radians conversion factor
 deg2rad = pi/180
 # Names of each month for making titles
@@ -66,6 +65,6 @@ def animate(i):
     return img
 
 # Animate once every time index from start_file to the last file
-anim = FuncAnimation(fig, func=animate, frames=range(215,288)) #sum(array(num_ts[start_file-1:])))
+anim = FuncAnimation(fig, func=animate, frames=range(17,90)) #sum(array(num_ts[start_file-1:])))
 # Save as an mp4 with one frame per second
 anim.save('aice.mp4', fps=1)
