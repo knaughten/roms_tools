@@ -13,9 +13,9 @@ from matplotlib.animation import *
 # Directory containing CICE output files
 directory = '/short/y99/kaa561/roms_spinup_newest/cice/'
 # Number of time indices in each file
-num_ts = [288, 288, 270, 288, 270, 90]
+num_ts = [288, 288, 270, 288, 288]
 # File number to start with for the animation (1-based)
-start_file = 6
+start_file = 5
 # Degrees to radians conversion factor
 deg2rad = pi/180
 # Names of each month for making titles
@@ -65,6 +65,6 @@ def animate(i):
     return img
 
 # Animate once every time index from start_file to the last file
-anim = FuncAnimation(fig, func=animate, frames=range(17,90)) #sum(array(num_ts[start_file-1:])))
+anim = FuncAnimation(fig, func=animate, frames=range(215,288)) #sum(array(num_ts[start_file-1:])))
 # Save as an mp4 with one frame per second
 anim.save('aice.mp4', fps=1)

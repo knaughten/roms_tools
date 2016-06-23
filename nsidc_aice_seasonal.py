@@ -5,9 +5,9 @@ from matplotlib.pyplot import *
 # Make a figure comparing sea ice concentration from NSIDC (1995 data) and CICE
 # (latest year of spinup under repeated 1995 forcing) for each season.
 # Input:
-# cice_file = path to CICE output file, containing at least one complete
-#             Dec-Nov period (if there are multiple such periods, this script
-#             uses the last one)
+# cice_file = path to CICE output file with 5-day averages, containing at least
+#             one complete Dec-Nov period (if there are multiple such periods, 
+#             this script uses the last one)
 # save = optional boolean to save the figure to a file, rather than displaying
 #        it on the screen
 # fig_name = if save=True, path to the desired filename for figure
@@ -85,15 +85,16 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
                 leap_year = True
     if leap_year:
         # Update last day in February
-        end_day[0] = 29
+        end_day[0] += 1
         ndays_season[0] += 1
 
     # Initialise seasonal averages of CICE output
     cice_data = ma.empty([4, size(cice_lon,0), size(cice_lon,1)])
-    cice_data[:,:] = 0.0
+    cice_data[:,:,:] = 0.0
     # Process one season at a time
     for season in range(4):
         season_days = 0  # Number of days in season; this will be incremented
+        next_season = mod(season+1, 4)
 
         # Find starting timestep
         start_t_season = -1
@@ -112,13 +113,12 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             if cice_time[t].month == end_month[season] and cice_time[t].day == end_day[season]:
                 end_t_season = t
                 break
-            next_season = mod(season+1, 4)
             if cice_time[t].month == start_month[next_season] and cice_time[t].day in range(start_day[next_season], start_day[next_season]+4):
                 end_t_season = t
                 break
         # Make sure we actually found it
         if end_t_season == -1:
-            print 'Error: could not find starting timestep for season ' + season_title[season]
+            print 'Error: could not find ending timestep for season ' + season_title[season]
             return
 
         # Figure out how many of the 5 days averaged in start_t_season are
@@ -153,7 +153,6 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
         # Figure out how many of the 5 days averaged in end_t_season are
         # actually within this season
-        next_season = mod(season+1, 4)
         if cice_time[end_t_season].month == start_month[next_season] and cice_time[end_t_season].day == start_day[next_season] + 3:
             # Ending day is in position 1 of 5; we care about the first 1
             end_days = 1
@@ -176,8 +175,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         cice_data[season,:,:] += id.variables['aice'][end_t_season,:,:]*end_days
         season_days += end_days
 
-        # Check that we got the correct number of days
-        
+        # Check that we got the correct number of days        
         if season_days != ndays_season[season]:
             print 'Error: found ' + str(num_days) + ' days instead of ' + str(ndays_season[season])
             return
@@ -261,14 +259,14 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         # NSIDC
         fig.add_subplot(2, 4, season+1, aspect='equal')
         contourf(nsidc_x, nsidc_y, nsidc_data[season,:,:], lev)
-        title('NSIDC - ' + season_names[season], fontsize=24)
+        title('NSIDC (' + season_names[season] + ')', fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
         # CICE
         fig.add_subplot(2, 4, season+5, aspect='equal')
         img = contourf(cice_x, cice_y, cice_data[season,:,:], lev)
-        title('CICE - ' + season_names[season], fontsize=24)
+        title('CICE (' + season_names[season] + ')', fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')

@@ -516,31 +516,39 @@ massloss_map.py: Make a map of unexplained error in annually averaged simulated
 nsidc_aice_monthly.py: Make a figure comparing sea ice concentration from NSIDC
                        (1995 data) and CICE (latest year of spinup under
 		       repeated 1995 forcing), for the given month.
-		       Input: First edit the variables nsidc_head, nsidc_head_0,
-		              nsidc_head_1, and nsidc_tail (near the top of the
-			      file) to suit the paths to NSIDC output on your
-			      filesystem. Then open python or ipython and type
-			      "run nsidc_aice_monthly.py". The script will
-			      prompt you for the CICE output file, the month
-			      to plot, and whether to save the figure (and if
-			      so, what filename) or display it on the screen.
-			      As with the other interactive plotting scripts,
-			      the interface will repeat as many times as you
-			      like, and you only have to specify which
-			      parameters have changed since the last plot.
+		       To run: First edit the variables nsidc_head,
+		               nsidc_head_0, nsidc_head_1, and nsidc_tail (near
+			       the top of the file) to suit the paths to NSIDC
+			       output on your filesystem. Then open python or
+			       ipython and type "run nsidc_aice_monthly.py". The
+			       script will prompt you for the CICE output file,
+			       the month to plot, and whether to save the figure
+			       (and if so, what filename) or display it on the
+			       screen. As with the other interactive plotting
+			       scripts, the interface will repeat as many times
+			       as you like, and you only have to specify which
+			       parameters have changed since the last plot.
 
 nsidc_aice_seasonal.py: Like nsidc_aice_monthly.py, but creates a 4x2 plot
                         comparing NSIDC and CICE sea ice concentration averaged
 			over each season (DJF, MAM, JJA, SON).
-			Input: First edit the variables nsidc_head,
-			       nsidc_head_0, nsidc_head_1, and nsidc_tail (near
-			       the top of the file) to suit the paths to NSIDC
-			       output on your filesystem. Then open python or
-			       ipython and type "run nsidc_aice_seasonal.py".
-			       The script will prompt you for the CICE output
-			       file and whether you want to save the figure (and
-			       if so, what filename) or display it on the
-			       screen. This script does not repeat.
+			To run: First edit the variables nsidc_head,
+			        nsidc_head_0, nsidc_head_1, and nsidc_tail (near
+			        the top of the file) to suit the paths to NSIDC
+			        output on your filesystem. Then open python or
+			        ipython and type "run nsidc_aice_seasonal.py".
+			        The script will prompt you for the CICE output
+			        file and whether you want to save the figure
+				(and if so, what filename) or display it on the
+			        screen. This script does not repeat.
+
+ismr_plot.py: Creates a circumpolar plot of ice shelf melt rates averaged over
+              the last year of simulation.
+	      To run: Open python or ipython and type "run ismr_plot.py". The
+	              script will prompt you for the path to a ROMS output file
+		      containing at least one year of 5-day averages, and
+		      ask you whether you want to save the figure (and if so,
+		      what filename) or display it on screen.
 
 
 ***ANIMATIONS***

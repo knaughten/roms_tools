@@ -26,7 +26,7 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
 
     # Degrees to radians conversion factor
     deg2rad = pi/180
-    # Northern boundary 60S for plot
+    # Northern boundary 63S for plot
     nbdry = -63+90
     # Centre of missing circle in grid
     lon_c = 50
