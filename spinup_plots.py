@@ -470,6 +470,7 @@ def spinup_plots (file_path, cice_path, log_path):
     ax2.set_ylabel('Area-averaged Ice Shelf Melt Rate (m/y)', color='r')
     for t2 in ax2.get_yticklabels():
         t2.set_color('r')
+    title('Whole Continent', fontsize=30)
     savefig('massloss.png')
 
     print 'Plotting total kinetic energy'

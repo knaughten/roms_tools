@@ -13,9 +13,9 @@ from matplotlib.animation import *
 # Directory containing CICE output files
 directory = '/short/y99/kaa561/roms_spinup_newest/cice/'
 # Number of time indices in each file
-num_ts = [288, 288, 270, 288, 288]
+num_ts = [288, 288, 270, 288, 288, 288, 288]
 # File number to start with for the animation (1-based)
-start_file = 5
+start_file = 7
 # Degrees to radians conversion factor
 deg2rad = pi/180
 # Names of each month for making titles

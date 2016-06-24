@@ -253,27 +253,27 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
     lev = linspace(0, 1, num=50)
 
     # Plot
-    fig = figure(figsize=(40,18))
+    fig = figure(figsize=(20,9))
     # Loop over seasons
     for season in range(4):
         # NSIDC
         fig.add_subplot(2, 4, season+1, aspect='equal')
         contourf(nsidc_x, nsidc_y, nsidc_data[season,:,:], lev)
-        title('NSIDC (' + season_names[season] + ')', fontsize=24)
+        title('NSIDC (' + season_names[season] + ')', fontsize=20)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
         # CICE
         fig.add_subplot(2, 4, season+5, aspect='equal')
         img = contourf(cice_x, cice_y, cice_data[season,:,:], lev)
-        title('CICE (' + season_names[season] + ')', fontsize=24)
+        title('CICE (' + season_names[season] + ')', fontsize=20)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
     # Add a horizontal colorbar at the bottom
     cbaxes = fig.add_axes([0.4, 0.04, 0.2, 0.04])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
-    cbar.ax.tick_params(labelsize=20)
+    cbar.ax.tick_params(labelsize=16)
     # Add the main title
     suptitle('Sea ice concentration', fontsize=30)
 
