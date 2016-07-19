@@ -318,8 +318,8 @@ def calc_bwtemp (file_path, dA, t):
 def spinup_plots (file_path, cice_path, log_path):
 
     # Observed basal mass loss (Rignot 2013) and uncertainty
-    obs_massloss = 1500
-    obs_massloss_error = 237
+    obs_massloss = 1325
+    obs_massloss_error = 235
     # Observed ice shelf melt rates and uncertainty
     obs_ismr = 0.85
     obs_ismr_error = 0.1
@@ -453,10 +453,12 @@ def spinup_plots (file_path, cice_path, log_path):
     ymax = max(1.05*ismr_high/massloss_factor, ax1.get_ylim()[1])
     ax1.set_ylim([ymin, ymax])
     # Title and ticks in blue for this side of the plot
-    ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
+    ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b', fontsize=18)
     for t1 in ax1.get_yticklabels():
         t1.set_color('b')        
-    ax1.set_xlabel('Years')
+    ax1.set_xlabel('Years', fontsize=18)
+    setp(ax1.get_xticklabels(), fontsize=15)
+    setp(ax1.get_yticklabels(), fontsize=15)
     ax1.grid(True)
     # Twin axis for melt rates
     ax2 = ax1.twinx()
@@ -467,10 +469,11 @@ def spinup_plots (file_path, cice_path, log_path):
     ax2.axhline(ismr_low, color='r', linestyle='dashed')
     ax2.axhline(ismr_high, color='r', linestyle='dashed')
     # Title and ticks in red for this side of the plot
-    ax2.set_ylabel('Area-averaged Ice Shelf Melt Rate (m/y)', color='r')
+    ax2.set_ylabel('Area-averaged Ice Shelf Melt Rate (m/y)', color='r', fontsize=18)
     for t2 in ax2.get_yticklabels():
         t2.set_color('r')
-    title('Whole Continent', fontsize=30)
+    setp(ax2.get_yticklabels(), fontsize=15)
+    title('Whole Continent', fontsize=24)
     savefig('massloss.png')
 
     print 'Plotting total kinetic energy'

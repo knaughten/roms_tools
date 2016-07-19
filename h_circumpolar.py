@@ -32,19 +32,19 @@ def h_circumpolar (grid_path, fig_name):
     x = -(lat+90)*cos(lon*deg2rad+pi/2)
     y = (lat+90)*sin(lon*deg2rad+pi/2)
 
-    lev = arange(0,max(data),500)
+    lev = linspace(0,amax(data),num=50)
 
     # Plot
     fig = figure(figsize=(16,12))
     fig.add_subplot(1,1,1, aspect='equal')
     contourf(x, y, data, lev)
-    cbar = colorbar()
+    cbar = colorbar(ticks=arange(0,amax(data),1000))
     cbar.ax.tick_params(labelsize=20)
     title('Bathymetry (m)', fontsize=30)
     axis('off')
 
-    show()
-    #savefig(fig_name)
+    #show()
+    savefig(fig_name)
 
 
 # Command-line interface

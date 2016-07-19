@@ -3,7 +3,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from matplotlib import rcParams
 
-# Make a map of unexplained percent error in annually averaged simulated basal mass loss
+# Make a map of unexplained percent error in annually averaged simulated melt rate
 # from each ice shelf that is over 5,000 km^2 in Rignot et al., 2013.
 # Input:
 # grid_path = path to ROMS grid file
@@ -11,7 +11,7 @@ from matplotlib import rcParams
 # save = optional boolean to save the figure to a file, rather than displaying
 #        it on the screen
 # fig_name = if save=True, path to the desired filename for the figure
-def massloss_map (grid_path, log_path, save=False, fig_name=None):
+def ismr_map (grid_path, log_path, save=False, fig_name=None):
 
     # Limits on longitude and latitude for each ice shelf
     # These depend on the source geometry, in this case RTopo 1.05
@@ -21,12 +21,17 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
     lon_max = [-59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 180]
     lat_min = [-73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
     lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
-    # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
-    obs_massloss = [1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
-    obs_massloss_error = [14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
+    # Area of each ice shelf in m^2 (printed to screen during massloss.py, 
+    # update if the grid changes)
+    area = [12754001970.4, 52008964915.9, 47287926558.6, 353435138251.0, 31290573250.5, 5162051654.52, 3990382861.08, 4680996769.75, 32446806852.2, 7694313052.38, 13537287121.0, 4918446447.87, 6482036686.01, 30521756982.6, 15158334399.6, 64359735004.9, 4575785549.65, 45327465354.5, 8110511960.62, 7088165282.99, 55762463981.5, 68006982027.4, 429252991746.0]
+    # Observed melt rate (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
+    obs_ismr = [0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
+    obs_ismr_error = [0.6, 1, 0.8, 0.1, 0.6, 1, 1, 0.6, 0.4, 0.3, 0.3, 0.6, 0.7, 0.6, 0.7, 0.4, 0.6, 0.4, 0.2, 0.2, 0.2, 0.2, 0.1]
 
     # Degrees to radians conversion factor
     deg2rad = pi/180
+    # Density of ice in kg/m^3
+    rho_ice = 916
     # Northern boundary 63S for plot
     nbdry = -63+90
     # Centre of missing circle in grid
@@ -48,15 +53,16 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
         except(ValueError):
             # Reached the header for the next variable
             break
-    # Set up array for mass loss values at each ice shelf
-    massloss_ts = empty([len(obs_massloss), len(time)])
+    # Set up array for melt rate values at each ice shelf
+    ismr_ts = empty([len(obs_ismr), len(time)])
     index = 0
     # Loop over ice shelves
-    while index < len(obs_massloss):
+    while index < len(obs_ismr):
         t = 0
         for line in f:
             try:
-                massloss_ts[index, t] = float(line)
+                # Convert from mass loss to melt rate
+                ismr_ts[index, t] = float(line)*1e12/(rho_ice*area[index])
                 t += 1
             except(ValueError):
                 # Reached the header for the next variable
@@ -67,10 +73,10 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
     time = array(time)
     min_t = nonzero(time >= time[-1]-1)[0][0]
     max_t = size(time)
-    # Find the average mass loss for each ice shelf over this last year
-    massloss = empty(len(obs_massloss))
-    for index in range(len(obs_massloss)):
-        massloss[index] = mean(massloss_ts[index, min_t:max_t])
+    # Find the average melt rate for each ice shelf over this last year
+    ismr = empty(len(obs_ismr))
+    for index in range(len(obs_ismr)):
+        ismr[index] = mean(ismr_ts[index, min_t:max_t])
 
     # Read the grid
     id = Dataset(grid_path, 'r')
@@ -90,27 +96,27 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
     open_ocn[mask_zice==1] = 0
     land_zice = ma.masked_where(open_ocn==1, open_ocn)
 
-    # Initialise a field of ice shelf mass loss unexplained percent error
+    # Initialise a field of ice shelf melt rate unexplained error
     error = ma.empty(shape(lon))
     error[:,:] = ma.masked
 
     # Loop over ice shelves
-    for index in range(len(obs_massloss)):
+    for index in range(len(obs_ismr)):
         # Find the range of observations
-        massloss_low = obs_massloss[index] - obs_massloss_error[index]
-        massloss_high = obs_massloss[index] + obs_massloss_error[index]
-        # Find the unexplained percent error in mass loss
-        if massloss[index] < massloss_low:
-            # Simulated mass loss too low
-            error_tmp = (massloss[index] - massloss_low)/massloss_low*100
-        elif massloss[index] > massloss_high:
-            # Simulated mass loss too high
-            error_tmp = (massloss[index] - massloss_high)/massloss_high*100
+        ismr_low = obs_ismr[index] - obs_ismr_error[index]
+        ismr_high = obs_ismr[index] + obs_ismr_error[index]
+        # Find the unexplained percent error in melt rate
+        if ismr[index] < ismr_low:
+            # Simulated melt rate too low
+            error_tmp = (ismr[index] - ismr_low)/ismr_low*100
+        elif ismr[index] > ismr_high:
+            # Simulated melt rate too high
+            error_tmp = (ismr[index] - ismr_high)/ismr_high*100
         else:
             # Simulated mass loss within observational error estimates
             error_tmp = 0
         # Modify error field for this region
-        if index == len(obs_massloss)-1:
+        if index == len(obs_ismr)-1:
             # Ross region is split into two
             region = (lon >= lon_min[index])*(lon <= lon_max[index])*(lat >= lat_min[index])*(lat <= lat_max[index])*(mask_zice == 1) + (lon >= lon_min[index+1])*(lon <= lon_max[index+1])*(lat >= lat_min[index+1])*(lat <= lat_max[index+1])*(mask_zice == 1)
         else:
@@ -156,7 +162,7 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
     contour(x, y, zice, levels=[min_zice], colors=('black'))
     xlim([-nbdry, nbdry])
     ylim([-nbdry, nbdry])
-    title('Bias in Ice Shelf Mass Loss (%)', fontsize=30)
+    title('Bias in Ice Shelf Melt Rate (%)', fontsize=30)
     axis('off')
 
     # Finished
@@ -179,7 +185,7 @@ if __name__ == "__main__":
         save = False
         fig_name = None
     # Make the plot
-    massloss_map(grid_path, log_path, save, fig_name)
+    ismr_map(grid_path, log_path, save, fig_name)
             
     
     

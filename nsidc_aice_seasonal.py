@@ -104,7 +104,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
                 break
         # Make sure we actually found it
         if start_t_season == -1:
-            print 'Error: could not find starting timestep for season ' + season_title[season]
+            print 'Error: could not find starting timestep for season ' + season_names[season]
             return
 
         # Find ending timestep
@@ -118,7 +118,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
                 break
         # Make sure we actually found it
         if end_t_season == -1:
-            print 'Error: could not find ending timestep for season ' + season_title[season]
+            print 'Error: could not find ending timestep for season ' + season_names[season]
             return
 
         # Figure out how many of the 5 days averaged in start_t_season are
@@ -139,7 +139,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             # Starting day is in position 5 of 5; we care about the last 1
             start_days = 1
         else:
-            print 'Error for season ' + season_title[season] + ': starting index is month ' + str(cice_time[start_t_season].month) + ', day ' + str(cice_time[start_t_season].day)
+            print 'Error for season ' + season_names[season] + ': starting index is month ' + str(cice_time[start_t_season].month) + ', day ' + str(cice_time[start_t_season].day)
             return
 
         # Start accumulating data weighted by days
@@ -169,7 +169,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             # Ending day is in position 5 of 5; we care about all 5
             end_days = 5
         else:
-            print 'Error for season ' + season_title[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
+            print 'Error for season ' + season_names[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
             return
 
         cice_data[season,:,:] += id.variables['aice'][end_t_season,:,:]*end_days
@@ -177,7 +177,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
         # Check that we got the correct number of days        
         if season_days != ndays_season[season]:
-            print 'Error: found ' + str(num_days) + ' days instead of ' + str(ndays_season[season])
+            print 'Error: found ' + str(season_days) + ' days instead of ' + str(ndays_season[season])
             return
 
         # Finished accumulating data, now convert from sum to average
@@ -253,29 +253,34 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
     lev = linspace(0, 1, num=50)
 
     # Plot
-    fig = figure(figsize=(20,9))
+    fig = figure(figsize=(9,18.5))
     # Loop over seasons
     for season in range(4):
         # NSIDC
-        fig.add_subplot(2, 4, season+1, aspect='equal')
+        ax = fig.add_subplot(4, 2, 2*season+1, aspect='equal')
         contourf(nsidc_x, nsidc_y, nsidc_data[season,:,:], lev)
-        title('NSIDC (' + season_names[season] + ')', fontsize=20)
+        if season == 0:
+            title('NSIDC', fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
         # CICE
-        fig.add_subplot(2, 4, season+5, aspect='equal')
+        ax = fig.add_subplot(4, 2, 2*season+2, aspect='equal')
         img = contourf(cice_x, cice_y, cice_data[season,:,:], lev)
-        title('CICE (' + season_names[season] + ')', fontsize=20)
+        if season == 0:
+            title('CICE', fontsize=24)
+        text(35, 0, season_names[season], fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
     # Add a horizontal colorbar at the bottom
-    cbaxes = fig.add_axes([0.4, 0.04, 0.2, 0.04])
+    cbaxes = fig.add_axes([0.25, 0.04, 0.5, 0.02])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
     cbar.ax.tick_params(labelsize=16)
     # Add the main title
     suptitle('Sea ice concentration', fontsize=30)
+    # Decrease space between plots
+    subplots_adjust(wspace=0.025,hspace=0.025)
 
     # Finished
     if save:

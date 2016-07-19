@@ -68,6 +68,12 @@ romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
 			   of the file). Then open python or ipython and type
 			   "run romscice_tides.py".
 
+nbdry_grid_hack.py: Modify the ROMS grid so that the northernmost 15 rows
+                    (about 3 degrees) have the same bathymetry, i.e. dh/dy=0,
+		    on advice of Matt Mazloff.
+		    To run: Open python or ipython and type
+		            "run nbdry_grid_hack.py".
+
 
 ***POST-PROCESSING DIAGNOSTICS***
 
@@ -502,9 +508,9 @@ uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
 			  times as you like, and you only have to specify which
 			  parameters have changed since the last plot.
 
-massloss_map.py: Make a map of unexplained error in annually averaged simulated
-                 basal mass loss from each ice shelf that is over 5,000 km^2 in
-		 Rignot et al., 2013.
+massloss_map.py: Make a map of unexplained percent error in annually averaged
+                 simulated basal mass loss from each ice shelf that is over
+		 5,000 km^2 in Rignot et al., 2013.
 		 To run: First make sure your logfile from massloss.py is up to
 		         date, as this script reads simulated basal mass loss
 			 timeseries from this logfile. Then open python or
@@ -512,6 +518,16 @@ massloss_map.py: Make a map of unexplained error in annually averaged simulated
 			 prompt you for paths to the ROMS grid file and the
 			 mass loss logfile, and whether to save the figure (and
 			 if so, what filename) or display it on the screen.
+
+ismr_map.py: Same as massloss_map.py, but for area-averaged melt rates rather
+             than area-integrated mass loss.
+	     To run: First make sure your logfile from massloss.py is up to
+	             date, as this script reads simulated basal mass loss
+		     timeseries from this logfile. Then open python or ipython
+		     and type "run ismr_map.py". The script will prompt you for
+		     paths to the ROMS grid file and the mass loss logfile, and
+		     whether to save the figure (and if so, what filename) or
+		     display it on the screen.
 
 nsidc_aice_monthly.py: Make a figure comparing sea ice concentration from NSIDC
                        (1995 data) and CICE (latest year of spinup under
@@ -583,6 +599,31 @@ massloss_map.py: Make a map of unexplained error in annually averaged simulated
 			 prompt you for paths to the ROMS grid file and the
 			 mass loss logfile, and whether to save the figure (and
 			 if so, what filename) or display it on the screen.
+
+sose_roms_seasonal.py: Make a 4x2 plot compring lat vs. depth slices of
+                       seasonally averaged temperature or salinity at the given
+		       longitude, between ROMS (last year of simulation) and
+		       SOSE (2005-2010 climatology).
+		       To run: First make the sure the path to the SOSE seasonal
+		               climatology file, stored in the variable sose_file
+			       near the top of the main function, is correct.
+			       (If you don't have this file ask Kaitlin for it.)
+			       Then Open python or ipython and type
+		               "run sose_roms_seasonal.py". You will be prompted
+			       for the path to the ROMS output file, whether to
+			       plot temperature or salinity, the longitude
+			       slice to plot, the deepest depth to plot, and
+			       whether to save the figure (and if so, what
+			       filename) or display it on screen. As with other
+			       interactive plotting scripts, the interface will
+			       repeat as many times as you want and only ask for
+			       changes to the existing options.
+
+zice_circumpolar.py: Creates a circumpolar Antarctic plot of ice shelf draft.
+                     To run: Open python or ipython and type
+		             "run zice_circumpolar.py". The script will prompt
+			     you for the path to the ROMS grid file and the
+			     filename to save the figure under.
 
 
 ***ANIMATIONS***
@@ -697,20 +738,19 @@ convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
 			      qsub -v YEAR=$i convert_ecco.job
 			  done
 
-romscice_nbc_zeta.py: Interpolate one year of monthly AVISO sea surface height
-                      data to the northern boundary of the ROMS grid. Save to
-		      the existing lateral boundary condition file, created
-		      using romscice_nbc.py.
+romscice_nbc_zeta.py: Interpolate AVISO sea surface height climatology
+                      (annual average) to the northern boundary of the ROMS
+		      grid. Save to the existing lateral boundary condition
+		      file, created using romscice_nbc.py.
 		      To run: Edit file paths and boundary index near the top
 		              of the file. Then make sure that you have scipy
 			      version 0.14 or higher (on raijin, this means
 			      switching to python/2.7.6; instructions at the
 			      top of the file). Then open python or ipython
-			      and type "from romscice_nbc_zeta import *" then
-			      "romscice_nbc_zeta(year)" where year is eg 1992.
-			      You can also easily call it in a loop, e.g.
-			      for year in range(1995, 2005+1):
-			          romscice_nbc_zeta(year)
+			      and type "run romscice_nbc_zeta.py". You will
+			      be prompted for the path to the lateral
+			      boundary condition file that you want to add
+			      zeta to.
 
 fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
                 missing timesteps. This script interpolates the missing

@@ -119,6 +119,7 @@ def massloss (file_path, log_path):
             if t == start_t:
                 # Calculate conversion factor on first timestep
                 factors[index] = 1e12/(rho_ice*sum(dA_tmp))
+                print 'Area of ' + names[index] + ': ' + str(sum(dA_tmp))
 
     id.close()
 
@@ -151,10 +152,12 @@ def massloss (file_path, log_path):
             max_tick += dtick
         ax1.set_ylim([min_tick, max_tick])
         # Title and ticks in blue for this side of the plot
-        ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
+        ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b', fontsize=18)
         for t1 in ax1.get_yticklabels():
             t1.set_color('b')
-        ax1.set_xlabel('Years')
+        ax1.set_xlabel('Years', fontsize=18)
+        setp(ax1.get_xticklabels(), fontsize=15)
+        setp(ax1.get_yticklabels(), fontsize=15)
         ax1.grid(True)
         # Twin axis for melt rates
         ax2 = ax1.twinx()
@@ -165,11 +168,12 @@ def massloss (file_path, log_path):
         ax2.axhline(ismr_low, color='r', linestyle='dashed')
         ax2.axhline(ismr_high, color='r', linestyle='dashed')
         # Title and ticks in red for this side of the plot
-        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)', color='r')
+        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)', color='r', fontsize=18)
         for t2 in ax2.get_yticklabels():
             t2.set_color('r')
+        setp(ax2.get_yticklabels(), fontsize=15)
         # Name of the ice shelf for the main title
-        title(names[index])
+        title(names[index], fontsize=24)
         fig.savefig(fig_names[index])
         
     print 'Saving results to log file'

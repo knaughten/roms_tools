@@ -243,6 +243,8 @@ def interp_lon (data_3d, z_3d, lat_2d, lon_2d, lon0):
 # Output:
 # data = array of data averaged between lon_bounds, dimension depth x lat
 # z = array of depth values averaged between lon_bounds, dimension depth x lat
+# lat = array of latitude values averaged between lon_bounds, dimension 
+#       depth x lat
 def average_btw_lons (data_3d, z_3d, lat_2d, lon_2d, lon_bounds):
 
     dlon = 0.25 # Regular lon spacing: change this for new grids
