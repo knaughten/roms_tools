@@ -20,7 +20,7 @@ def romscice_tides ():
     # Path to TPXO file
     tpxo_file = '../ROMS-CICE-MCT/data/h_tpxo7.2.nc'
     # Desired path to output file
-    out_file = '../ROMS-CICE-MCT/data/tides_tpxo72_1yr.nc'
+    out_file = '../ROMS-CICE-MCT/data/tides_tpxo72.nc' #_1yr.nc'
     # Bounds on latitude indices to read from TPXO2 (as close together as
     # possible while containing all the latitudes ROMS needs, so that there
     # aren't too many land points to fill with nearest neighbours which is
@@ -37,12 +37,12 @@ def romscice_tides ():
     # file caisom001_tides.nc)
     period = array([44714.165191868, 43200.0012869521, 86164.0770050671, 92949.6357005365, 45570.0535117177, 86637.1997716528, 43082.0503185947, 96726.0857029666, 2380715.86358729, 1180295.54554976])    
     # Tweak all these periods so they evenly divide 1 year
-    period_1yr = zeros(num_cmp)
-    sec_per_year = 365.25*24*60*60
-    for n in range(num_cmp):
-        period_orig = period[n]
-        freq = round(sec_per_year/period_orig)
-        period_1yr[n] = sec_per_year/freq
+    #period_1yr = zeros(num_cmp)
+    #sec_per_year = 365.25*24*60*60
+    #for n in range(num_cmp):
+        #period_orig = period[n]
+        #freq = round(sec_per_year/period_orig)
+        #period_1yr[n] = sec_per_year/freq
 
     # Read ROMS grid
     id = Dataset(grid_file, 'r')
@@ -87,7 +87,7 @@ def romscice_tides ():
     id.createVariable('tide_period', 'f8', ('tide_period'))
     id.variables['tide_period'].long_name = 'tide angular period'
     id.variables['tide_period'].units = 'seconds'
-    id.variables['tide_period'][:] = period_1yr
+    id.variables['tide_period'][:] = period #_1yr
     id.createVariable('tide_Ephase', 'f8', ('tide_period', 'eta_rho', 'xi_rho'))
     id.variables['tide_Ephase'].long_name = 'tidal elevation phase angle'
     id.variables['tide_Ephase'].units = 'degrees, time of maximum elevation with respect to chosen time origin'

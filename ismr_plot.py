@@ -42,12 +42,12 @@ def ismr_plot (file_path, save=False, fig_name=None):
 
     # Set colour map
     # Values for change points
-    cmap_vals = array([amin(ismr), 0, 1, 2, 5, 8])
-    # Map to 0-1
-    cmap_vals_norm = (cmap_vals - amin(ismr))/(8 - amin(ismr))
+    cmap_vals = array([-0.5, 0, 1, 2, 5, 8])
     # Colours for change points
     # (blue, white, yellow-orange, red-orange, dark red, purple)
     cmap_colors = [(0.26, 0.45, 0.86), (1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
+    # Map to 0-1
+    cmap_vals_norm = (cmap_vals + 0.5)/(8 + 0.5)
     # Combine into a list
     cmap_list = []
     for i in range(size(cmap_vals)):
@@ -55,7 +55,7 @@ def ismr_plot (file_path, save=False, fig_name=None):
     # Make colour map    
     mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
     # Set levels
-    lev = linspace(amin(ismr), 8, num=100)
+    lev = linspace(-0.5, 8, num=100)
 
     # Get land/zice mask
     open_ocn = copy(mask_rho)
@@ -83,7 +83,7 @@ def ismr_plot (file_path, save=False, fig_name=None):
     # Fill in the missing circle
     contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
     # Now shade the melt rate
-    contourf(x, y, ismr, lev, cmap=mf_cmap, extend='max')
+    contourf(x, y, ismr, lev, cmap=mf_cmap, extend='both')
     cbar = colorbar(ticks=arange(0,8+1,1))
     cbar.ax.tick_params(labelsize=20)
     # Add a black contour for the ice shelf front

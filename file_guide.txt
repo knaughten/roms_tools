@@ -74,6 +74,16 @@ nbdry_grid_hack.py: Modify the ROMS grid so that the northernmost 15 rows
 		    To run: Open python or ipython and type
 		            "run nbdry_grid_hack.py".
 
+add_iceberg_melt.py: Read Martin and Adcroft's monthly climatology of
+                     freshwater fluxes from iceberg melt, and add to the
+		     precipitation fields used by ROMS and CICE.
+		     To run: Open python or ipython and type
+		             "run add_iceberg_melt.py". You will be prompted
+			     for the path to a ROMS-CICE forcing file
+			     containing one year of monthly averaged
+			     precipitation; the iceberg fluxes will be added
+			     to this.
+
 
 ***POST-PROCESSING DIAGNOSTICS***
 
@@ -792,8 +802,17 @@ repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
 		   March 1st records from the same time of day.
 		   To run: Edit the user parameters near the bottom of the file
 		           (paths to forcing files, years, variable names, etc)
-			   then open python or ipython and type "run
-			   repeat_forcing.py".
+			   then open python or ipython and type
+			   "run repeat_forcing.py".
+
+repeat_forcing_monthly.py: Same as repeat_forcing but for monthly forcing fields
+                           rather than sub-daily. No interpolation is needed,
+			   just modifying the time axis to put all data on the
+			   15th of each month, with a cycle length of 4 years.
+			   To run: Edit the user parameters near the bottom of
+			           the file (paths to forcing files, years)
+				   then open python or ipython and type
+				   "run repeat_forcing_monthly.py".
 
 romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
                           (eg created with romscice_ini.py), overwrite the

@@ -1,6 +1,6 @@
 from re import split
 from numpy import *
-from matplotlib.pyplot import plot,xlabel,ylabel,clf,show
+from matplotlib.pyplot import *
 
 # Read the volume values written in ocean.log each timestep
 # and return them as a 1D array. 
