@@ -24,10 +24,10 @@ def zice_circumpolar (grid_path, fig_name):
 
     # Read data
     id = Dataset(grid_path, 'r')
-    zice = -1*id.variables['zice'][:,:]
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask_rho = id.variables['mask_rho'][:,:]
+    zice = -1*id.variables['zice'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask_rho = id.variables['mask_rho'][:-15,:-2]
     id.close()
 
     # Mask the open ocean and land
@@ -68,8 +68,8 @@ def zice_circumpolar (grid_path, fig_name):
     title('Ice shelf draft (m)', fontsize=30)
     axis('off')
 
-    #show()
-    fig.savefig(fig_name)
+    show()
+    #fig.savefig(fig_name)
 
 
 # Command-line interface

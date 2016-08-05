@@ -19,10 +19,10 @@ def h_circumpolar (grid_path, fig_name):
 
     # Read data
     id = Dataset(grid_path, 'r')
-    data = id.variables['h'][:,:]
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask = id.variables['mask_rho'][:,:]
+    data = id.variables['h'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask = id.variables['mask_rho'][:-15,:-2]
     id.close()
 
     # Mask with land mask

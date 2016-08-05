@@ -1,0 +1,43 @@
+FESOM (Timmermann 2012):
+Name			Mass loss	Melt rate
+Ronne-Filchner	  	138  		0.35
+Brunt & Riiser-Larsen	65		0.94
+Fimbul & Jelbart	130		2.8
+Larsen C 		48		1.0
+George VI		86		3.6
+Abbot  			59		2.1
+Pine Island		13		3.1
+Getz 			164		5.4
+Ross			260		0.6
+Amery			174		2.9
+Total			1600
+
+BRIOS (Hellmer 2004):
+Name			Mass loss	Melt rate
+Abbot			18.16		0.55
+Amery			17.65		0.35
+Brunt & Riiser-Larsen	165.9		2.38
+Ronne-Filchner		119.7		0.32
+Fimbul			243.1		4.91
+George VI		22.48		0.43
+Getz   			53.64		1.95
+Larsen (?)		38.13		0.63
+Ross   			180.2		0.49
+Shackleton		47.68		1.04
+Total			906.6
+
+COCO (Kusahara 2013):
+Name			Mass loss
+Larsen (all)		21.6
+Ronne-Filchner		160.5
+Brunt to Prince Harald	107.6
+Amery 	 		70.3
+West and Shackleton	27.1
+Totten to Merz		43.5
+McMurdo Sound		12.8
+Ross	`		110.7
+Sulzberger-Nickerson	4.8
+Getz to PIG		58.7
+Abbot			68.6
+Wilkins-GVI-Stange	83.3
+Total			769.6

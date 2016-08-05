@@ -30,11 +30,11 @@ def dpt_2d_int (file_path):
     print 'Reading grid'
     # Read grid variables
     id = Dataset(file_path, 'r')
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask = id.variables['mask_rho'][:,:]
+    h = id.variables['h'][:-15,:-3]
+    zice = id.variables['zice'][:-15,:-3]
+    lon = id.variables['lon_rho'][:-15,:-3]
+    lat = id.variables['lat_rho'][:-15,:-3]
+    mask = id.variables['mask_rho'][:-15,:-3]
 
     # Interpolate latitude to the edges of each cell
     s_bdry = lat[0,:]
@@ -66,11 +66,13 @@ def dpt_2d_int (file_path):
 
         print 'Processing timestep ' + str(t+1) + ' of '+str(size(time))
         # Read ubar and interpolate onto the rho-grid
-        ubar = id.variables['ubar'][t,:,:]
+        ubar = id.variables['ubar'][t,:-15,:]
         w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
         middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
         e_bdry_ubar = w_bdry_ubar[:]
         ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
+        # Throw away the overlapping periodic boundary
+        ubar_rho = ubar_rho[:,:-3]
         # Trim to Drake Passage bounds
         ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
         # Calculate transport and convert to Sv

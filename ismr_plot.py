@@ -29,25 +29,25 @@ def ismr_plot (file_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask_rho = id.variables['mask_rho'][:,:]
-    zice = id.variables['zice'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask_rho = id.variables['mask_rho'][:-15,:-2]
+    zice = id.variables['zice'][:-15,:-2]
     # Read the last year of ice shelf melt rates (assume 5-day averages here),
     # average over time, and convert from m/s to m/y
-    ismr = mean(id.variables['m'][-73:,:,:], axis=0)*60*60*24*365.25
+    ismr = mean(id.variables['m'][-73:,:-15,:-2], axis=0)*60*60*24*365.25
     id.close()
     # Mask the open ocean and land out of the melt rates
     ismr = ma.masked_where(zice==0, ismr)
 
     # Set colour map
     # Values for change points
-    cmap_vals = array([-0.5, 0, 1, 2, 5, 8])
+    cmap_vals = array([-0.1, 0, 1, 2, 5, 8])
     # Colours for change points
     # (blue, white, yellow-orange, red-orange, dark red, purple)
     cmap_colors = [(0.26, 0.45, 0.86), (1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
     # Map to 0-1
-    cmap_vals_norm = (cmap_vals + 0.5)/(8 + 0.5)
+    cmap_vals_norm = (cmap_vals + 0.1)/(8 + 0.1)
     # Combine into a list
     cmap_list = []
     for i in range(size(cmap_vals)):
@@ -55,7 +55,7 @@ def ismr_plot (file_path, save=False, fig_name=None):
     # Make colour map    
     mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
     # Set levels
-    lev = linspace(-0.5, 8, num=100)
+    lev = linspace(-0.1, 8, num=100)
 
     # Get land/zice mask
     open_ocn = copy(mask_rho)

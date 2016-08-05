@@ -22,14 +22,14 @@ def ini_sst_circumpolar (grid_path, file_path, fig_name):
 
     # Read surface temps
     id = Dataset(file_path, 'r')
-    data = id.variables['temp'][0,-1,:,:]
+    data = id.variables['temp'][0,-1,:-15,:-2]
     id.close()
 
     # Read lat and lon
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask = id.variables['mask_rho'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask = id.variables['mask_rho'][:-15,:-2]
     id.close()
 
     # Mask with land mask
@@ -49,8 +49,8 @@ def ini_sst_circumpolar (grid_path, file_path, fig_name):
     title(r'Initial SST ($^{\circ}$C)', fontsize=30)
     axis('off')
 
-    #savefig(fig_name)
-    show()
+    savefig(fig_name)
+    #show()
 
 
 # Command-line interface

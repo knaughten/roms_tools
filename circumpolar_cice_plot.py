@@ -19,7 +19,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
 
     # Read the variable and figure out which grid it's on
     id = Dataset(file_path, 'r')
-    data = id.variables[var_name][tstep-1,:,:]
+    data = id.variables[var_name][tstep-1,:-15,:]
     if var_name == 'aice':
         units = 'fraction'
     else:
@@ -39,8 +39,8 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
         return
 
     # Read the correct lat and lon for this grid
-    lon = id.variables[lon_name][:,:]
-    lat = id.variables[lat_name][:,:]
+    lon = id.variables[lon_name][:-15,:]
+    lat = id.variables[lat_name][:-15,:]
     id.close()
 
     # Convert to spherical coordinates

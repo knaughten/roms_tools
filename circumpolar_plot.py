@@ -36,11 +36,11 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
     id = Dataset(file_path, 'r')
     if len(id.variables[var_name].shape) == 4:
         # 3D variable; will have to choose depth later
-        data_full = id.variables[var_name][tstep-1,:,:,:]
+        data_full = id.variables[var_name][tstep-1,:,:-15,:]
         choose_depth = True
     elif len(id.variables[var_name].shape) == 3:
         # 2D variable
-        data = id.variables[var_name][tstep-1,:,:]
+        data = id.variables[var_name][tstep-1,:-15,:]
         choose_depth = False
     if var_name == 'salt':
         units = 'psu'
@@ -72,8 +72,8 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
         return
 
     # Read grid variables
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
+    h = id.variables['h'][:-15,:]
+    zice = id.variables['zice'][:-15,:]
     # h and zice are on the rho-grid; interpolate if necessary
     if grid_name == 'u':
         h = 0.5*(h[:,0:-1] + h[:,1:])
@@ -82,9 +82,29 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
         h = 0.5*(h[0:-1,:] + h[1:,:])
         zice = 0.5*(zice[0:-1,:] + zice[1:,:])
     # Read the correct lat and lon for this grid
-    lon = id.variables[lon_name][:,:]
-    lat = id.variables[lat_name][:,:]
+    lon = id.variables[lon_name][:-15,:]
+    lat = id.variables[lat_name][:-15,:]
     id.close()
+
+    # Throw away the overlapping periodic boundary
+    if grid_name == 'u':
+        if choose_depth:
+            data_full = data_full[:,:,:-1]
+        else:
+            data = data[:,:-1]
+        lon = lon[:,:-1]
+        lat = lat[:,:-1]
+        h = h[:,:-1]
+        zice = zice[:,:-1]
+    else:
+        if choose_depth:
+            data_full = data_full[:,:,:-2]
+        else:
+            data = data[:,:-2]
+        lon = lon[:,:-2]
+        lat = lat[:,:-2]
+        h = h[:,:-2]
+        zice = zice[:,:-2]
 
     # Convert to spherical coordinates
     x = -(lat+90)*cos(lon*deg2rad+pi/2)

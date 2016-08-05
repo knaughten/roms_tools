@@ -24,20 +24,20 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
 
     # Read grid and velocity data
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
     if depth_key == 1:
         # Surface u and v
-        u = id.variables['u'][tstep-1,-1,:,:]
-        v = id.variables['v'][tstep-1,-1,:,:]
+        u = id.variables['u'][tstep-1,-1,:-15,:]
+        v = id.variables['v'][tstep-1,-1,:-15,:]
     elif depth_key == 2:
         # Bottom u and v
-        u = id.variables['u'][tstep-1,0,:,:]
-        v = id.variables['v'][tstep-1,0,:,:]
+        u = id.variables['u'][tstep-1,0,:-15,:]
+        v = id.variables['v'][tstep-1,0,:-15,:]
     elif depth_key == 3:
         # Vertically averaged u and v
-        u = id.variables['ubar'][tstep-1,:,:]
-        v = id.variables['vbar'][tstep-1,:,:]
+        u = id.variables['ubar'][tstep-1,:-15,:]
+        v = id.variables['vbar'][tstep-1,:-15,:]
     id.close()
 
     # Interpolate u to the rho-grid
@@ -50,6 +50,9 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
     middle_v = 0.5*(v[0:-1,:] + v[1:,:])
     n_bdry_v = v[-1,:]
     v_rho = ma.concatenate((s_bdry_v[None,:], middle_v, n_bdry_v[None,:]), axis=0)
+    # Throw away the overlapping periodic boundary
+    u_rho = u_rho[:,:-2]
+    v_rho = v_rho[:,:-2]
     # Calculate speed for the background filled contour plot
     speed = sqrt(u_rho**2 + v_rho**2)
 
@@ -69,7 +72,7 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
     # Average X, Y, dX_dt, and dY_dt over block x block intervals
     # Calculate number of blocks
     size0 = int(ceil(size(X,0)/float(block)))
-    size1 = int(ceil(size(X,1)/float(block)))
+    size1 = int(ceil((size(X,1)-1)/float(block)))
     # Set up arrays for averaged fields
     X_block = ma.empty([size0, size1])
     Y_block = ma.empty([size0, size1])

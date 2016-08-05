@@ -18,12 +18,12 @@ def overturning_plot (file_path, fig_name):
 
     # Read v and grid variables
     id = Dataset(file_path, 'r')
-    v = id.variables['v'][-1,:,:,:]  # -1 means last timestep
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
-    zeta = id.variables['zeta'][-1,:,:]
-    lon_v = id.variables['lon_v'][:,:]
-    lat_v = id.variables['lat_v'][:,:]
+    v = id.variables['v'][-1,:,:-15,:-3]  # -1 means last timestep
+    h = id.variables['h'][:-15,:-3]
+    zice = id.variables['zice'][:-15,:-3]
+    zeta = id.variables['zeta'][-1,:-15,:-3]
+    lon_v = id.variables['lon_v'][:-15,:-3]
+    lat_v = id.variables['lat_v'][:-15,:-3]
     id.close()
 
     # Interpolate h, zice, and zeta to the v-grid
@@ -60,7 +60,8 @@ def overturning_plot (file_path, fig_name):
     ylabel('Depth (m)')
     title('Meridional Overturning Streamfunction (Sv)')
 
-    savefig(fig_name)
+    #savefig(fig_name)
+    show()
 
 
 # Command-line interface

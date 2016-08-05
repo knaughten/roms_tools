@@ -585,6 +585,15 @@ bwtemp_plot.py: Creates a circumpolar plot of bottom water temperature, averaged
 			figure (and if so, what filename) or display it on
 			screen.
 
+bwsalt_plot.py: Creates a circumpolar plot of bottom water salinity, averaged
+                over the last year of simulation.
+		To run: Open python or ipython and type "run bwsalt_plot.py".
+		        The script will prompt you for the path to a ROMS
+			output file containing at least one year of 5-day
+			averages, and ask you whether you want to save the
+			figure (and if so, what filename) or display it on
+			screen.
+
 ismr_seasonal_cycle.py: Make a map of the magnitude of the seasonal cycle (over
                         the last year of simulation) in area-averaged melt rates
                         for each ice shelf that is over 5,000 km^2 in Rignot

@@ -35,11 +35,11 @@ def calc_grid (file_path):
 
     # Read grid variables
     id = Dataset(file_path, 'r')
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask = id.variables['mask_rho'][:,:]
+    h = id.variables['h'][:-15,:-3]
+    zice = id.variables['zice'][:-15,:-3]
+    lon = id.variables['lon_rho'][:-15,:-3]
+    lat = id.variables['lat_rho'][:-15,:-3]
+    mask = id.variables['mask_rho'][:-15,:-3]
     id.close()
 
     # Calculate water column thickness
@@ -73,7 +73,7 @@ def get_rho (file_path, t):
     id = Dataset(file_path, 'r')
     # Read density anomalies, add rho0 to get absolute density
     # Convert to float128 to prevent overflow later
-    rho = ma.asarray(id.variables['rho'][t,:,:,:], dtype=float128) + rho0
+    rho = ma.asarray(id.variables['rho'][t,:,:-15,:-3], dtype=float128) + rho0
     id.close()
     return rho
 
@@ -95,7 +95,7 @@ def calc_ohc (file_path, dV, rho, t):
     # Read temperature, converting to float128 to prevent overflow during
     # integration
     id = Dataset(file_path, 'r')
-    temp = ma.asarray(id.variables['temp'][t,:,:,:], dtype=float128)
+    temp = ma.asarray(id.variables['temp'][t,:,:-15,:-3], dtype=float128)
     # Convert from Celsius to Kelvin
     temp = temp + celsius2kelvin
     id.close()
@@ -117,7 +117,7 @@ def calc_totalsalt (file_path, dV, rho, t):
     # Read salinity, converting to float128 to prevent overflow during
     # integration
     id = Dataset(file_path, 'r')
-    salt = ma.asarray(id.variables['salt'][t,:,:,:], dtype=float128)
+    salt = ma.asarray(id.variables['salt'][t,:,:-15,:-3], dtype=float128)
     id.close()
 
     # Integrate 1e-3*salt*rho over volume to get total mass of salt
@@ -141,7 +141,7 @@ def calc_massloss (file_path, dA, t):
     # Read ice shelf melt rate, converting to float128 to prevent overflow
     # during integration
     id = Dataset(file_path, 'r')
-    ismr = ma.asarray(id.variables['m'][t,:,:], dtype=float128)
+    ismr = ma.asarray(id.variables['m'][t,:-15,:-3], dtype=float128)
     # Convert from m/s to m/y
     ismr = ismr*365.25*24*60*60
     id.close()
@@ -166,8 +166,8 @@ def calc_tke (file_path, dV, rho, t):
     # Read u and v, converting to float 128 to prevent overflow during
     # integration
     id = Dataset(file_path, 'r')
-    u = ma.asarray(id.variables['u'][t,:,:,:], dtype=float128)
-    v = ma.asarray(id.variables['v'][t,:,:,:], dtype=float128)
+    u = ma.asarray(id.variables['u'][t,:,:-15,:], dtype=float128)
+    v = ma.asarray(id.variables['v'][t,:,:-15,:], dtype=float128)
     id.close()
 
     # Interpolate u onto the rho-grid
@@ -175,12 +175,16 @@ def calc_tke (file_path, dV, rho, t):
     middle_u = 0.5*(u[:,:,0:-1] + u[:,:,1:])
     e_bdry_u = w_bdry_u[:,:]
     u_rho = ma.concatenate((w_bdry_u[:,:,None], middle_u, e_bdry_u[:,:,None]), axis=2)
+    # Throw away periodic boundary overlap
+    u_rho = u_rho[:,:,:-3]
 
     # Interpolate v onto the rho-grid
     s_bdry_v = v[:,0,:]
     middle_v = 0.5*(v[:,0:-1,:] + v[:,1:,:])
     n_bdry_v = v[:,-1,:]
     v_rho = ma.concatenate((s_bdry_v[:,None,:], middle_v, n_bdry_v[:,None,:]), axis=1)
+    # Throw away periodic boundary overlap
+    v_rho = v_rho[:,:,:-3]
 
     # Integrate 0.5*rho*(u^2 + v^2) over volume to get TKE
     tke = sum(0.5*rho*(u_rho**2 + v_rho**2)*dV)
@@ -211,7 +215,7 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
 
     # Read ubar, converting to float128 to prevent overflow during integration
     id = Dataset(file_path, 'r')
-    ubar = ma.asarray(id.variables['ubar'][t,:,:], dtype=float128)
+    ubar = ma.asarray(id.variables['ubar'][t,:-15,:], dtype=float128)
     id.close()
 
     # Interpolate ubar onto the rho-grid
@@ -219,6 +223,8 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
     middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
     e_bdry_ubar = w_bdry_ubar[:]
     ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
+    # Throw away periodic boundary overlap
+    ubar = ubar[:,:-3]
 
     # Trim arrays to these bounds
     ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
@@ -241,7 +247,7 @@ def calc_totalice (cice_path, dA, t):
 
     id = Dataset(cice_path, 'r')
     # Read sea ice area fraction at each grid cell
-    aice = ma.asarray(id.variables['aice'][t,:,:], dtype=float128)
+    aice = ma.asarray(id.variables['aice'][t,:-15,:-3], dtype=float128)
     id.close()
 
     # Remove masks on aice and dA, and fill aice with zeros on land mask
@@ -270,8 +276,8 @@ def calc_totalfwflux (cice_path, dA, t):
 
     id = Dataset(cice_path, 'r')
     # Read freshwater and salt fluxes at each grid cell
-    fresh = ma.asarray(id.variables['fresh_ai'][t,:,:], dtype=float128)/100./24./60./60
-    fsalt = ma.asarray(id.variables['fsalt_ai'][t,:,:], dtype=float128)/1000.
+    fresh = ma.asarray(id.variables['fresh_ai'][t,:-15,:-3], dtype=float128)/100./24./60./60
+    fsalt = ma.asarray(id.variables['fsalt_ai'][t,:-15,:-3], dtype=float128)/1000.
     fwflux = fresh - fsalt    
     id.close()
 
@@ -298,8 +304,8 @@ def calc_totalfwflux (cice_path, dA, t):
 def calc_bwtemp (file_path, dA, t):
 
     id = Dataset(file_path, 'r')
-    temp = ma.asarray(id.variables['temp'][t,0,:,:], dtype=float128)
-    zice = id.variables['zice'][:,:]
+    temp = ma.asarray(id.variables['temp'][t,0,:-15,:-3], dtype=float128)
+    zice = id.variables['zice'][:-15,:-3]
     id.close()
 
     cavity_temp = ma.masked_where(zice==0, temp)

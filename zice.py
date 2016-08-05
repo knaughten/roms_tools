@@ -12,9 +12,9 @@ def zice (file_path, fig_name):
 
     # Read zice and masks
     file = Dataset(file_path, 'r')
-    zice = file.variables['zice'][:,:]
-    mask_rho = file.variables['mask_rho'][:,:]
-    mask_zice = file.variables['mask_zice'][:,:]
+    zice = file.variables['zice'][:-15,:-3]
+    mask_rho = file.variables['mask_rho'][:-15,:-3]
+    mask_zice = file.variables['mask_zice'][:-15,:-3]
     file.close()
 
     # Mask out ocean and land
@@ -33,7 +33,8 @@ def zice (file_path, fig_name):
     xticks([814,815], (r'0$^{\circ}$',''), fontsize=24)
     yticks([34, 324], (r'75$^{\circ}$S', r'50$^{\circ}$S'), fontsize=24)
 
-    savefig(fig_name, transparent=True)
+    #savefig(fig_name, transparent=True)
+    show()
 
 
 # Command-line interface

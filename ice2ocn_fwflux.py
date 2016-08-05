@@ -16,9 +16,9 @@ def ice2ocn_fwflux (file_path, tstep, fig_name):
 
     # Read data
     id = Dataset(file_path, 'r')
-    data = id.variables['fresh_ai'][tstep-1,:,:] - id.variables['fsalt_ai'][tstep-1,:,:]/1000.*60.*60.*24.*100.
-    lon = id.variables['TLON'][:,:]
-    lat = id.variables['TLAT'][:,:]
+    data = id.variables['fresh_ai'][tstep-1,:-15,:] - id.variables['fsalt_ai'][tstep-1,:-15,:]/1000.*60.*60.*24.*100.
+    lon = id.variables['TLON'][:-15,:]
+    lat = id.variables['TLAT'][:-15,:]
     id.close()
 
     # Convert to spherical coordinates
@@ -35,8 +35,8 @@ def ice2ocn_fwflux (file_path, tstep, fig_name):
     title('CICE-to-ROMS net freshwater flux (cm/day)', fontsize=30)
     axis('off')
 
-    #savefig(fig_name)
-    show()
+    savefig(fig_name)
+    #show()
 
 
 # Command-line interface

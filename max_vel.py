@@ -17,8 +17,8 @@ def max_vel (file_path):
 
     for l in range(size(time)):
         print 'Processing timestep ' + str(l+1) + ' of ' + str(size(time))
-        u = file.variables['u'][l,:,:,:]
-        v = file.variables['v'][l,:,:,:]
+        u = file.variables['u'][l,:,:-15,:-2]
+        v = file.variables['v'][l,:,:-15,:-3]
         # Find the maximum |u| and |v| at this timestep
         max_u.append(amax(abs(u)))
         max_v.append(amax(abs(v)))

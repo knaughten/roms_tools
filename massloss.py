@@ -95,7 +95,7 @@ def massloss (file_path, log_path):
 
         # Read ice shelf melt rate, converting to float128 to prevent overflow
         # during integration
-        ismr = ma.asarray(id.variables['m'][t-start_t,:,:], dtype=float128)
+        ismr = ma.asarray(id.variables['m'][t-start_t,:-15,:-3], dtype=float128)
         # Convert from m/s to m/y
         ismr = ismr*365.25*24*60*60
 
@@ -199,9 +199,9 @@ def calc_grid (file_path):
 
     # Read grid variables
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    zice = id.variables['zice'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-3]
+    lat = id.variables['lat_rho'][:-15,:-3]
+    zice = id.variables['zice'][:-15,:-3]
     id.close()
 
     # Calculate dx and dy in another script

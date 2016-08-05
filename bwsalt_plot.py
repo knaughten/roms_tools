@@ -2,7 +2,7 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 
-# Create a circumpolar plot of bottom water temperature, averaged over the last
+# Create a circumpolar plot of bottom water salinity, averaged over the last
 # year of simulation.
 # Input:
 # file_path = path to ocean averages file containing at least one year of
@@ -10,7 +10,7 @@ from matplotlib.pyplot import *
 # save = optional boolean to save the figure to a file, rather than display it
 #        on screen
 # fig_name = if save=True, filename for figure
-def bwtemp_plot (file_path, save=False, fig_name=None):
+def bwsalt_plot (file_path, save=False, fig_name=None):
 
     # Degrees to radians conversion factor
     deg2rad = pi/180
@@ -20,16 +20,16 @@ def bwtemp_plot (file_path, save=False, fig_name=None):
     # Radius of missing circle (play around with this until it works)
     radius = 10.1
     # Bounds on colour scale
-    min_scale = -2.5
-    max_scale = 2.5
+    min_scale = 34
+    max_scale = 35
 
     # Read the grid
     id = Dataset(file_path, 'r')
     lon = id.variables['lon_rho'][:-15,:-2]
     lat = id.variables['lat_rho'][:-15,:-2]
-    # Read the last year of bottom water temp (assume 5-day averages here) and
-    # average over time
-    bwtemp = mean(id.variables['temp'][-73:,0,:-15,:-2], axis=0)
+    # Read the last year of bottom water salinity (assume 5-day averages here)
+    # and average over time
+    bwsalt = mean(id.variables['salt'][-73:,0,:-15,:-2], axis=0)
     id.close()
 
     # Convert grid to spherical coordinates
@@ -51,14 +51,14 @@ def bwtemp_plot (file_path, save=False, fig_name=None):
     ax = fig.add_subplot(1,1,1,aspect='equal')
     fig.patch.set_facecolor('white')
     # First shade everything in grey
-    contourf(x, y, ones(shape(bwtemp)), 1, colors=(('0.6', '0.6', '0.6')))
+    contourf(x, y, ones(shape(bwsalt)), 1, colors=(('0.6', '0.6', '0.6')))
     # Fill in the missing circle
     contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
-    # Now shade the temperature (land mask will remain grey)
-    contourf(x, y, bwtemp, lev, cmap='jet', extend='both')
-    cbar = colorbar(ticks=arange(min_scale, max_scale+0.5, 0.5))
+    # Now shade the salinity (land mask will remain grey)
+    contourf(x, y, bwsalt, lev, cmap='jet', extend='both')
+    cbar = colorbar(ticks=arange(min_scale, max_scale+0.2, 0.2))
     cbar.ax.tick_params(labelsize=20)
-    title(r'Bottom water temperature ($^{\circ}$C), annual average', fontsize=30)
+    title(r'Bottom water salintiy (psu), annual average', fontsize=30)
     axis('off')
 
     # Finished
@@ -80,6 +80,6 @@ if __name__ == '__main__':
         save = False
         fig_name = None
     # Make the plot
-    bwtemp_plot(file_path, save, fig_name)
+    bwsalt_plot(file_path, save, fig_name)
     
     

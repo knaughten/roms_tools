@@ -58,7 +58,7 @@ def add_iceberg_melt (file):
         melt_roms = melt_roms/rho_w*seconds_per_12h
         # Add to precipitation field for this month
         id = Dataset(file, 'a')
-        id.variables['rain'][12*year+month,:,:] = id.variables['rain'][12*year+month,:,:] - melt_roms
+        id.variables['rain'][month,:,:] = id.variables['rain'][month,:,:] - melt_roms
         id.close()
 
 

@@ -33,9 +33,9 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
 
     # Read the variable
     id = Dataset(file_path, 'r')
-    data_3d = id.variables[var_name][tstep-1,:,:,:]
+    data_3d = id.variables[var_name][tstep-1,:,:-15,:]
     # Also read sea surface height
-    zeta = id.variables['zeta'][tstep-1,:,:]
+    zeta = id.variables['zeta'][tstep-1,:-15,:]
     if var_name == 'salt':
         units = 'psu'
     else:
@@ -62,8 +62,8 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         return
 
     # Read grid variables
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
+    h = id.variables['h'][:-15,:]
+    zice = id.variables['zice'][:-15,:]
     # h, zice, and zeta are on the rho-grid; interpolate if necessary
     if grid_name == 'u':
         h = 0.5*(h[:,0:-1] + h[:,1:])
@@ -74,9 +74,25 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         zice = 0.5*(zice[0:-1,:] + zice[1:,:])
         zeta = 0.5*(zeta[0:-1,:] + zeta[1:,:])
     # Read the correct lat and lon for this grid (determined previously)
-    lon_2d = id.variables[lon_name][:,:]
-    lat_2d = id.variables[lat_name][:,:]
+    lon_2d = id.variables[lon_name][:-15,:]
+    lat_2d = id.variables[lat_name][:-15,:]
     id.close()
+
+    # Throw away periodic boundary overlap
+    if grid_name == 'u':
+        data_3d = data_3d[:,:,:-1]
+        zeta = zeta[:,:-1]
+        h = h[:,:-1]
+        zice = zice[:,:-1]
+        lon_2d = lon_2d[:,:-1]
+        lat_2d = lat_2d[:,:-1]
+    else:
+        data_3d = data_3d[:,:,:-2]
+        zeta = zeta[:,:-2]
+        h = h[:,:-2]
+        zice = zice[:,:-2]
+        lon_2d = lon_2d[:,:-2]
+        lat_2d = lat_2d[:,:-2]        
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)

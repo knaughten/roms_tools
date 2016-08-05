@@ -23,7 +23,7 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
     lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
     # Area of each ice shelf in m^2 (printed to screen during massloss.py, 
     # update if the grid changes)
-    area = [12754001970.4, 52008964915.9, 47287926558.6, 353435138251.0, 31290573250.5, 5162051654.52, 3990382861.08, 4680996769.75, 32446806852.2, 7694313052.38, 13537287121.0, 4918446447.87, 6482036686.01, 30521756982.6, 15158334399.6, 64359735004.9, 4575785549.65, 45327465354.5, 8110511960.62, 7088165282.99, 55762463981.5, 68006982027.4, 429252991746.0]
+    area = [12754001970.4, 52008964915.9, 47287926558.6, 353435138251.0, 31290573250.5, 5162051654.52, 3990382861.08, 4680996769.75, 32446806852.2, 7694313052.38, 13537287121.0, 4918446447.87, 6482036686.01, 30521756982.6, 15158334399.6, 64359735004.9, 4575785549.65, 45327465354.5, 8110511960.62, 7088165282.99, 54898163328.1, 68006982027.4, 429252991746.0]
     # Observed melt rate (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
     obs_ismr = [0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
     obs_ismr_error = [0.6, 1, 0.8, 0.1, 0.6, 1, 1, 0.6, 0.4, 0.3, 0.3, 0.6, 0.7, 0.6, 0.7, 0.4, 0.6, 0.4, 0.2, 0.2, 0.2, 0.2, 0.1]
@@ -80,11 +80,11 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask_rho = id.variables['mask_rho'][:,:]
-    mask_zice = id.variables['mask_zice'][:,:]
-    zice = id.variables['zice'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask_rho = id.variables['mask_rho'][:-15,:-2]
+    mask_zice = id.variables['mask_zice'][:-15,:-2]
+    zice = id.variables['zice'][:-15,:-2]
     id.close()
     
     # Make sure longitude goes from -180 to 180, not 0 to 360
@@ -140,7 +140,7 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
     # Determine bounds on colour scale
     max_val = amax(abs(error))
     lev = linspace(-max_val, max_val, num=40)
-    lev = linspace(-200, 200, num=40)
+    lev = linspace(-100, 100, num=40)
     # Space ticks on colorbar 25% apart
     max_tick = floor(max_val/25)*25
 

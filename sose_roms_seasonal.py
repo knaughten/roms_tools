@@ -70,10 +70,10 @@ def sose_roms_seasonal (file_path, var_name, lon0, depth_bdry, save=False, fig_n
 
     # Read grid and time values
     id = Dataset(file_path, 'r')
-    h = id.variables['h'][:,:]
-    zice = id.variables['zice'][:,:]
-    lon_roms_2d = id.variables['lon_rho'][:,:]
-    lat_roms_2d = id.variables['lat_rho'][:,:]
+    h = id.variables['h'][:-15,:]
+    zice = id.variables['zice'][:-15,:]
+    lon_roms_2d = id.variables['lon_rho'][:-15,:]
+    lat_roms_2d = id.variables['lat_rho'][:-15,:]
     time_id = id.variables['ocean_time']
     # Get the year, month, and day (all 1-based) for each output step
     # These are 5-day averages marked with the middle day's date
@@ -186,12 +186,12 @@ def sose_roms_seasonal (file_path, var_name, lon0, depth_bdry, save=False, fig_n
             return
 
         # Start accumulating data weighted by days
-        var_3d_roms[season,:,:,:] += id.variables[var_name][start_t_season,:,:,:]*start_days
+        var_3d_roms[season,:,:,:] += id.variables[var_name][start_t_season,:,:-15,:]*start_days
         season_days += start_days
 
         # Between start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
-            var_3d_roms[season,:,:,:] += id.variables[var_name][t,:,:,:]*5
+            var_3d_roms[season,:,:,:] += id.variables[var_name][t,:,:-15,:]*5
             season_days += 5
 
         # Figure out how many of the 5 days averaged in end_t_season are
@@ -215,7 +215,7 @@ def sose_roms_seasonal (file_path, var_name, lon0, depth_bdry, save=False, fig_n
             print 'Error for season ' + season_title[season] + ': ending index is month ' + str(time[end_t_season].month) + ', day ' + str(time[end_t_season].day)
             return
 
-        var_3d_roms[season,:,:,:] += id.variables[var_name][end_t_season,:,:,:]*end_days
+        var_3d_roms[season,:,:,:] += id.variables[var_name][end_t_season,:,:-15,:]*end_days
         season_days += end_days
 
         # Check that we got the correct number of days

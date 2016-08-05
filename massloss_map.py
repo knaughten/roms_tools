@@ -74,11 +74,11 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:,:]
-    lat = id.variables['lat_rho'][:,:]
-    mask_rho = id.variables['mask_rho'][:,:]
-    mask_zice = id.variables['mask_zice'][:,:]
-    zice = id.variables['zice'][:,:]
+    lon = id.variables['lon_rho'][:-15,:-2]
+    lat = id.variables['lat_rho'][:-15,:-2]
+    mask_rho = id.variables['mask_rho'][:-15,:-2]
+    mask_zice = id.variables['mask_zice'][:-15,:-2]
+    zice = id.variables['zice'][:-15,:-2]
     id.close()
     
     # Make sure longitude goes from -180 to 180, not 0 to 360
@@ -134,7 +134,7 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
     # Determine bounds on colour scale
     max_val = amax(abs(error))
     lev = linspace(-max_val, max_val, num=40)
-    lev = linspace(-200, 200, num=40)
+    lev = linspace(-100, 100, num=40)
     # Space ticks on colorbar 25% apart
     max_tick = floor(max_val/25)*25
 

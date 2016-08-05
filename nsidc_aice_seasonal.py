@@ -36,8 +36,8 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
     # Read CICE grid and time values
     id = Dataset(cice_file, 'r')
-    cice_lon = id.variables['TLON'][:,:]
-    cice_lat = id.variables['TLAT'][:,:]
+    cice_lon = id.variables['TLON'][:-15,:]
+    cice_lat = id.variables['TLAT'][:-15,:]
     time_id = id.variables['time']
     # Get the year, month, and day (all 1-based) for each output step
     # These are 5-day averages marked with the last day's date.
@@ -143,12 +143,12 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Start accumulating data weighted by days
-        cice_data[season,:,:] += id.variables['aice'][start_t_season,:,:]*start_days
+        cice_data[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
         season_days += start_days
 
         # Beween start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
-            cice_data[season,:,:] += id.variables['aice'][t,:,:]*5
+            cice_data[season,:,:] += id.variables['aice'][t,:-15,:]*5
             season_days += 5
 
         # Figure out how many of the 5 days averaged in end_t_season are
@@ -172,7 +172,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             print 'Error for season ' + season_names[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
             return
 
-        cice_data[season,:,:] += id.variables['aice'][end_t_season,:,:]*end_days
+        cice_data[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
         season_days += end_days
 
         # Check that we got the correct number of days        
@@ -253,23 +253,23 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
     lev = linspace(0, 1, num=50)
 
     # Plot
-    fig = figure(figsize=(9,18.5))
+    fig = figure(figsize=(20,9))
     # Loop over seasons
     for season in range(4):
         # NSIDC
-        ax = fig.add_subplot(4, 2, 2*season+1, aspect='equal')
+        ax = fig.add_subplot(2, 4, season+1, aspect='equal')
         contourf(nsidc_x, nsidc_y, nsidc_data[season,:,:], lev)
         if season == 0:
-            title('NSIDC', fontsize=24)
+            text(-39, 0, 'NSIDC', fontsize=24, ha='right')
+        title(season_names[season], fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
         # CICE
-        ax = fig.add_subplot(4, 2, 2*season+2, aspect='equal')
+        ax = fig.add_subplot(2, 4, season+5, aspect='equal')
         img = contourf(cice_x, cice_y, cice_data[season,:,:], lev)
         if season == 0:
-            title('CICE', fontsize=24)
-        text(35, 0, season_names[season], fontsize=24)
+            text(-39, 0, 'CICE', fontsize=24, ha='right')
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
