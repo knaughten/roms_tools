@@ -180,7 +180,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         # There is land everywhere at the northern boundary
         # Show the first 2 degrees of this land mask
         lat_max = max(lat[:,j_max]) + 2
-    lat_max = -65
+#    lat_max = -65
     xlim([lat_min, lat_max])
     ylim([depth_min, 0])
 

@@ -5,7 +5,8 @@ from os.path import *
 from cartesian_grid_2d import *
 
 # Calculate and plot timeseries of basal mass loss and area-averaged ice shelf
-# melt rates from major ice shelves during a ROMS simulation.
+# melt rates from major ice shelves and from the entire continent during a 
+# ROMS simulation.
 # Input:
 # file_path = path to ocean history/averages file
 # log_path = path to log file (if it exists, previously calculated values will
@@ -83,10 +84,13 @@ def timeseries_massloss (file_path, log_path):
     if exists(log_path):
         # Fill first start_t timesteps with existing values
         massloss[:,0:start_t] = old_massloss[:,:]
+
+    print 'Reading data'
     # Read melt rate and convert from m/s to m/y
     ismr = id.variables['m'][:,:-15,:-3]*365.25*24*60*60
     id.close()
 
+    print 'Setting up arrays'
     # Set up array of masked area values for each ice shelf
     dA_masked = ma.empty([len(names), size(dA,0), size(dA,1)])
     # Set up array of conversion factors from mass loss to area-averaged melt
@@ -102,11 +106,14 @@ def timeseries_massloss (file_path, log_path):
         else:
             dA_tmp = ma.masked_where((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]), dA)
         dA_masked[index,:,:] = dA_tmp[:,:]
+        # Calculate area of this ice shelf
         area_tmp = sum(dA_masked[index,:,:])
+        # Calculate conversion factor
         factors[index] = 1e12/(rho_ice*area_tmp)
         print 'Area of ' + names[index] + ': ' + str(area_tmp) + ' m^2'
 
     # Build timeseries
+    print 'Calculating variables'
     for t in range(start_t, size(time)):
         # Loop over ice shelves
         for index in range(len(names)):
@@ -134,6 +141,7 @@ def timeseries_massloss (file_path, log_path):
         # Make sure y-limits won't cut off observed melt rate
         ymin = amin([ismr_low/factors[index], massloss_low, amin(massloss[index,:])])
         ymax = amax([ismr_high/factors[index], massloss_high, amax(massloss[index,:])])
+        # Adjust y-limits to line up with ticks
         ticks = ax1.get_yticks()
         min_tick = ticks[0]
         max_tick = ticks[-1]

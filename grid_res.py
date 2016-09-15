@@ -34,12 +34,12 @@ def grid_res (grid_path, save=False, fig_name=None):
     y = (lat+90)*sin(lon*deg2rad+pi/2)
 
     # Colour levels
-    lev = linspace(0, 40, num=50)
+    lev = linspace(0, 20, num=50)
 
     # Plot
     fig = figure(figsize=(16,12))
     fig.add_subplot(1,1,1, aspect='equal')
-    contourf(x, y, res, lev)
+    contourf(x, y, res, lev, extend='both')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
     title('Grid resolution (km)', fontsize=30)
