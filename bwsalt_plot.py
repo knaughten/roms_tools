@@ -58,7 +58,7 @@ def bwsalt_plot (file_path, save=False, fig_name=None):
     contourf(x, y, bwsalt, lev, cmap='jet', extend='both')
     cbar = colorbar(ticks=arange(min_scale, max_scale+0.2, 0.2))
     cbar.ax.tick_params(labelsize=20)
-    title(r'Bottom water salintiy (psu), annual average', fontsize=30)
+    title(r'Bottom water salinity (psu), annual average', fontsize=30)
     axis('off')
 
     # Finished

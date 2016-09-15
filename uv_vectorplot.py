@@ -1,10 +1,12 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from rotate_vector_roms import *
 
 # Make a circumpolar Antarctic plot of speed overlaid with velocity vectors at
 # the given depth (surface, bottom, or vertically averaged).
 # Input:
+# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # tstep = timestep in file_path to plot (1-indexed)
 # depth_key = integer flag indicating whether to plot the surface velocity (1),
@@ -12,7 +14,7 @@ from matplotlib.pyplot import *
 # save = optional boolean flag indicating that the plot should be saved to a
 #        file rather than displayed on the screen
 # fig_name = if save=True, filename for figure
-def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
+def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=None):
 
     # Radius of the Earth in metres
     r = 6.371e6
@@ -22,6 +24,10 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
     # single point or the plot will be way too crowded)
     block = 15
 
+    # Read angle from grid file
+    grid_id = Dataset(grid_path, 'r')
+    angle = grid_id.variables['angle'][:-15,:]
+    grid_id.close()
     # Read grid and velocity data
     id = Dataset(file_path, 'r')
     lon = id.variables['lon_rho'][:-15,:-2]
@@ -40,19 +46,11 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
         v = id.variables['vbar'][tstep-1,:-15,:]
     id.close()
 
-    # Interpolate u to the rho-grid
-    w_bdry_u = 0.5*(u[:,0] + u[:,-1])
-    middle_u = 0.5*(u[:,0:-1] + u[:,1:])
-    e_bdry_u = w_bdry_u[:]
-    u_rho = ma.concatenate((w_bdry_u[:,None], middle_u, e_bdry_u[:,None]), axis=1)
-    # Interplate v to the rho-grid
-    s_bdry_v = v[0,:]
-    middle_v = 0.5*(v[0:-1,:] + v[1:,:])
-    n_bdry_v = v[-1,:]
-    v_rho = ma.concatenate((s_bdry_v[None,:], middle_v, n_bdry_v[None,:]), axis=0)
+    # Rotate velocities to lat-lon space
+    u_lonlat, v_lonlat = rotate_vector_roms(u, v, angle)
     # Throw away the overlapping periodic boundary
-    u_rho = u_rho[:,:-2]
-    v_rho = v_rho[:,:-2]
+    u_rho = u_lonlat[:,:-2]
+    v_rho = v_lonlat[:,:-2]
     # Calculate speed for the background filled contour plot
     speed = sqrt(u_rho**2 + v_rho**2)
 
@@ -60,8 +58,8 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
     X = -(lat+90)*cos(lon*deg2rad+pi/2)
     Y  = (lat+90)*sin(lon*deg2rad+pi/2)
 
-    # Calculate velocity components in lon-lat space (just differentiate and
-    # rearrange spherical coordinate transformations)
+    # Calculate velocity components in spherical coordinate space
+    # (just differentiate and rearrange spherical coordinate transformations)
     dlon_dt = u_rho/(r*cos(lat*deg2rad)*deg2rad)
     dlat_dt = v_rho/(r*deg2rad)
     # Calculate velocity components in X-Y space (just differentiate and
@@ -123,6 +121,7 @@ def uv_vectorplot (file_path, tstep, depth_key, save=False, fig_name=None):
 # Command-line interface
 if __name__ == "__main__":
 
+    grid_path = raw_input("Path to ROMS grid file: ")
     file_path = raw_input("Path to ocean history/averages file: ")
     tstep = int(raw_input("Timestep number (starting at 1): "))
     # Parse depth information
@@ -141,7 +140,7 @@ if __name__ == "__main__":
         save = False
         fig_name = None
     # Make the plot
-    uv_vectorplot(file_path, tstep, depth_key, save, fig_name)
+    uv_vectorplot(grid_path, file_path, tstep, depth_key, save, fig_name)
 
     # Repeat until the user wants to exit
     while True:
@@ -177,7 +176,7 @@ if __name__ == "__main__":
                 # Get file name for figure
                 fig_name = raw_input("File name for figure: ")
             # Make the plot
-            uv_vectorplot(file_path, tstep, depth_key, save, fig_name)
+            uv_vectorplot(grid_path, file_path, tstep, depth_key, save, fig_name)
         else:
             break
                         

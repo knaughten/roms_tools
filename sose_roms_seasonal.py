@@ -45,7 +45,7 @@ def sose_roms_seasonal (file_path, var_name, lon0, depth_bdry, save=False, fig_n
         var_max = 7.5
         var_ticks = 1
     elif var_name == 'salt':
-        var_min = 34.2
+        var_min = 33.8
         var_max = 34.8
         var_ticks = 0.2
     else:

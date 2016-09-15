@@ -12,10 +12,10 @@ from scipy.interpolate import griddata
 def add_iceberg_melt (file):
 
     # Naming conventions for iceberg files
-    iceberg_head = '/short/m68/kaa561/ROMS-CICE-MCT/data/MartinAdcroft2010_iceberg_meltfluxes/icebergs.1861-1960.'
+    iceberg_head = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.1861-1960.'
     iceberg_tail = '.melt.nc'
     # Iceberg grid file
-    iceberg_grid = '/short/m68/kaa561/ROMS-CICE-MCT/data/MartinAdcroft2010_iceberg_meltfluxes/icebergs.static.nc'
+    iceberg_grid = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.static.nc'
     # ROMS grid file
     roms_grid ='/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Density of freshwater
@@ -58,7 +58,7 @@ def add_iceberg_melt (file):
         melt_roms = melt_roms/rho_w*seconds_per_12h
         # Add to precipitation field for this month
         id = Dataset(file, 'a')
-        id.variables['rain'][month,:,:] = id.variables['rain'][month,:,:] - melt_roms
+        id.variables['rain'][month,:,:] = id.variables['rain'][month,:,:] + melt_roms
         id.close()
 
 

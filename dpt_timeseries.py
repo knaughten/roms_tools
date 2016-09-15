@@ -1,19 +1,14 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from rotate_vector_roms import *
 
 # Calculates zonal transport through each grid cell in the Drake Passage
 # and plots a timeseries of the result.
 # Input:
+# grid_path = path to ROMS grid file
 # file_path = path to ROMS ocean history or averages file
-def dpt_timeseries (file_path):
-
-    # Radius of the Earth in m
-    r = 6.371e6
-    # Degrees to radians conversion factor
-    deg2rad = pi/180.0
-    # Northern boundary of ROMS grid
-    nbdry_val = -30
+def dpt_timeseries (grid_path, file_path):
 
     # Radius of the Earth in m
     r = 6.371e6
@@ -35,14 +30,17 @@ def dpt_timeseries (file_path):
     j_max = 298
 
     print 'Reading grid'
-    # Read grid variables
+    # Read angle from the grid file
+    grid_id = Dataset(grid_path, 'r')
+    angle = grid_id.variables['angle'][:-15,:]
+    grid_id.close()
+    # Read other grid variables
     id = Dataset(file_path, 'r')
     h = id.variables['h'][:-15,:-3]
     zice = id.variables['zice'][:-15,:-3]
     lon = id.variables['lon_rho'][:-15,:-3]
     lat = id.variables['lat_rho'][:-15,:-3]
     mask = id.variables['mask_rho'][:-15,:-3]
-
 
     # Interpolate latitude to the edges of each cell
     s_bdry = lat[0,:]
@@ -51,18 +49,9 @@ def dpt_timeseries (file_path):
     lat_edges = ma.concatenate((s_bdry[None,:], middle_lat, n_bdry[None,:]))
     # Subtract to get the change in latitude over each cell
     dlat = lat_edges[1:,:] - lat_edges[0:-1,:]
-
     # Convert from spherical to Cartesian coordinates
     # dy = r*dlat where dlat is converted to radians
     dy = r*dlat*pi/180.0
-    # Calculate water column thickness
-    wct = h + zice
-
-    # Calculate dy_wct and mask with land mask
-    dy_wct = ma.masked_where(mask==0, dy*wct)
-    # Trim to Drake Passage bounds
-    dy_wct_DP = dy_wct[j_min:j_max,i_DP]
-    lat_DP = lat[j_min:j_max,i_DP]
 
     # Read time values and convert from seconds to years
     time = id.variables['ocean_time'][:]/(365*24*60*60)
@@ -72,18 +61,23 @@ def dpt_timeseries (file_path):
     for t in range(size(time)):
 
         print 'Processing timestep ' + str(t+1) + ' of '+str(size(time))
-        # Read ubar and interpolate onto the rho-grid
-        ubar = id.variables['ubar'][t,:-15,:]
-        w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
-        middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
-        e_bdry_ubar = w_bdry_ubar[:]
-        ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
-        # Throw away the overlapping periodic boundary
-        ubar_rho = ubar_rho[:,:-3]
+        # Calculate water column thickness
+        zeta = id.variables['zeta'][t,:-15,:-3]
+        wct = h + zice + zeta
+        # Calculate dy_wct and mask with land mask
+        dy_wct = ma.masked_where(mask==0, dy*wct)
         # Trim to Drake Passage bounds
-        ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
+        dy_wct_DP = dy_wct[j_min:j_max,i_DP]
+        # Rotate velocities into lat-lon space
+        ubar = id.variables['ubar'][t,:-15,:]
+        vbar = id.variables['vbar'][t,:-15,:]
+        ubar_lonlat, vbar_lonlat = rotate_vector_roms(ubar, vbar, angle)
+        # Throw away the overlapping periodic boundary
+        ubar_lonlat = ubar_lonlat[:,:-3]
+        # Trim to Drake Passage bounds
+        ubar_DP = ubar_lonlat[j_min:j_max,i_DP]
         # Integrate transport and convert to Sv
-        transport.append(sum(ubar_rho_DP*dy_wct_DP)*1e-6)
+        transport.append(sum(ubar_DP*dy_wct_DP)*1e-6)
 
     id.close()
 
@@ -101,8 +95,9 @@ def dpt_timeseries (file_path):
 # Command-line interface
 if __name__ == "__main__":
 
+    grid_path = raw_input('Enter path to ROMS grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    dpt_timeseries(file_path)
+    dpt_timeseries(grid_path, file_path)
     
 
 

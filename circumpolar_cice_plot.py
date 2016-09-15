@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from rotate_vector_cice import *
 
 # Make a circumpolar Antarctic plot of the given (horizontal) variable from CICE.
 # Input:
@@ -17,13 +18,37 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
 
     deg2rad = pi/180
 
-    # Read the variable and figure out which grid it's on
+    # Read the variable
     id = Dataset(file_path, 'r')
     data = id.variables[var_name][tstep-1,:-15,:]
     if var_name == 'aice':
         units = 'fraction'
     else:
         units = id.variables[var_name].units
+
+    # Check for vector variables that need to be rotated
+    if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'strairx', 'strairy', 'strtltx', 'strtlty', 'strcorx', 'strcory', 'strocnx', 'strocny', 'strintx', 'strinty']:
+        angle = id.variables['ANGLET'][:-15,:]
+        if var_name in ['uvel', 'uatm', 'uocn', 'strairx', 'strtltx', 'strcorx', 'strocnx', 'strintx']:
+            # u-variable
+            u_data = data[:,:]
+            if var_name[0] == 'u':
+                v_data = id.variables[var_name.replace('u','v')][tstep-1,:-15,:]
+            else:
+                v_data = id.variables[var_name.replace('x','y')][tstep-1,:-15,:]
+            u_data_lonlat, v_data_lonlat = rotate_vector_cice(u_data, v_data, angle)
+            data = u_data_lonlat
+        elif var_name in ['vvel', 'vatm', 'vocn', 'strairy', 'strtlty', 'strcory', 'strocny', 'strinty']:
+            # v-variable
+            v_data = data[:,:]
+            if var_name[0] == 'v':
+                u_data = id.variables[var_name.replace('v','u',1)][tstep-1,:-15,:]
+            else:
+                u_data = id.variables[var_name.replace('y','x')][tstep-1,:-15,:]
+            u_data_lonlat, v_data_lonlat = rotate_vector_cice(u_data, v_data, angle)
+            data = v_data_lonlat
+
+    # Figure out which grid we're on
     grid_string = id.variables[var_name].coordinates
     if grid_string.startswith('ULON'):
         grid_name = 'u'
@@ -58,7 +83,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
             colour_map = 'jet'
     else:
         # Determine bounds automatically
-        if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'frzmlt', 'fresh_ai', 'fsalt_ai', 'fhocn_ai', 'strairx', 'strairy', 'strtltx', 'strtlty', 'strcorx', 'strcory', 'strocnx', 'strocny', 'strintx', 'strinty']:
+        if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'fresh_ai', 'fsalt_ai', 'fhocn_ai', 'strairx', 'strairy', 'strtltx', 'strtlty', 'strcorx', 'strcory', 'strocnx', 'strocny', 'strintx', 'strinty']:
             # Center levels on 0 for certain variables, with a blue-to-red
             # colourmap
             max_val = amax(abs(data))

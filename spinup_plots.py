@@ -3,6 +3,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_3d import *
+from rotate_vector_roms import *
 
 # Analyse a ROMS spinup by calculating and plotting 9 timeseries:
 # Total heat content
@@ -12,7 +13,7 @@ from cartesian_grid_3d import *
 # Total kinetic energy
 # Drake Passage transport
 # Total sea ice extent
-# Net sea ice-to-ocean freshwater flux
+# Total sea ice volume
 # Area-averaged bottom water temperature in ice shelf cavities
 
 
@@ -105,14 +106,13 @@ def calc_ohc (file_path, dV, rho, t):
     return ohc
 
 
-# Calculate total salt content at the given timestep t.
+# Calculate average salinity at the given timestep t.
 # Input:
 # file_path = path to ocean history/averages file
 # dV = elements of volume on the rho grid, masked with land mask
-# rho = density on the rho grid at timestep t
 # t = timestep index in file_path
-# Output: totalsalt = total salt content (kg)
-def calc_totalsalt (file_path, dV, rho, t):
+# Output: avgsalt = average salinity (psu)
+def calc_avgsalt (file_path, dV, t):
 
     # Read salinity, converting to float128 to prevent overflow during
     # integration
@@ -120,9 +120,9 @@ def calc_totalsalt (file_path, dV, rho, t):
     salt = ma.asarray(id.variables['salt'][t,:,:-15,:-3], dtype=float128)
     id.close()
 
-    # Integrate 1e-3*salt*rho over volume to get total mass of salt
-    totalsalt = sum(1e-3*salt*rho*dV)
-    return totalsalt    
+    # Integrate to get average
+    avgsalt = sum(salt*dV)/sum(dV)
+    return avgsalt
 
 
 # Calculate net basal mass loss based on the given ice shelf melt rate field.
@@ -193,13 +193,14 @@ def calc_tke (file_path, dV, rho, t):
 
 # Calculate zonal transport through the Drake Passage.
 # Input:
+# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # dy_wct = differential of y times water column thickness for each cell on the 
 #          2D rho-grid, masked with land mask
 # t = timestep index in file_path
 # Output: drakepsg_trans = zonal transport through the Drake Passage (60W),
 #                          integrated over depth and latitude
-def calc_drakepsgtrans (file_path, dy_wct, t):
+def calc_drakepsgtrans (grid_path, file_path, dy_wct, t):
 
     # Bounds on Drake Passage; edit for new grids
     # i-index of single north-south line to plot (representing a zonal slice);
@@ -213,25 +214,24 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
     j_min = 229
     j_max = 298
 
-    # Read ubar, converting to float128 to prevent overflow during integration
+    grid_id = Dataset(grid_path, 'r')
+    angle = grid_id.variables['angle'][:-15,:]
+    grid_id.close()
+
+    # Rotate velocities into lat-lon space
     id = Dataset(file_path, 'r')
     ubar = ma.asarray(id.variables['ubar'][t,:-15,:], dtype=float128)
+    vbar = ma.asarray(id.variables['vbar'][t,:-15,:], dtype=float128)
     id.close()
-
-    # Interpolate ubar onto the rho-grid
-    w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
-    middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
-    e_bdry_ubar = w_bdry_ubar[:]
-    ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
-    # Throw away periodic boundary overlap
-    ubar = ubar[:,:-3]
-
-    # Trim arrays to these bounds
-    ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
+    ubar_lonlat, vbar_lonlat = rotate_vector_roms(ubar, vbar, angle)
+    # Throw away the overlapping periodic boundary
+    ubar_lonlat = ubar_lonlat[:,:-3]
+    # Trim to Drake Passage bounds
+    ubar_DP = ubar_lonlat[j_min:j_max,i_DP]
     dy_wct_DP = dy_wct[j_min:j_max,i_DP]
 
     # Calculate transport
-    transport = sum(ubar_rho_DP*dy_wct_DP)
+    transport = sum(ubar_DP*dy_wct_DP)
 
     # Divide by 1e6 to convert to Sv
     return transport*1e-6
@@ -242,7 +242,7 @@ def calc_drakepsgtrans (file_path, dy_wct, t):
 # cice_path = path to CICE history file
 # dA = elements of area on the 2D rho grid (any mask will be removed)
 # t = timestep index in cice_path
-# Output: totalice = total sea ice extent (m^2)
+# Output: totalice = total sea ice extent (million km^2)
 def calc_totalice (cice_path, dA, t):
 
     id = Dataset(cice_path, 'r')
@@ -264,6 +264,33 @@ def calc_totalice (cice_path, dA, t):
     totalice = sum(dA_nomask*extent_flag)
     # Convert to million km^2 and return
     return totalice*1e-12   
+
+
+# Calculate total sea ice volume at the given timestep t.
+# Input:
+# cice_path = path to CICE history file
+# dA = elements of area on the 2D rho grid (any mask will be removed)
+# t = timestep index in cice_path
+# Output = totalvice = total sea ice volume (million km^3)
+def calc_totalvice (cice_path, dA, t):
+
+    id = Dataset(cice_path, 'r')
+    # Read sea ice area fraction and height
+    aice = ma.asarray(id.variables['aice'][t,:-15,:-3], dtype=float128)
+    hi = ma.asarray(id.variables['hi'][t,:-15,:-3], dtype=float128)
+    id.close()
+
+    # Remove masks on aice, hi, dA. Fill aice and hi with zeros on land mask.
+    aice_nomask = aice.data
+    aice_nomask[aice.mask] = 0.0
+    hi_nomask = hi.data
+    hi_nomask[hi.mask] = 0.0
+    dA_nomask = dA.data
+
+    # Integrate volume
+    totalvice = sum(dA_nomask*aice_nomask*hi_nomask)
+    # Convert to million km^3 and return
+    return totalvice*1e-12
 
 
 # Calculate total sea ice-to-ocean freshwater flux at the given timestep t.
@@ -316,12 +343,13 @@ def calc_bwtemp (file_path, dA, t):
 
 # Main routine
 # Input:
+# grid_path = path to ROMS grid file
 # file_path = path to ocean history/averages file
 # cice_path = path to CICE history file
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def spinup_plots (file_path, cice_path, log_path):
+def spinup_plots (grid_path, file_path, cice_path, log_path):
 
     # Observed basal mass loss (Rignot 2013) and uncertainty
     obs_massloss = 1325
@@ -332,12 +360,13 @@ def spinup_plots (file_path, cice_path, log_path):
 
     time = []
     ohc = []
-    totalsalt = []
+    avgsalt = []
     massloss = []
     tke = []
     drakepsgtrans = []
     totalice = []
-    totalfwflux = []
+    totalvice = []
+    #totalfwflux = []
     bwtemp = []
     # Check if the log file exists
     if exists(log_path):
@@ -358,7 +387,7 @@ def spinup_plots (file_path, cice_path, log_path):
                 break
         for line in f:
             try:
-                totalsalt.append(float(line))
+                avgsalt.append(float(line))
             except (ValueError):
                 break
         for line in f:
@@ -383,9 +412,14 @@ def spinup_plots (file_path, cice_path, log_path):
                 break
         for line in f:
             try:
-                totalfwflux.append(float(line))
+                totalvice.append(float(line))
             except(ValueError):
                 break
+        #for line in f:
+            #try:
+                #totalfwflux.append(float(line))
+            #except(ValueError):
+                #break
         for line in f:
             bwtemp.append(float(line))
         f.close()
@@ -408,18 +442,20 @@ def spinup_plots (file_path, cice_path, log_path):
         print 'Calculating ocean heat content'
         ohc.append(calc_ohc(file_path, dV, rho, t))
         print 'Calculating total salt content'
-        totalsalt.append(calc_totalsalt(file_path, dV, rho, t))
+        avgsalt.append(calc_avgsalt(file_path, dV, t))
         print 'Calculating basal mass loss'
         massloss_tmp, massloss_factor = calc_massloss(file_path, dA, t)
         massloss.append(massloss_tmp)
         print 'Calculating total kinetic energy'
         tke.append(calc_tke(file_path, dV, rho, t))
         print 'Calculating Drake Passage transport'
-        drakepsgtrans.append(calc_drakepsgtrans(file_path, dy_wct, t))
+        drakepsgtrans.append(calc_drakepsgtrans(grid_path, file_path, dy_wct, t))
         print 'Calculating total sea ice extent'
         totalice.append(calc_totalice(cice_path, dA, t))
-        print 'Calculating total sea ice-to-ocean freshwater flux'
-        totalfwflux.append(calc_totalfwflux(cice_path, dA, t))
+        print 'Calculating total sea ice volume'
+        totalvice.append(calc_totalvice(cice_path, dA, t))
+        #print 'Calculating total sea ice-to-ocean freshwater flux'
+        #totalfwflux.append(calc_totalfwflux(cice_path, dA, t))
         print 'Calculating average bottom water temperature in ice shelf cavities'
         bwtemp.append(calc_bwtemp(file_path, dA, t))
 
@@ -434,11 +470,11 @@ def spinup_plots (file_path, cice_path, log_path):
 
     print 'Plotting total salt content'
     clf()
-    plot(time, totalsalt)
+    plot(time, avgsalt)
     xlabel('Years')
-    ylabel('Southern Ocean Salt Content (kg)')
+    ylabel('Average Salinity (psu)')
     grid(True)
-    savefig('totalsalt.png')
+    savefig('avgsalt.png')
 
     print 'Plotting basal mass loss and area-averaged ice shelf melt rate'
     clf()
@@ -506,15 +542,23 @@ def spinup_plots (file_path, cice_path, log_path):
     grid(True)
     savefig('totalice.png')
 
-    print 'Plotting total sea ice-to-ocean freshwater flux'
+    print 'Plotting total sea ice volume'
     clf()
-    plot(time, totalfwflux)
-    # Add a line at zero
-    plot(time, zeros(len(totalfwflux)), color='black')
+    plot(time, totalvice)
     xlabel('Years')
-    ylabel('Sea Ice-to-Ocean Freshwater Flux (Sv)')
+    ylabel(r'Total Sea Ice Volume (million km$^3$)')
     grid(True)
-    savefig('totalfwflux.png')
+    savefig('totalvice.png')
+
+    #print 'Plotting total sea ice-to-ocean freshwater flux'
+    #clf()
+    #plot(time, totalfwflux)
+    # Add a line at zero
+    #plot(time, zeros(len(totalfwflux)), color='black')
+    #xlabel('Years')
+    #ylabel('Sea Ice-to-Ocean Freshwater Flux (Sv)')
+    #grid(True)
+    #savefig('totalfwflux.png')
 
     print 'Plotting bottom water temperature'
     clf()
@@ -532,8 +576,8 @@ def spinup_plots (file_path, cice_path, log_path):
     f.write('Southern Ocean Heat Content (J):\n')
     for elm in ohc:
         f.write(str(elm) + '\n')
-    f.write('Southern Ocean Salt Content (kg):\n')
-    for elm in totalsalt:
+    f.write('Average Salinity (psu):\n')
+    for elm in avgsalt:
         f.write(str(elm) + '\n')
     f.write('Ice Shelf Basal Mass Loss (Gt/y):\n')
     for elm in massloss:
@@ -547,9 +591,11 @@ def spinup_plots (file_path, cice_path, log_path):
     f.write('Total Sea Ice Extent (million km^2):\n')
     for elm in totalice:
         f.write(str(elm) + '\n')
-    f.write('Total Sea Ice-to-Ocean Freshwater Flux (Sv):\n')
-    for elm in totalfwflux:
+    for elm in totalvice:
         f.write(str(elm) + '\n')
+    #f.write('Total Sea Ice-to-Ocean Freshwater Flux (Sv):\n')
+    #for elm in totalfwflux:
+        #f.write(str(elm) + '\n')
     f.write('Average Bottom Water Temperature in Ice Shelf Cavities (C):\n')
     for elm in bwtemp:
         f.write(str(elm) + '\n')
@@ -559,10 +605,11 @@ def spinup_plots (file_path, cice_path, log_path):
 # Command-line interface
 if __name__ == "__main__":
 
+    grid_path = raw_input('Enter path to ROMS grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
     cice_path = raw_input('Enter path to CICE history file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    spinup_plots(file_path, cice_path, log_path)
+    spinup_plots(grid_path, file_path, cice_path, log_path)
 
 

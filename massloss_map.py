@@ -3,11 +3,11 @@ from numpy import *
 from matplotlib.pyplot import *
 from matplotlib import rcParams
 
-# Make a map of unexplained percent error in annually averaged simulated basal mass loss
-# from each ice shelf that is over 5,000 km^2 in Rignot et al., 2013.
+# Make a map of unexplained percent error in annually averaged simulated basal
+# mass loss from each ice shelf that is over 5,000 km^2 in Rignot et al., 2013.
 # Input:
 # grid_path = path to ROMS grid file
-# log_path = path to log file created by massloss.py
+# log_path = path to log file created by timeseries_massloss.py
 # save = optional boolean to save the figure to a file, rather than displaying
 #        it on the screen
 # fig_name = if save=True, path to the desired filename for the figure
@@ -47,6 +47,12 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
             time.append(float(line))
         except(ValueError):
             # Reached the header for the next variable
+            break
+    # Skip the values for the entire continent
+    for line in f:
+        try:
+            pass
+        except(ValueError):
             break
     # Set up array for mass loss values at each ice shelf
     massloss_ts = empty([len(obs_massloss), len(time)])

@@ -1,6 +1,7 @@
 # Build a 1995 initialisation file for ROMS from the ECCO2 temperature and 
 # salinity reanalysis of January 1995. Set initial velocities and sea surface
-# height to zero.
+# height to zero. Under the ice shelves, extrapolate temperature and salinity
+# from the ice shelf front.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
 # the interp_ecco2roms function to find where these filenames are defined.
 
@@ -19,13 +20,6 @@ from calc_z import *
 
 # Main routine
 def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_ecco):
-
-    # Parameters for freezing point of seawater; taken from Ben's PhD thesis
-    a = -5.73e-2
-    b = 8.32e-2
-    c = -7.61e-8
-    rho = 1035.0
-    g = 9.81    
 
     # Read ECCO2 data and grid
     print 'Reading ECCO2 data'
@@ -97,22 +91,9 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 
     # Regridding happens here...
     print 'Interpolating temperature'
-    temp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, -0.5)
+    temp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
     print 'Interpolating salinity'
-    salt = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, 35)
-
-    # Identify the continental shelf
-    h_3d = tile(h, (N,1,1))
-    index = nonzero((lat_roms_3d <= -60)*(h_3d <= 1200))
-    # Set salinity over the continental shelf to a constant value, and
-    # temperature to the local freezing point
-    salt[index] = 35
-    temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
-    # Make sure the ice shelf cavities got this too
-    mask_zice_3d = tile(mask_zice, (N,1,1))
-    index = mask_zice_3d == 1
-    salt[index] = 35
-    temp[index] = a*salt[index] + b + c*rho*g*abs(z_roms_3d[index])
+    salt = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
 
     # Set initial velocities and sea surface height to zero
     u = zeros((N, num_lat, num_lon-1))
@@ -206,8 +187,8 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
     print 'Finished'
 
 
-# Given an array on the ECCO2 grid, fill land mask with constant values
-# and interpolate onto the ROMS grid.
+# Given an array on the ECCO2 grid, interoplate onto the ROMS grid, extrapolate
+# under ice shelf cavities, and fill the land mask with constant values.
 # Input:
 # A = array of size nxmxo containing values on the ECCO2 grid (dimension
 #     longitude x latitude x depth)
@@ -223,31 +204,104 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 # z_roms_3d = array of size pxqxr containing ROMS depth values in negative
 #             z-coordinates (converted from grid file using calc_z.py, as
 #             shown below in the main script)
-# fill_value = scalar containing the value with which to fill the ROMS land mask
-#              and ice shelf cavities (doesn't really matter, don't use NaN)
+# mask_rho = array of size qxr containing ROMS land mask (ocean/ice shelf 1,
+#            land 0)
+# mask_zice = array of size qxr containing ROMS ice shelf mask (ice shelf 1,
+#             ocean/land 0)
+# fill = scalar containing the value with which to fill the ROMS land mask
+#        (doesn't really matter, don't use NaN)
 # Output:
 # B = array of size pxqxr containing values on the ROMS grid (dimension depth x
 #     latitude x longitude)
-def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, fill_value):
+def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, fill):
+
+    # Radius of the Earth in m
+    r = 6.371e6
+    # Degrees to radians conversion factor
+    deg2rad = pi/180.0
 
     # Calculate N based on size of ROMS grid
     N = size(lon_roms_3d, 0)
 
-    # Fill the ECCO2 land mask with a constant value close to the mean of A
-    # This is less than ideal, but we will overwrite the continental shelf
-    # values anyway later
-    Afill = A
-    Afill[A.mask] = fill_value
+    # Unmask A and fill with NaNs
+    A_unmask = A.data
+    A_unmask[A.mask]=NaN
 
-    # Build a function for linear interpolation of A
-    interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), Afill)
+    # Build a function for linear interpolation of A; set flag to fill
+    # out-of-bounds values with NaN
+    interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), A_unmask, bounds_error=False, fill_value=NaN)
     B = zeros(shape(lon_roms_3d))
+
     # Interpolate each z-level individually - 3D vectorisation uses too
     # much memory!
     for k in range(N):
         print '...vertical level ', str(k+1), ' of ', str(N)
         # Pass positive values for ROMS depth
-        B[k,:,:] = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))
+        tmp = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))
+        # Fill NaNs with constant value
+        index = isnan(tmp)
+        tmp[index] = fill
+        # Fill land mask with constant value
+        tmp[mask_rho==0] = fill
+        # Save this depth level
+        B[k,:,:] = tmp
+
+    print '...selecting the ice shelf front'
+    # Find the ice shelf front
+    front = zeros(shape(lon_roms_3d))
+    # Find northernmost latitude with ice shelves
+    nbdry_zice = where(sum(mask_zice, axis=1) > 0)[-1][-1] + 2
+    # Loop over all cells; can't find a cleaner way to do this
+    for j in range(nbdry_zice):
+        for i in range(size(mask_zice,1)):
+            # First make sure this is an ocean point
+            if mask_rho[j,i] == 1:
+                # Find bounds on window of radius 1
+                j_min = max(j-1,0)
+                j_max = min(j+2, size(mask_zice,0))
+                i_min = max(i-1,0)
+                i_max = min(i+2, size(mask_zice,1))
+                # Points at the ice shelf front are not ice shelf points, but
+                # have at least one neighbour that is
+                if mask_zice[j,i] == 0 and any(mask_zice[j_min:j_max,i_min:i_max] == 1):
+                    front[:,j,i] = 1
+
+    print '...extrapolating under ice shelves'
+    mask_zice_3d = tile(mask_zice, (N,1,1))
+    for j in range(nbdry_zice, -1, -1):
+        print '...latitude index ' + str(nbdry_zice-j+1) + ' of ' + str(nbdry_zice+1)
+        # Find coordinates of ice shelf front points
+        lon_front = lon_roms_3d[front==1]
+        lat_front = lat_roms_3d[front==1]
+        z_front = z_roms_3d[front==1]
+        # Also find the values of the given variable here
+        B_front = B[front==1]
+        for i in range(size(mask_zice,1)):
+            if mask_zice[j,i] == 1:
+                for k in range(N):
+                    # Calculate Cartesian distance from this point to each point
+                    # at the ice shelf front
+                    dlon = lon_front - lon_roms_3d[k,j,i]
+                    index = dlon > 300
+                    dlon[index] -= 360
+                    index = dlon < -300
+                    dlon[index] += 360
+                    dlon = abs(dlon)
+                    dlat = abs(lat_front - lat_roms_3d[k,j,i])
+                    dz = abs(z_front - z_roms_3d[k,j,i])
+                    dx = r*cos(lat_roms_3d[k,j,i]*deg2rad)*dlon*deg2rad
+                    dy = r*dlat*deg2rad
+                    dist = sqrt(dx**2 + dy**2 + dz**2)
+                    # Find the index with the minimum distance: this is the
+                    # nearest-neighbour
+                    nearest = argmin(dist)
+                    B[k,j,i] = B_front[nearest]
+        # Update the ice shelf front points to include the new points we've just
+        # extrapolated to
+        front_tmp = front[:,j,:]
+        mask_zice_tmp = mask_zice_3d[:,j,:]
+        front_tmp[mask_zice_tmp==1] = 1
+        front[:,j,:] = front_tmp
         
     return B
 
@@ -259,8 +313,8 @@ if __name__ == "__main__":
     # Path to ROMS grid file
     grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
     # Path to ECCO2 files for temperature and salinity in January 1995
-    theta_file = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.199501.nc'
-    salt_file = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.199501.nc'
+    theta_file = '../ROMS-CICE-MCT/data/THETA.1440x720x50.199501.nc'
+    salt_file = '../ROMS-CICE-MCT/data/SALT.1440x720x50.199501.nc'
     # Path to desired output file
     output_file = '../ROMS-CICE-MCT/data/ecco2_ini.nc'
 

@@ -5,6 +5,7 @@ cice_grid.py: Given a ROMS grid file, create corresponding CICE grid and kmt
 	      To run: Open python or ipython, and type "run cice_grid.py." The
 	              script will prompt you for paths to the existing ROMS
 		      grid file and the desired CICE grid and kmt files.
+
 woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
                text file (FESOM input format) to NetCDF.
 	       To run: First edit user parameters (file paths) near the top of
@@ -13,11 +14,10 @@ woa_netcdf.py: Converts World Ocean Atlas temperature and salinity data from
 
 romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
                      data for temperature and salinity; starts with a motionless
-		     ocean and zero sea surface height. Under ice shelves, sets
-		     the salinity to a constant value (34.5 psu) and the
-		     temperature to the local freezing point. Uses WOA data
-		     assumed to be converted from FESOM input using
-		     woa_netcdf.py
+		     ocean and zero sea surface height. Under ice shelves,
+		     extrapolates temperature and salinity using
+		     nearest-neighbour techniques. Uses WOA data assumed to be
+		     converted from FESOM input using woa_netcdf.py.
 		     To run: First edit user parameters (file paths and grid
 		             parameters) near the bottom of the file (after the
 			     Then make sure that you have scipy version 0.14 or
@@ -25,6 +25,18 @@ romscice_ini_woa.py: Builds a ROMS initialisation file using World Ocean Atlas
 			     python/2.7.6; instructions at the top of the file).
 			     Then open python/ipython and type "run
 			     romscice_ini_woa.py".
+
+romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
+                      temperature and salinity; starts with a motionless ocean
+		      and zero sea surface height. In ice shelf cavities,
+		      temperature and salinity are linearly extrapolated
+		      using nearest-neighbour as in romscice_ini_woa.py.
+		      To run: First edit user parameters (file paths and grid
+		              parameters) near the bottom of the file. Then make
+			      sure that you have scipy version 0.14 or higher
+			      (on raijin, this means switching to python/2.7.6;
+			      instructions at the top of the file). Then open
+			      python/ipython and type "run romscice_ini.py".
 
 romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
                  year of monthly ECCO2 data for temperature, salinity, and
@@ -36,6 +48,32 @@ romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
 			 switching to python/2.7.6; instructions at the top
 			 of the file). Then open python or ipython and type
 			 "run romscice_nbc.py".
+
+convert_era.job: A self-submitting batch job which converts 1 year of
+                 ERA-Interim sub-daily data into a ROMS-CICE forcing file,
+		 in chunks of 100 6-hour timesteps at once (otherwise the python
+		 memory overflows because this is a LOT of data). Depends on
+		 roms_cice_atm_subdaily.py.
+		 To run: First edit user parameters in romscice_atm_subdaily.py
+		         (see below). Then edit the PBS job settings at the top
+			 of this file. Then, to get the batch jobs started for
+			 a given year (say 1992), type
+			 qsub -v YEAR=1992,COUNT=0 convert_era.job
+			 You can also submit multiple years quickly with a bash
+			 loop:
+			 for i in `seq 1992 2009`;
+			 do
+			     qsub -v YEAR=$i,COUNT=0 convert_era.job
+			 done
+
+romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
+                          atmospheric forcing file (plus 50 12-hour timesteps
+			  of ERA-Interim precipitation) to a ROMS-CICE forcing
+			  file.
+			  To run: Edit user parameters near the top of the
+			          script (mainly just file paths). This script
+				  is designed to be called by a self-submitting
+				  batch job, e.g. convert_era.job.
 
 romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
                          atmospheric forcing to ROMS-CICE input forcing files
@@ -83,6 +121,42 @@ add_iceberg_melt.py: Read Martin and Adcroft's monthly climatology of
 			     containing one year of monthly averaged
 			     precipitation; the iceberg fluxes will be added
 			     to this.
+
+add_tide_period.py: Given a ROMS tide file with tidal potential amplitude and
+                    phase angle (created using Kate's potential tide scripts),
+		    add the tidal period in seconds for each component.
+		    To run: First edit the variable "tide_file" to point to the
+		            correct file to edit. Then open python or ipython
+			    and type "run add_tide_period.py".
+
+eraint_rotate_winds.py: Rotate the winds in a ROMS-CICE forcing file,
+                        interpolated from ERA-Interim as in
+			romscice_atm_subdaily.py or romscice_atm_monthly.py,
+			so that they are in local x-y space (i.e. positive
+			Uwind points directly to the cell to the right;
+			positive Vwind points directly to the cell above) rather
+			than lon-lat space, which is slightly rotated.
+			To run: Open python or ipython and type
+			        "run eraint_rotate_winds.py". You will be
+				prompted for the path to the ROMS grid file and
+				the forcing file to rotate.
+
+remove_cavities.py: Remove the ice shelf cavities from the given ROMS grid file
+                    and fill them in with land. After you run this script, I
+		    suggest you remove the variables "zice" and "mask_zice"
+		    from the file using NCO, to avoid any confusion later.
+		    To run: Open python or ipython and type
+		            "run remove_cavities.py". You will be prompted for
+			    the path to the ROMS grid file you wish to edit.
+
+uvp_grid_fix.py: The Matlab scripts I use to generate the ROMS grid assume that
+                 the u-grid, v-grid, and psi-grid points have the same locations
+		 as the rho-grid, and they just chop off the last point in the
+		 required dimension(s). This is not correct. This script fixes
+		 that.
+		 To run: Open python or ipython and type "run uvp_grid_fix.py".
+		         You will be prompoted for the path to the ROMS grid
+			 file you wish to edit.
 
 
 ***POST-PROCESSING DIAGNOSTICS***
@@ -172,18 +246,20 @@ dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
 			   The script will prompt you for paths to the ROMS
 			   grid file and the ocean history or averages file.
 
-massloss.py: Calculates and plots timeseries of basal mass loss and
-             area-averaged melt rates from major ice shelves during a ROMS
-             simulation. Also writes the timeseries to a log file so they don't
-	     have to be recomputed if the run is extended; at the beginning of
-	     this script, previous values will be read from the same log file
-	     if it exists.
-	     To run: Open python or ipython, and type "run massloss.py". The
-	             script will prompt you for the paths to the ROMS grid file,
-		     the ocean history or averages file, and the log file. If
-		     you are using ice shelf draft data from something other
-		     than RTopo 1.05 you might need to tweak the lat and lon
-		     limits.
+timeseries_massloss.py: Calculates and plots timeseries of basal mass loss and
+                        area-averaged melt rates from major ice shelves and the
+			entire continent during a ROMS simulation. Also writes
+			the timeseries to a log file so they don't have to be
+			recomputed if the run is extended; at the beginning of
+			this script, previous values will be read from the same
+			log file if it exists.
+	                To run: Open python or ipython, and type
+			        "run timeseries_massloss.py". The script will
+				prompt you for the paths to the ROMS grid file,
+				the ocean history or averages file, and the log
+				file. If you are using ice shelf draft data
+				from something other than RTopo 1.05 you might
+				need to tweak the lat and lon limits.
 
 
 ***CMIP5 ANALYSIS***
@@ -521,23 +597,24 @@ uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
 massloss_map.py: Make a map of unexplained percent error in annually averaged
                  simulated basal mass loss from each ice shelf that is over
 		 5,000 km^2 in Rignot et al., 2013.
-		 To run: First make sure your logfile from massloss.py is up to
-		         date, as this script reads simulated basal mass loss
-			 timeseries from this logfile. Then open python or
-			 ipython and type "run massloss_map.py". The script will
-			 prompt you for paths to the ROMS grid file and the
-			 mass loss logfile, and whether to save the figure (and
-			 if so, what filename) or display it on the screen.
+		 To run: First make sure your logfile from
+		         timeseries_massloss.py is up to date, as this script
+			 reads simulated basal mass loss timeseries from this
+			 logfile. Then open python or ipython and type
+			 "run massloss_map.py". The script will prompt you for
+			 paths to the ROMS grid file and the mass loss logfile,
+			 and whether to save the figure (and if so, what
+			 filename) or display it on the screen.
 
 ismr_map.py: Same as massloss_map.py, but for area-averaged melt rates rather
              than area-integrated mass loss.
-	     To run: First make sure your logfile from massloss.py is up to
-	             date, as this script reads simulated basal mass loss
-		     timeseries from this logfile. Then open python or ipython
-		     and type "run ismr_map.py". The script will prompt you for
-		     paths to the ROMS grid file and the mass loss logfile, and
-		     whether to save the figure (and if so, what filename) or
-		     display it on the screen.
+	     To run: First make sure your logfile from timeseries_massloss.py
+	             is up to date, as this script reads simulated basal mass
+		     loss timeseries from this logfile. Then open python or
+		     ipython and type "run ismr_map.py". The script will prompt
+		     you for paths to the ROMS grid file and the mass loss
+		     logfile, and whether to save the figure (and if so, what
+		     filename) or display it on the screen.
 
 nsidc_aice_monthly.py: Make a figure comparing sea ice concentration from NSIDC
                        (1995 data) and CICE (latest year of spinup under
@@ -594,40 +671,15 @@ bwsalt_plot.py: Creates a circumpolar plot of bottom water salinity, averaged
 			figure (and if so, what filename) or display it on
 			screen.
 
-ismr_seasonal_cycle.py: Make a map of the magnitude of the seasonal cycle (over
-                        the last year of simulation) in area-averaged melt rates
-                        for each ice shelf that is over 5,000 km^2 in Rignot
-			et al., 2013.
-			To run: First make sure your logfile from massloss.py is
-			        up to date, as this script reads simulated
-				basal mass loss timeseries from this log file.
-				Then open python or ipython and type
-				"run ismr_seasonal_cycle.py". The script will
-				prompt you for paths to the ROMS grid file and
-				the mass loss logfile, and whether to save the
-				figure (and if so, what filename) or display it
-				on the screen.
-
-massloss_map.py: Make a map of unexplained error in annually averaged simulated
-                 basal mass loss from each ice shelf that is over 5,000 km^2 in
-		 Rignot et al., 2013.
-		 To run: First make sure your logfile from massloss.py is up to
-		         date, as this script reads simulated basal mass loss
-			 timeseries from this logfile. Then open python or
-			 ipython and type "run massloss_map.py". The script will
-			 prompt you for paths to the ROMS grid file and the
-			 mass loss logfile, and whether to save the figure (and
-			 if so, what filename) or display it on the screen.
-
 sose_roms_seasonal.py: Make a 4x2 plot compring lat vs. depth slices of
                        seasonally averaged temperature or salinity at the given
 		       longitude, between ROMS (last year of simulation) and
 		       SOSE (2005-2010 climatology).
 		       To run: First make the sure the path to the SOSE seasonal
-		               climatology file, stored in the variable sose_file
-			       near the top of the main function, is correct.
-			       (If you don't have this file ask Kaitlin for it.)
-			       Then Open python or ipython and type
+		               climatology file, stored in the variable
+			       sose_file near the top of the main function, is
+			       correct. (If you don't have this file ask Kaitlin
+			       for it.) Then open python or ipython and type
 		               "run sose_roms_seasonal.py". You will be prompted
 			       for the path to the ROMS output file, whether to
 			       plot temperature or salinity, the longitude
@@ -643,6 +695,34 @@ zice_circumpolar.py: Creates a circumpolar Antarctic plot of ice shelf draft.
 		             "run zice_circumpolar.py". The script will prompt
 			     you for the path to the ROMS grid file and the
 			     filename to save the figure under.
+
+grid_res.py: Make a circumpolar plot of the horizontal resolution of the ROMS
+             grid (square root of the area of each cell).
+	     To run: Open python or ipython and type "run grid_res.py". You will
+	             be prompted for the ROMS grid file, and whether to save the
+		     figure (and if so, what filename) or display it on the
+		     screen.
+
+mld_plot.py: Create a circumpolar Antarctic plot of mixed layer depth in ROMS.
+             Follows the same process as circumpolar_plot.py, but masking out
+	     the ice shelves requires a special case.
+	     To run: Open python or ipython and type "mld_plot.py". You will
+	             be prompted for the ROMS output file, the timestep to
+		     plot, colour bounds (optional), whether to save the figure
+		     (and if so, what filename) or display it on the screen.
+		     This script is non-repeating.
+
+make_zonal_slices.sh: Example of a bash script that calls sose_roms_seasonal.py
+                      for both temperature and salinity at 10 degree increments
+		      all along the Antarctic coastline.
+		      To run: First edit the variable ROMS_FILE to point to the
+		              ROMS output file you want plots for (it must
+			      contain at least 1 year of 5-day averages).
+			      Also change whatever other arguments you want
+			      in the calls to sose_roms_seasonal, such as the
+			      output file name or the maximum depth to plot.
+			      Then just type "./make_zonal_slices.sh" in the
+			      shell and it will go.
 
 
 ***ANIMATIONS***
@@ -669,12 +749,27 @@ calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
 cartesian_grid_2d.py: Given ROMS grid variables, calculate 2D Cartesian
                       integrands dx and dy.
 		      To run: This is a function designed to be called from
-		              other scripts. See for example massloss.py
+		              other scripts. See for example
+			      timeseries_massloss.py
 
 cartesian_grid_3d.py: Given ROMS grid variables, calculate 3D Cartesian
                       integrands dx, dy, and dz, as well as 3D z-coordinates.
 		      To run: This is a function designed to be called from
 		              other scripts. See for example spinup_plots.py.
+
+rotate_vector_cice.py: Given a 2D vector in x-y space on the CICE grid, rotate
+                       it to lon-lat space.
+		       To run: This is a function designed to be called from
+		               other scripts. See for example
+			       circumpolar_cice_plot.py.
+
+rotate_vector_roms.py: Given a 2D vector in x-y space on the ROMS grid
+                       (x-component on the u-grid, y-component on the v-grid),
+		       interpolate them both to the rho-grid and rotate the
+		       vector to lon-lat space.
+		       To run: This is a function designed to be called from
+		               other scripts. See for example
+			       circumpolar_plot.py.
 
 
 ***OBSOLETE***
@@ -704,42 +799,6 @@ update_grid.sh: After making changes to bathymetry, ice shelf draft, and masks
 			plus PBS flags for the raijin queue. Hopefully it will
 			still be useful. Then type "qsub update_grid.sh" to
 			submit to the queue.
-
-convert_era.job: A self-submitting batch job which converts 1 year of
-                 ERA-Interim sub-daily data into a ROMS-CICE forcing file,
-		 in chunks of 100 6-hour timesteps at once (otherwise the python
-		 memory overflows because this is a LOT of data). Depends on
-		 roms_cice_atm_subdaily.py.
-		 To run: First edit user parameters in romscice_atm_subdaily.py
-		         (see below). Then edit the PBS job settings at the top
-			 of this file. Then, to get the batch jobs started for
-			 a given year (say 1992), type
-			 qsub -v YEAR=1992,COUNT=0 convert_era.job
-			 You can also submit multiple years quickly with a bash
-			 loop:
-			 for i in `seq 1992 2009`;
-			 do
-			     qsub -v YEAR=$i,COUNT=0 convert_era.job
-			 done
-
-romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
-                          atmospheric forcing file (plus 50 12-hour timesteps
-			  of ERA-Interim precipitation) to a ROMS-CICE forcing
-			  file.
-			  To run: Edit user parameters near the top of the
-			          script (mainly just file paths). This script
-				  is designed to be called by a self-submitting
-				  batch job, e.g. convert_era.job.
-
-romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
-                      temperature and salinity; starts with a motionless ocean
-		      and zero sea surface height.
-		      To run: First edit user parameters (file paths and grid
-		              parameters) near the bottom of the file. Then make
-			      sure that you have scipy version 0.14 or higher
-			      (on raijin, this means switching to python/2.7.6;
-			      instructions at the top of the file). Then open
-			      python/ipython and type "run romscice_ini.py".
 
 convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
                   northern lateral bounday conditions for ROMS.

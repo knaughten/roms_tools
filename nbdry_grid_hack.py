@@ -21,27 +21,21 @@ def nbdry_grid_hack (grid_file, num_pts):
 
     # Loop over longitude
     for i in range(size(h,1)):
-        # Only modify columns where the northern boundary is open
-        # (i.e. not land)
-        if mask_rho[-1,i] == 1:
-            # Set bathymetry and land mask to be the same as the
-            # point "num_pts" from the northern boundary
-            for j in range(1, num_pts):
-                h[-j,i] = h[-num_pts,i]
-                mask_rho[-j,i] = mask_rho[-num_pts,i]
-
-    # Update the other masks
-    mask_u = mask_rho[:,1:]*mask_rho[:,:-1]
-    mask_v = mask_rho[1:,:]*mask_rho[:-1,:]
-    mask_psi = mask_rho[1:,1:]*mask_rho[1:,:-1]*mask_rho[:-1,1:]*mask_rho[:-1,:-1]
+        # Find the southernmost unmasked cell within "num_pts" of the
+        # northern boundary and set all the points north of it to match
+        found_pt = False
+        for j in range(num_pts, -1, -1):
+            if mask_rho[-j,i] == 1:
+                if found_pt:
+                    # Already found the right point
+                    h[-j,i] = val
+                else:
+                    # This is the first unmasked point
+                    found_pt = True
+                    val = h[-j,i]
 
     # Save changes
     id.variables['h'][:,:] = h
-    id.variables['mask_rho'][:,:] = mask_rho
-    id.variables['mask_u'][:,:] = mask_u
-    id.variables['mask_v'][:,:] = mask_v
-    id.variables['mask_psi'][:,:] = mask_psi
-
     id.close()
 
 

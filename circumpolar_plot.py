@@ -2,6 +2,7 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 from cartesian_grid_3d import *
+from rotate_vector_roms import *
 
 # Make a circumpolar Antarctic plot of the given (horizontal) ROMS variable.
 # Input:
@@ -23,7 +24,8 @@ from cartesian_grid_3d import *
 # save = optional boolean flag indicating that the plot should be saved to a 
 #        file rather than displayed on the screen
 # fig_name = if save=True, filename for figure
-def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds=None, save=False, fig_name=None):
+# grid_path = path to grid file; only needed if var_name is a vector component
+def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -52,59 +54,58 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
         units = id.variables[var_name].units
     long_name = id.variables[var_name].long_name
 
-    # Figure out what grid the variable is on
-    grid_string = id.variables[var_name].coordinates
-    if grid_string.startswith('lon_rho'):
-        grid_name = 'rho'
-        lon_name = 'lon_rho'
-        lat_name = 'lat_rho'
-    elif grid_string.startswith('lon_u'):
-        grid_name = 'u'
-        lon_name = 'lon_u'
-        lat_name = 'lat_u'
-    elif grid_string.startswith('lon_v'):
-        grid_name = 'v'
-        lon_name = 'lon_v'
-        lat_name = 'lat_v'
-    else:
-        print 'Grid type ' + grid_string + ' not supported'
-        id.close()
-        return
-
+    # Check for vector variables that need to be rotated
+    if var_name in ['ubar', 'vbar', 'u', 'v', 'sustr', 'svstr', 'bustr', 'bvstr']:
+        grid_id = Dataset(grid_path, 'r')
+        angle = grid_id.variables['angle'][:-15,:]
+        grid_id.close()
+        if var_name in ['ubar', 'sustr', 'bustr']:
+            # 2D u-variable
+            u_data = data[:,:]
+            v_data = id.variables[var_name.replace('u','v')][tstep-1,:-15,:]
+            u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+            data = u_data_lonlat
+        elif var_name in ['vbar', 'svstr', 'bvstr']:
+            # 2D v-variable
+            v_data = data[:,:]
+            u_data = id.variables[var_name.replace('v','u')][tstep-1,:-15,:]
+            u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+            data = v_data_lonlat
+        elif var_name in ['u']:
+            # 3D u-variable
+            data_full_ugrid = data_full[:,:,:]
+            data_full = ma.empty([data_full_ugrid.shape[0],data_full_ugrid.shape[1],data_full_ugrid.shape[2]+1])
+            for k in range(N):
+                u_data = data_full_ugrid[k,:,:]
+                v_data = id.variables[var_name.replace('u','v')][tstep-1,k,:-15,:]
+                u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+                data_full[k,:,:] = u_data_lonlat
+        elif var_name in ['v']:
+            # 3D v-variable
+            data_full_vgrid = data_full[:,:,:]
+            data_full = ma.empty([data_full_vgrid.shape[0],data_full_vgrid.shape[1]+1,data_full_vgrid.shape[2]])
+            for k in range(N):
+                v_data = data_full_vgrid[k,:,:]
+                u_data = id.variables[var_name.replace('v','u')][tstep-1,k,:-15,:]
+                u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+                data_full[k,:,:] = v_data_lonlat        
+ 
     # Read grid variables
     h = id.variables['h'][:-15,:]
     zice = id.variables['zice'][:-15,:]
-    # h and zice are on the rho-grid; interpolate if necessary
-    if grid_name == 'u':
-        h = 0.5*(h[:,0:-1] + h[:,1:])
-        zice = 0.5*(zice[:,0:-1] + zice[:,1:])
-    elif grid_name == 'v':
-        h = 0.5*(h[0:-1,:] + h[1:,:])
-        zice = 0.5*(zice[0:-1,:] + zice[1:,:])
-    # Read the correct lat and lon for this grid
-    lon = id.variables[lon_name][:-15,:]
-    lat = id.variables[lat_name][:-15,:]
+    lon = id.variables['lon_rho'][:-15,:]
+    lat = id.variables['lat_rho'][:-15,:]
     id.close()
 
     # Throw away the overlapping periodic boundary
-    if grid_name == 'u':
-        if choose_depth:
-            data_full = data_full[:,:,:-1]
-        else:
-            data = data[:,:-1]
-        lon = lon[:,:-1]
-        lat = lat[:,:-1]
-        h = h[:,:-1]
-        zice = zice[:,:-1]
+    if choose_depth:
+        data_full = data_full[:,:,:-2]
     else:
-        if choose_depth:
-            data_full = data_full[:,:,:-2]
-        else:
-            data = data[:,:-2]
-        lon = lon[:,:-2]
-        lat = lat[:,:-2]
-        h = h[:,:-2]
-        zice = zice[:,:-2]
+        data = data[:,:-2]
+    lon = lon[:,:-2]
+    lat = lat[:,:-2]
+    h = h[:,:-2]
+    zice = zice[:,:-2]
 
     # Convert to spherical coordinates
     x = -(lat+90)*cos(lon*deg2rad+pi/2)
@@ -354,6 +355,12 @@ if __name__ == "__main__":
         depth_bounds = None
     id.close()
 
+    if var_name in ['ubar', 'vbar', 'u', 'v', 'sustr', 'svstr', 'bustr', 'bvstr']:
+        # Will need the grid file to get the angle
+        grid_path = raw_input("Path to ROMS grid file: ")
+    else:
+        grid_path = None
+
     # Get index of time axis in ROMS history/averages file
     tstep = int(raw_input("Timestep number (starting at 1): "))
 
@@ -375,7 +382,7 @@ if __name__ == "__main__":
         fig_name = None
 
     # Make the plot
-    circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name)
+    circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name, grid_path)
 
     # Repeat until the user wants to exit
     while True:
@@ -431,6 +438,9 @@ if __name__ == "__main__":
                             depth = NaN
                             depth_bounds = None
                         id.close()
+                        if var_name in ['ubar', 'vbar', 'u', 'v', 'sustr', 'svstr', 'bustr', 'bvstr'] and grid_path is None:
+                            # Will need the grid file to get the angle
+                            grid_path = raw_input("Path to ROMS grid file: ")
                     elif int(changes) == 3:
                         # New depth information
                         depth_type = raw_input("Single depth (s) or vertical average (v)? ")
@@ -479,7 +489,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name)
+            circumpolar_plot(file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds, save, fig_name, grid_path)
 
         else:
             break

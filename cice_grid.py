@@ -15,14 +15,37 @@ def cice_grid (roms_grid_name, cice_grid_name, cice_kmt_name):
     cice_kmt = Dataset(cice_kmt_name, 'w')
 
     # Read variables
-    ulon = roms.variables['lon_rho'][:,:]
-    ulat = roms.variables['lat_rho'][:,:]
-    angle = roms.variables['angle'][:]
+    ulon_tmp = roms.variables['lon_psi'][:,:]
+    ulat_tmp = roms.variables['lat_psi'][:,:]
+    # Convert angle to degrees
+    angle = roms.variables['angle'][:]*180/pi
     # Mask out ice shelf cavities for sea ice
     kmt = roms.variables['mask_rho'][:,:] - roms.variables['mask_zice'][:,:]
 
     i = arange(angle.shape[1])
     j = arange(angle.shape[0])
+
+    # Get one more index in each dimension for lat and lon; linearly extend
+    ulon = zeros([size(j), size(i)])
+    ulon[:-1,:-1] = ulon_tmp
+    # Longitude is a bit tricky because of the mod 360
+    for jj in range(size(j)):
+        ulon_1back = ulon[jj,-2]
+        ulon_2back = ulon[jj,-3]
+        if ulon_2back - ulon_1back > 300:
+            ulon_2back -= 360
+        ulon[jj,-1] = 2*ulon_1back - ulon_2back
+    for ii in range(size(i)):
+        ulon_1back = ulon[-2,ii]
+        ulon_2back = ulon[-3,ii]
+        if ulon_2back - ulon_1back < -300:
+            ulon_2back += 360
+        ulon[-1,ii] = 2*ulon_1back - ulon_2back        
+    ulat = zeros([size(j), size(i)])
+    ulat[:-1,:-1] = ulat_tmp
+    # Latitude is easy
+    ulat[-1,:] = 2*ulat[-2,:] - ulat[-3,:]
+    ulat[:,-1] = 2*ulat[:,-2] - ulat[:,-3]
 
     # Write variables
     cice_grid.createDimension('i', size(i))

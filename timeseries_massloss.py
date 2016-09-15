@@ -11,26 +11,25 @@ from cartesian_grid_2d import *
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def massloss (file_path, log_path):
+def timeseries_massloss (file_path, log_path):
 
     # Titles and figure names for each ice shelf
-    names = ['Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
-    fig_names = ['larsen_d.png', 'larsen_c.png', 'wilkins_georgevi_stange.png', 'ronne_filchner.png', 'abbot.png', 'pig.png', 'thwaites.png', 'dotson.png', 'getz.png', 'nickerson.png', 'sulzberger.png', 'mertz.png', 'totten_moscowuni.png', 'shackleton.png', 'west.png', 'amery.png', 'princeharald.png', 'baudouin_borchgrevink.png', 'lazarev.png', 'nivl.png', 'fimbul_jelbart_ekstrom.png', 'brunt_riiserlarsen.png', 'ross.png']
+    names = ['All Ice Shelves', 'Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
+    fig_names = ['total_massloss.png', 'larsen_d.png', 'larsen_c.png', 'wilkins_georgevi_stange.png', 'ronne_filchner.png', 'abbot.png', 'pig.png', 'thwaites.png', 'dotson.png', 'getz.png', 'nickerson.png', 'sulzberger.png', 'mertz.png', 'totten_moscowuni.png', 'shackleton.png', 'west.png', 'amery.png', 'princeharald.png', 'baudouin_borchgrevink.png', 'lazarev.png', 'nivl.png', 'fimbul_jelbart_ekstrom.png', 'brunt_riiserlarsen.png', 'ross.png']
     # Limits on longitude and latitude for each ice shelf
     # These depend on the source geometry, in this case RTopo 1.05
     # Note there is one extra index at the end of each array; this is because
     # the Ross region crosses the line 180W and therefore is split into two
-    lon_min = [-62.67, -65.5, -79.17, -85, -104.17, -102.5, -108.33, -114.5, -135.67, -149.17, -155, 144, 115, 94.17, 80.83, 65, 33.83, 19, 12.9, 9.33, -10.05, -28.33, -180, 158.33]
-    lon_max = [-59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 180]
-    lat_min = [-73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
-    lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
+    lon_min = [-180, -62.67, -65.5, -79.17, -85, -104.17, -102.5, -108.33, -114.5, -135.67, -149.17, -155, 144, 115, 94.17, 80.83, 65, 33.83, 19, 12.9, 9.33, -10.05, -28.33, -180, 158.33]
+    lon_max = [180, -59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 180]
+    lat_min = [-90, -73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
+    lat_max = [-30, -69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
     # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
-    obs_massloss = [1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
-    obs_massloss_error = [14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
+    obs_massloss = [1325, 1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
+    obs_massloss_error = [235, 14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
     # Observed ice shelf melt rates and uncertainty
-    obs_ismr = [0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
-    obs_ismr_error = [0.6, 1, 0.8, 0.1, 0.6, 1, 1, 0.6, 0.4, 0.3, 0.3, 0.6, 0.7, 0.6, 0.7, 0.4, 0.6, 0.4, 0.2, 0.2, 0.2, 0.2, 0.1]
-          
+    obs_ismr = [0.85, 0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
+    obs_ismr_error = [0.1, 0.6, 1, 0.8, 0.1, 0.6, 1, 1, 0.6, 0.4, 0.3, 0.3, 0.6, 0.7, 0.6, 0.7, 0.4, 0.6, 0.4, 0.2, 0.2, 0.2, 0.2, 0.1]          
     # Density of ice in kg/m^3
     rho_ice = 916
 
@@ -84,44 +83,37 @@ def massloss (file_path, log_path):
     if exists(log_path):
         # Fill first start_t timesteps with existing values
         massloss[:,0:start_t] = old_massloss[:,:]
+    # Read melt rate and convert from m/s to m/y
+    ismr = id.variables['m'][:,:-15,:-3]*365.25*24*60*60
+    id.close()
 
+    # Set up array of masked area values for each ice shelf
+    dA_masked = ma.empty([len(names), size(dA,0), size(dA,1)])
     # Set up array of conversion factors from mass loss to area-averaged melt
     # rate for each ice shelf
     factors = empty(len(names))
+    for index in range(len(names)):
+        # Mask dA for the current ice shelf (note dA is already masked
+        # with the global ice shelf mask, so just restrict the indices
+        # to isolate the given ice shelf)
+        if index == len(names)-1:
+            # Ross region is split into two
+            dA_tmp = ma.masked_where(((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]))*((lon < lon_min[index+1]) + (lon > lon_max[index+1]) + (lat < lat_min[index+1]) + (lat > lat_max[index+1])), dA)
+        else:
+            dA_tmp = ma.masked_where((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]), dA)
+        dA_masked[index,:,:] = dA_tmp[:,:]
+        area_tmp = sum(dA_masked[index,:,:])
+        factors[index] = 1e12/(rho_ice*area_tmp)
+        print 'Area of ' + names[index] + ': ' + str(area_tmp) + ' m^2'
 
-    # Process each timestep separately to prevent memory overflow
+    # Build timeseries
     for t in range(start_t, size(time)):
-        print 'Processing timestep ' + str(t-start_t+1) + ' of ' + str(size(time)-start_t)
-
-        # Read ice shelf melt rate, converting to float128 to prevent overflow
-        # during integration
-        ismr = ma.asarray(id.variables['m'][t-start_t,:-15,:-3], dtype=float128)
-        # Convert from m/s to m/y
-        ismr = ismr*365.25*24*60*60
-
         # Loop over ice shelves
         for index in range(len(names)):
-
-            # Mask dA for the current ice shelf (note dA is already masked
-            # with the global ice shelf mask, so just restrict the indices
-            # to isolate the given ice shelf)
-            if index == len(names)-1:
-                # Ross region is split into two
-                dA_tmp = ma.masked_where(((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]))*((lon < lon_min[index+1]) + (lon > lon_max[index+1]) + (lat < lat_min[index+1]) + (lat > lat_max[index+1])), dA)
-            else:
-                dA_tmp = ma.masked_where((lon < lon_min[index]) + (lon > lon_max[index]) + (lat < lat_min[index]) + (lat > lat_max[index]), dA)
-
             # Integrate ice shelf melt rate over area to get volume loss
-            volumeloss = sum(ismr*dA_tmp)
+            volumeloss = sum(ismr[t-start_t,:,:]*dA_masked[index,:,:])
             # Convert to mass loss in Gt/y
             massloss[index, t] = 1e-12*rho_ice*volumeloss
-
-            if t == start_t:
-                # Calculate conversion factor on first timestep
-                factors[index] = 1e12/(rho_ice*sum(dA_tmp))
-                print 'Area of ' + names[index] + ': ' + str(sum(dA_tmp))
-
-    id.close()
 
     # Plot each timeseries
     print 'Plotting'
@@ -152,12 +144,12 @@ def massloss (file_path, log_path):
             max_tick += dtick
         ax1.set_ylim([min_tick, max_tick])
         # Title and ticks in blue for this side of the plot
-        ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b', fontsize=18)
+        ax1.set_ylabel('Basal Mass Loss (Gt/y)', color='b')
         for t1 in ax1.get_yticklabels():
             t1.set_color('b')
-        ax1.set_xlabel('Years', fontsize=18)
-        setp(ax1.get_xticklabels(), fontsize=15)
-        setp(ax1.get_yticklabels(), fontsize=15)
+        ax1.set_xlabel('Years')
+#        setp(ax1.get_xticklabels(), fontsize=15)
+#        setp(ax1.get_yticklabels(), fontsize=15)
         ax1.grid(True)
         # Twin axis for melt rates
         ax2 = ax1.twinx()
@@ -168,12 +160,12 @@ def massloss (file_path, log_path):
         ax2.axhline(ismr_low, color='r', linestyle='dashed')
         ax2.axhline(ismr_high, color='r', linestyle='dashed')
         # Title and ticks in red for this side of the plot
-        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)', color='r', fontsize=18)
+        ax2.set_ylabel('Area-Averaged Ice Shelf Melt Rate (m/y)', color='r')
         for t2 in ax2.get_yticklabels():
             t2.set_color('r')
-        setp(ax2.get_yticklabels(), fontsize=15)
+#        setp(ax2.get_yticklabels(), fontsize=15)
         # Name of the ice shelf for the main title
-        title(names[index], fontsize=24)
+        title(names[index])
         fig.savefig(fig_names[index])
         
     print 'Saving results to log file'
@@ -227,5 +219,5 @@ if __name__ == "__main__":
     file_path = raw_input('Enter path to ocean history/averages file: ')
     log_path = raw_input('Enter path to log file to save values and/or read previously calculated values: ')
 
-    massloss(file_path, log_path)
+    timeseries_massloss(file_path, log_path)
 

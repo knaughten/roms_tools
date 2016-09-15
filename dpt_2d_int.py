@@ -1,12 +1,15 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from rotate_vector_roms import *
 
 # Calculates zonal transport through each grid cell in the Drake Passage,
 # vertically integrates, takes indefinite integral (cumulative sum) over
 # latitude, and makes a contour plot of the 2D (latitude vs time) result.
-# Input: file_path = path to ROMS ocean history or averages file
-def dpt_2d_int (file_path):
+# Input: 
+# grid_path = path to ROMS grid file
+# file_path = path to ROMS ocean history or averages file
+def dpt_2d_int (grid_path, file_path):
 
     # Radius of the Earth in m
     r = 6.371e6
@@ -28,6 +31,10 @@ def dpt_2d_int (file_path):
     j_max = 298
 
     print 'Reading grid'
+    # Read angle from the grid file
+    grid_id = Dataset(grid_path, 'r')
+    angle = grid_id.variables['angle'][:-15,:]
+    grid_id.close()
     # Read grid variables
     id = Dataset(file_path, 'r')
     h = id.variables['h'][:-15,:-3]
@@ -65,18 +72,16 @@ def dpt_2d_int (file_path):
     for t in range(size(time)):
 
         print 'Processing timestep ' + str(t+1) + ' of '+str(size(time))
-        # Read ubar and interpolate onto the rho-grid
+        # Rotate velocities into lat-lon space
         ubar = id.variables['ubar'][t,:-15,:]
-        w_bdry_ubar = 0.5*(ubar[:,0] + ubar[:,-1])
-        middle_ubar = 0.5*(ubar[:,0:-1] + ubar[:,1:])
-        e_bdry_ubar = w_bdry_ubar[:]
-        ubar_rho = ma.concatenate((w_bdry_ubar[:,None], middle_ubar, e_bdry_ubar[:,None]), axis=1)
+        vbar = id.variables['vbar'][t,:-15,:]
+        ubar_lonlat, vbar_lonlat = rotate_vector_roms(ubar, vbar, angle)
         # Throw away the overlapping periodic boundary
-        ubar_rho = ubar_rho[:,:-3]
+        ubar_lonlat = ubar_lonlat[:,:-3]
         # Trim to Drake Passage bounds
-        ubar_rho_DP = ubar_rho[j_min:j_max,i_DP]
+        ubar_DP = ubar_lonlat[j_min:j_max,i_DP]
         # Calculate transport and convert to Sv
-        transport[t,:] = ubar_rho_DP*dy_wct_DP*1e-6
+        transport[t,:] = ubar_DP*dy_wct_DP*1e-6
 
     id.close()
 
@@ -98,8 +103,9 @@ def dpt_2d_int (file_path):
 # Command-line interface
 if __name__ == "__main__":
 
+    grid_path = raw_input('Enter path to ROMS grid file: ')
     file_path = raw_input('Enter path to ocean history/averages file: ')
-    dpt_2d_int(file_path)
+    dpt_2d_int(grid_path, file_path)
     
 
 

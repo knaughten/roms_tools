@@ -2,6 +2,7 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
+from rotate_vector_roms import *
 
 # Create a zonally averaged or zonally sliced plot (i.e. depth vs latitude)
 # of the given variable.
@@ -23,7 +24,8 @@ from calc_z import *
 # save = optional boolean flag; if True, the figure will be saved with file name
 #        fig_name, if False, the figure will display on the screen
 # fig_name = optional string containing filename for figure, if save=True
-def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds=None, save=False, fig_name=None):
+# grid_path = path to grid file; only needed if var_name is a vector component
+def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
     theta_s = 0.9
@@ -42,57 +44,42 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         units = id.variables[var_name].units
     long_name = id.variables[var_name].long_name
 
-    # Figure out what grid the variable is on
-    grid_string = id.variables[var_name].coordinates
-    if grid_string.startswith('lon_rho'):
-        grid_name = 'rho'
-        lon_name = 'lon_rho'
-        lat_name = 'lat_rho'
-    elif grid_string.startswith('lon_u'):
-        grid_name = 'u'
-        lon_name = 'lon_u'
-        lat_name = 'lat_u'
-    elif grid_string.startswith('lon_v'):
-        grid_name = 'v'
-        lon_name = 'lon_v'
-        lat_name = 'lat_v'
-    else:
-        print 'Grid type ' + grid_string + ' not supported'
-        id.close()
-        return
+    # Rotate velocity if necessary
+    if var_name in ['u', 'v']:
+        grid_id = Dataset(grid_path, 'r')
+        angle = grid_id.variables['angle'][:-15,:]
+        grid_id.close()
+        if var_name == 'u':
+            data_3d_ugrid = data_3d[:,:,:]
+            data_3d = ma.empty([data_3d_ugrid.shape[0], data_3d_ugrid.shape[1], data_3d_ugrid.shape[2]+1])
+            for k in range(N):
+                u_data = data_3d_ugrid[k,:,:]
+                v_data = id.variables['v'][tstep-1,k,:-15,:]
+                u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+                data_3d[k,:,:] = u_data_lonlat
+        elif var_name == 'v':
+            data_3d_vgrid = data_3d[:,:,:]
+            data_3d = ma.empty([data_3d_vgrid.shape[0], data_3d_vgrid.shape[1]+1, data_3d_vgrid.shape[2]])
+            for k in range(N):
+                v_data = data_3d_vgrid[k,:,:]
+                u_data = id.variables['u'][tstep-1,k,:-15,:]
+                u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
+                data_3d[k,:,:] = v_data_lonlat
 
     # Read grid variables
     h = id.variables['h'][:-15,:]
     zice = id.variables['zice'][:-15,:]
-    # h, zice, and zeta are on the rho-grid; interpolate if necessary
-    if grid_name == 'u':
-        h = 0.5*(h[:,0:-1] + h[:,1:])
-        zice = 0.5*(zice[:,0:-1] + zice[:,1:])
-        zeta = 0.5*(zeta[:,0:-1] + zeta[:,1:])
-    elif grid_name == 'v':
-        h = 0.5*(h[0:-1,:] + h[1:,:])
-        zice = 0.5*(zice[0:-1,:] + zice[1:,:])
-        zeta = 0.5*(zeta[0:-1,:] + zeta[1:,:])
-    # Read the correct lat and lon for this grid (determined previously)
-    lon_2d = id.variables[lon_name][:-15,:]
-    lat_2d = id.variables[lat_name][:-15,:]
+    lon_2d = id.variables['lon_rho'][:-15,:]
+    lat_2d = id.variables['lat_rho'][:-15,:]
     id.close()
 
     # Throw away periodic boundary overlap
-    if grid_name == 'u':
-        data_3d = data_3d[:,:,:-1]
-        zeta = zeta[:,:-1]
-        h = h[:,:-1]
-        zice = zice[:,:-1]
-        lon_2d = lon_2d[:,:-1]
-        lat_2d = lat_2d[:,:-1]
-    else:
-        data_3d = data_3d[:,:,:-2]
-        zeta = zeta[:,:-2]
-        h = h[:,:-2]
-        zice = zice[:,:-2]
-        lon_2d = lon_2d[:,:-2]
-        lat_2d = lat_2d[:,:-2]        
+    data_3d = data_3d[:,:,:-2]
+    zeta = zeta[:,:-2]
+    h = h[:,:-2]
+    zice = zice[:,:-2]
+    lon_2d = lon_2d[:,:-2]
+    lat_2d = lat_2d[:,:-2]        
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
@@ -193,6 +180,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         # There is land everywhere at the northern boundary
         # Show the first 2 degrees of this land mask
         lat_max = max(lat[:,j_max]) + 2
+    lat_max = -65
     xlim([lat_min, lat_max])
     ylim([depth_min, 0])
 
@@ -441,6 +429,11 @@ if __name__ == "__main__":
 
     file_path = raw_input("Path to ocean history/averages file: ")
     var_name = raw_input("Variable name: ")
+    if var_name in ['u', 'v']:
+        # Will need the grid file to get the angle
+        grid_path = raw_input("Path to ROMS grid file: ")
+    else:
+        grid_path = None
     tstep = int(raw_input("Timestep number (starting at 1): "))
 
     lon_type = raw_input("Single longitude (s) or zonal average (z)? ")
@@ -479,7 +472,7 @@ if __name__ == "__main__":
         save = False
         fig_name = None
 
-    zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name)
+    zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name, grid_path)
 
     # Repeat until the user wants to exit
     while True:
@@ -498,6 +491,9 @@ if __name__ == "__main__":
                     elif int(changes) == 2:
                         # New variable name
                         var_name = raw_input("Variable name: ")
+                        if var_name in ['u', 'v'] and grid_path is None:
+                            # Will need the grid file to get the angle
+                            grid_path = raw_input("Path to ROMS grid file: ")
                     elif int(changes) == 3:
                         # New timestep
                         tstep = int(raw_input("Timestep number (starting at 1): "))
@@ -539,7 +535,7 @@ if __name__ == "__main__":
                 fig_name = raw_input("File name for figure: ")
 
             # Make the plot
-            zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name)
+            zonal_plot(file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds, save, fig_name, grid_path)
 
         else:
             break
