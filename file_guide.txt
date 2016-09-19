@@ -75,6 +75,30 @@ romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
 				  is designed to be called by a self-submitting
 				  batch job, e.g. convert_era.job.
 
+fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
+                missing timesteps. This script interpolates the missing
+		timesteps in a given file based on existing timesteps in that
+		file, at the same time of day and a similar time of year.
+		To run: Open python or ipython, and type "from fill_clouds
+		        import *", then "fix_file('filename')" where filename
+			is the path to the ERA-Interim file that has missing
+			timesteps. You can also easily call it in a loop, e.g.
+			for year in range(1992, 2009+1):
+			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
+
+romscice_atm_smooth.py: At the beginning of spinups, when the ocean is
+                        initially motionless, ROMS can blow up easily if
+			immediately forced with sub-daily atmospheric forcing
+			due to the strong but transient storms. To counteract
+			this problem, this script smooths the given forcing
+			files using a simple moving average (currently 5 days,
+			but can be easily changed).
+			To run: Edit the user parameters near the bottom of the
+			        file (paths to forcing files, variable names,
+				interval to smooth over, etc) then open python
+				or ipython and type "run
+				roms_cice_atm_smooth.py".
+
 romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
                          atmospheric forcing to ROMS-CICE input forcing files
 			 on the correct grid and with the correct units.
@@ -90,12 +114,33 @@ romscice_nbc_rep.py: Given a ROMS lateral bounday condition file with one year
 		             near the bottom of the file. Then open python or
 			     ipython and type "run romscice_nbc_rep.py".
 
-romscice_atm_rep.py: Given a ROMS atmospheric boundary condition file with one
-                     year of monthly data, convert it to a file which can be
-		     used repeatedly year after year (for eg spinup).
-		     To run: Edit the paths to ERA-Interim files at the bottom
-		             of the file. Then open python or ipython and type
-			     "run romscice_atm_rep.py".
+repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
+                   of daily- or sub-daily atmospheric forcing, the easiest
+		   option is to have ROMS and CICE follow regular calendars
+		   (1995, 1996, 1997, etc) and make 4 copies of this annually-
+		   repeating file which the models will cycle through every
+		   4 years. One of these years (depending on the start year)
+		   must be a leap year. Once you have made four copies of the
+		   one-year (non-leap-year) dataset, and named them with the
+		   same naming convention (e.g. AN_yyyy_unlim.nc), this script
+		   will 1) set the cycle_length attribute to 4 years in each
+		   file; 2) alter the time axis of the latter 3 files so they
+		   follow the first in sequence; and 3) interpolate data for
+		   Feb 29th on the leap year, as the average of the Feb 28th and
+		   March 1st records from the same time of day.
+		   To run: Edit the user parameters near the bottom of the file
+		           (paths to forcing files, years, variable names, etc)
+			   then open python or ipython and type
+			   "run repeat_forcing.py".
+
+repeat_forcing_monthly.py: Same as repeat_forcing but for monthly forcing fields
+                           rather than sub-daily. No interpolation is needed,
+			   just modifying the time axis to put all data on the
+			   15th of each month, with a cycle length of 4 years.
+			   To run: Edit the user parameters near the bottom of
+			           the file (paths to forcing files, years)
+				   then open python or ipython and type
+				   "run repeat_forcing_monthly.py".
 
 romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
                    components interpolated from TPXO 7.2.
@@ -105,6 +150,20 @@ romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
 			   switching to python/2.7.6; instructions at the top
 			   of the file). Then open python or ipython and type
 			   "run romscice_tides.py".
+
+romscice_nbc_zeta.py: Interpolate AVISO sea surface height climatology
+                      (annual average) to the northern boundary of the ROMS
+		      grid. Save to the existing lateral boundary condition
+		      file, created using romscice_nbc.py.
+		      To run: Edit file paths and boundary index near the top
+		              of the file. Then make sure that you have scipy
+			      version 0.14 or higher (on raijin, this means
+			      switching to python/2.7.6; instructions at the
+			      top of the file). Then open python or ipython
+			      and type "run romscice_nbc_zeta.py". You will
+			      be prompted for the path to the lateral
+			      boundary condition file that you want to add
+			      zeta to.
 
 nbdry_grid_hack.py: Modify the ROMS grid so that the northernmost 15 rows
                     (about 3 degrees) have the same bathymetry, i.e. dh/dy=0,
@@ -161,6 +220,16 @@ uvp_grid_fix.py: The Matlab scripts I use to generate the ROMS grid assume that
 
 ***POST-PROCESSING DIAGNOSTICS***
 
+make_density_file.py: Given an ocean history or averages file with temperature
+                      and salinity data, calculate density fields at each
+		      timestep using the 1980 UENSCO seawater equation of
+		      state. Save in a new file.
+		      To run: Open python or ipython, and type
+		              "run make_density_file.py". The script will
+			      prompt you for the paths to the ROMS grid file,
+			      the ocean history or averages file, and the
+			      desired path to the new density file.
+
 plot_kinetic_energy.py: Extracts the kinetic energy values written in the
                         ocean.log files (you can supply as many ocean.log files
 			as you like, from e.g. a long run split into several
@@ -195,56 +264,30 @@ plot_volume.py: Extracts the volume values written in the ocean.log files (you
 			timestep length and the output frequency for ocean.log
 			(INFOSTEP in Params.py if you are using ROMS-CICE-MCT).
 
-spinup_plots.py: Analyse a ROMS spinup by calculating and plotting 9 timeseries:
-                 total heat content, total salt content, area-averaged ice shelf
-		 melt rate, ice shelf basal mass loss, total kinetic energy,
-		 Drake Passage transport, total sea ice extent, net sea ice-to-
-		 ocean freshwater flux, and area-averaged bottom water
-		 temperature in ice shelf cavities. Also write the timeseries to
-		 a log file so they don't have to be recomputed if the run is
-		 extended; at the beginning of this script, previous values will
-		 be read from the same log file if it exists. Note that to run
-		 this file, density anomalies (variable name "rho") must be
-		 written to the ocean history/averages file. This option can be
-		 activated in the .in ROMS configuration file with Hout(idDano)
-		 and Aout(idDano). Otherwise, you can use make_density_file.py
-		 to calculate absolute density based on the seawater equation of
-		 state; however, this process is quite slow.
-		 To run: First edit the i and j coordinates of the Drake Passage
-		         (in the function calc_drakepsgtrans) for your grid, and
-			 the value of rho0 (in the function get_rho) to match
-			 what is in your .in ROMS configuration file. Then open
-			 python or ipython, and type "run spinup_plots.py". The
-			 script will prompt you for the paths to the ROMS grid
-			 file, the ocean history or averages file, the CICE
-			 history file (concatenate the (individual files first
-			 so it contains the same timesteps as the ROMS
-			 history/averages file), and the log file.
+max_vel.py: Calculate the maximum |u| and |v| at each timestep of the given
+            ocean history (or averages) file, and plot the timeseries.
+	    To run: Open python or ipython, and type "run max_vel.py". The
+	            script will prompt you for the path to the ocean history
+		    file.
 
-dpt_2d.py: Calculates zonal transport through each grid cell in the Drake
-           Passage, vertically integrates, and makes a contour plot of 2D
-	   (latitude vs time) result.
-	   To run: Edit the i and j coordinates of the Drake Passage, near the
-	           top of the file, for your grid. Then open python or ipython
-		   and type "run dpt_2d.py". The script will prompt you for
-		   paths to the ROMS grid file and the ocean history or averages
-		   file.
+avg_zeta.py: Calculate the area-averaged sea surface height at each timestep of
+             the given ocean history (or averages) file, and plot the
+	     timeseries. This script also contains useful code for calculating
+	     area averages.
+	     To run: Open python or ipython, and type "run avg_zeta.py". The
+	             script will prompt you for paths to the ocean history
+		     and ROMS grid files.
 
-dpt_2d_int.py: Like dpt_2d.py, but plots the indefinite integral over latitude
-               (cumulative sum north to south) of transport.
-	       To run: Edit the i and j coordinates of the Drake Passage, near
-	               the top of the file, for your grid. Then open python or
-		       ipython and type "run dpt_2d.py". The script will prompt
-		       you for paths to the ROMS grid file and the ocean history
-		       or averages file.
-
-dpt_timeseries.py: Like dpt_2d.py, but integrates over latitude as well as
-                   depth, and plots the resulting 1D tiemseries.
-		   To run: Edit the i and j coordinates of the Drake Passage,
-		           near the top of the file, for your grid. Then open
-			   python or ipython and type "run dpt_timeseries.py".
-			   The script will prompt you for paths to the ROMS
-			   grid file and the ocean history or averages file.
+timeseries_seaice.py: Calculates and plots timeseries of total sea ice area and
+                      volume during a ROMS-CICE simulation. Also writes the
+		      timeseries to a log file so they don't have to be
+		      recomputed if the run is extended; at the beginning of
+		      this script, previous values will be read from the same
+		      log file if it exists.
+		      To run: Open python or ipython and type
+		              "run timeseries_seaice.py". The script will
+			      prompt you for the paths to the CICE history file
+			      and the log file.			      
 
 timeseries_massloss.py: Calculates and plots timeseries of basal mass loss and
                         area-averaged melt rates from major ice shelves and the
@@ -255,11 +298,32 @@ timeseries_massloss.py: Calculates and plots timeseries of basal mass loss and
 			log file if it exists.
 	                To run: Open python or ipython, and type
 			        "run timeseries_massloss.py". The script will
-				prompt you for the paths to the ROMS grid file,
-				the ocean history or averages file, and the log
-				file. If you are using ice shelf draft data
-				from something other than RTopo 1.05 you might
-				need to tweak the lat and lon limits.
+				prompt you for the paths to the ocean history
+				or averages file and the log file. If you are
+				using ice shelf draft data from something other
+				than RTopo 1.05 you might need to tweak the lat
+				and lon limits.
+
+timeseries_dpt.py: Calculates and plots timeseries of Drake Passage transport
+                   during a ROMS simulation. Also writes the timeseries to a
+		   log file so it doesn't have to be recomputed if the run is
+		   extended; at the beginning of this script, previous values
+		   will be read from the same log file if it exists.
+		   To run: Open python or ipython and type
+		           "run timeseries_dpt.py". The script will prompt you
+			   for the paths to the ROMS grid file, the ocean
+			   history or averages file, and the log file.
+
+timeseries_3D.py: Calculates and plots timeseries of total ocean heat content,
+                  average salinity, and total kinetic energy during a ROMS
+		  simulation. Also writes the timeseries to a log file so they
+		  don't have to be recomputed if the run is extended; at the
+		  beginning of this script, previous values will be read from
+		  the same log file if it exists.
+		  To run: Open python or ipython and type
+		          "run timeseries_3D.py". The script will prompt you
+			  for the paths to the ROMS grid file, the ocean history
+			  or averages file, and the log file.
 
 
 ***CMIP5 ANALYSIS***
@@ -459,7 +523,7 @@ h_circumpolar.py: Creates a circumpolar Antarctic plot of bathymetry. Follows
 			  for paths to the ROMS grid file and the filename
 			  to save the figure as.
 
-ice2ocn_f2flux.py: Creates a circumpolar Antarctic plot of net CICE-to-ROMS
+ice2ocn_fwflux.py: Creates a circumpolar Antarctic plot of net CICE-to-ROMS
                    freshwater flux in cm/day. Follows the same process as
 		   circumpolar_cice_plot.py, but the derived variable
 		   (FW flux - salt flux, converted to cm/day) requires a
@@ -771,158 +835,16 @@ rotate_vector_roms.py: Given a 2D vector in x-y space on the ROMS grid
 		               other scripts. See for example
 			       circumpolar_plot.py.
 
-
-***OBSOLETE***
-
-roms_grid_rtopo2.py: Interpolate RTopo-2 data to an existing ROMS grid, and do
-                     some smoothing. Then overwrite the bathymetry, ice shelf
-		     draft, and masks in the ROMS grid with the new RTopo-2
-		     values.
-		     To run: Modify the user parameters near the bottom of
-		             the file. Then make sure that you have scipy
-			     version 0.14 or higher (on raijin, this means
-			     switching to python/2.7.6; instructions at the top
-			     of the file).Then open python/ipython and type
-			     "run roms_grid_rtopo2.py".
-
-update_grid.sh: After making changes to bathymetry, ice shelf draft, and masks
-                in the ROMS grid (as in roms_grid_rtopo2.py), all input files
-		which depend on water column thickness (initial conditions
-		and lateral boundary conditions) must be regenerated. If it
-		is a spinup, the lateral boundary condition file will have to
-		be altered as in romscice_nbc_rep.py. Then a new spinup will
-		have to be submitted to test the changes to the grid. It is
-		likely that this process will have to be repeated many times
-		and this bash script was created to streamline the process.
-		To run: Other users will have to alter just about every line in
-		        this script as there are a lot of paths hard-coded,
-			plus PBS flags for the raijin queue. Hopefully it will
-			still be useful. Then type "qsub update_grid.sh" to
-			submit to the queue.
-
-convert_ecco.job: A batch job which converts 1 year of ECCO2 data into
-                  northern lateral bounday conditions for ROMS.
-		  To run: First edit user parameters in romscice_nbc.py
-		          (see below). Then edit the PBS job settings at the top
-			  of this file, and the module commands if necessary to
-			  make sure you have scipy version 0.14 or higher (on
-			  raijin this means switching to python/2.7.6).
-			  To submit for a given year (say 1992), type
-			  qsub -v YEAR=1992 convert_ecco.job
-			  You can also submit multiple years quickly with a bash
-			  loop:
-			  for i in `seq 1992 2009`;
-			  do
-			      qsub -v YEAR=$i convert_ecco.job
-			  done
-
-romscice_nbc_zeta.py: Interpolate AVISO sea surface height climatology
-                      (annual average) to the northern boundary of the ROMS
-		      grid. Save to the existing lateral boundary condition
-		      file, created using romscice_nbc.py.
-		      To run: Edit file paths and boundary index near the top
-		              of the file. Then make sure that you have scipy
-			      version 0.14 or higher (on raijin, this means
-			      switching to python/2.7.6; instructions at the
-			      top of the file). Then open python or ipython
-			      and type "run romscice_nbc_zeta.py". You will
-			      be prompted for the path to the lateral
-			      boundary condition file that you want to add
-			      zeta to.
-
-fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
-                missing timesteps. This script interpolates the missing
-		timesteps in a given file based on existing timesteps in that
-		file, at the same time of day and a similar time of year.
-		To run: Open python or ipython, and type "from fill_clouds
-		        import *", then "fix_file('filename')" where filename
-			is the path to the ERA-Interim file that has missing
-			timesteps. You can also easily call it in a loop, e.g.
-			for year in range(1992, 2009+1):
-			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
-
-roms_cice_atm_smooth.py: At the beginning of spinups, when the ocean is
-                         initially motionless, ROMS can blow up easily if
-			 immediately forced with sub-daily atmospheric forcing
-			 due to the strong but transient storms. To counteract
-			 this problem, this script smooths the given forcing
-			 files using a simple moving average (currently 5 days,
-			 but can be easily changed).
-			 To run: Edit the user parameters near the bottom of the
-			         file (paths to forcing files, variable names,
-				 interval to smooth over, etc) then open python
-				 or ipython and type "run
-				 roms_cice_atm_smooth.py".
-
-repeat_forcing.py: If you are spinning up ROMS-CICE-MCT using one repeating year
-                   of daily- or sub-daily atmospheric forcing, the easiest
-		   option is to have ROMS and CICE follow regular calendars
-		   (1995, 1996, 1997, etc) and make 4 copies of this annually-
-		   repeating file which the models will cycle through every
-		   4 years. One of these years (depending on the start year)
-		   must be a leap year. Once you have made four copies of the
-		   one-year (non-leap-year) dataset, and named them with the
-		   same naming convention (e.g. AN_yyyy_unlim.nc), this script
-		   will 1) set the cycle_length attribute to 4 years in each
-		   file; 2) alter the time axis of the latter 3 files so they
-		   follow the first in sequence; and 3) interpolate data for
-		   Feb 29th on the leap year, as the average of the Feb 28th and
-		   March 1st records from the same time of day.
-		   To run: Edit the user parameters near the bottom of the file
-		           (paths to forcing files, years, variable names, etc)
-			   then open python or ipython and type
-			   "run repeat_forcing.py".
-
-repeat_forcing_monthly.py: Same as repeat_forcing but for monthly forcing fields
-                           rather than sub-daily. No interpolation is needed,
-			   just modifying the time axis to put all data on the
-			   15th of each month, with a cycle length of 4 years.
-			   To run: Edit the user parameters near the bottom of
-			           the file (paths to forcing files, years)
-				   then open python or ipython and type
-				   "run repeat_forcing_monthly.py".
-
-romscice_ini_iceshelf.py: Given a ROMS initial condition file from ECCO2 data
-                          (eg created with romscice_ini.py), overwrite the
-			  salinity in ice shelf cavities (which aren't in ECCO2)
-			  with salinity from Ben's original initial conditions
-			  file (not really sure where this data is from, but
-			  it's more realistic than filling the cavities with
-			  constant salinity, and certainly more stable).
-			  To run: Edit the user parameters (paths to 3 files)
-			          near the bottom of the script, then open
-				  python or ipython and type "run
-				  romscice_ini_iceshelf.py".
-
-max_vel.py: Calculate the maximum |u| and |v| at each timestep of the given
-            ocean history (or averages) file, and plot the timeseries.
-	    To run: Open python or ipython, and type "run max_vel.py". The
-	            script will prompt you for the path to the ocean history
-		    file.
-
-avg_zeta.py: Calculate the area-averaged sea surface height at each timestep of
-             the given ocean history (or averages) file, and plot the
-	     timeseries. This script also contains useful code for calculating
-	     area averages.
-	     To run: Open python or ipython, and type "run avg_zeta.py". The
-	             script will prompt you for paths to the ocean history
-		     and ROMS grid files.
-
 unesco.py: Calculates the UNESCO seawater equation of state (1980): given
            temperature, salinity, and pressure (depth/10 is fine), returns
 	   density.
 	   To run: The function unesco is designed to be called by another
 	           script. See make_density_file.py for an example.
 
-make_density_file.py: Given an ocean history or averages file with temperature
-                      and salinity data, calculate density fields at each
-		      timestep using the 1980 UENSCO seawater equation of
-		      state. Save in a new file.
-		      To run: Open python or ipython, and type
-		              "run make_density_file.py". The script will
-			      prompt you for the paths to the ROMS grid file,
-			      the ocean history or averages file, and the
-			      desired path to the new density file.
+
+
+
+
                
 
 
