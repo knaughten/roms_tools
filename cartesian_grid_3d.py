@@ -31,8 +31,12 @@ def cartesian_grid_3d (lon, lat, h, zice, theta_s, theta_b, hc, N, zeta=None):
     # bottom edges of each cell
     z_edges = zeros((N+1, num_lat, num_lon))
     z_edges[1:-1,:,:] = 0.5*(z[0:-1,:,:] + z[1:,:,:])
-    # At surface, z=zice; at bottom, extrapolate
+    # At surface, z=zice
     z_edges[-1,:,:] = zice[:,:]
+    # Add zeta if it exists
+    if zeta is not None:
+        z_edges[-1,:,:] += zeta[:,:]
+    # At bottom, extrapolate
     z_edges[0,:,:] = 2*z[0,:,:] - z_edges[1,:,:]
     # Now find dz
     dz = z_edges[1:,:,:] - z_edges[0:-1,:,:]    

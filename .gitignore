@@ -1,0 +1,6 @@
+*.pyc
+*.png
+*.log
+*.jnl
+area_comparison
+rignot_data

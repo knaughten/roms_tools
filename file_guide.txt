@@ -326,155 +326,6 @@ timeseries_3D.py: Calculates and plots timeseries of total ocean heat content,
 			  or averages file, and the log file.
 
 
-***CMIP5 ANALYSIS***
-
-cmip5_paths.py: Builds an array of Model objects, one for each of the 39 CMIP5
-                models used in Kaitlin's project. Model objects contain
-		information about the model, and most usefully a class function
-		get_directory which returns the directory containing monthly
-		output for the specified variable and experiment.
-		To run: The function build_model_list is designed to be called
-		        by other functions; see for example
-			cmip5_eraint_rms_errors.py. Note that for the class
-			function get_directory to work, you must be running on
-			raijin and be part of the ua6 project.
-
-eraint_field.py: Reads ERA-Interim monthly data for the given variable name,
-                 between the given start and end years. Returns the monthly
-		 climatology.
-                 To run: The function eraint_field is designed to be called
-		         by other functions; see for example
-			 eraint_climatology_netcdf.py. If you are using it,
-			 be sure to edit the parameters near the top of the
-			 file (eg paths to ERA-Interim monthly data).
-
-ecco2_field.py: Reads ECCO2 data for the given variable name, between the given
-                start and end years. Interpolates to the northern boundary of
-		the circumpolar ROMS domain (currently 30S). Returns the monthly
-		climatology.
-		To run: The function ecco2_field is designed to be called by
-		        other functions; see for example
-			ecco2_climatology_netcdf.py. If you are using it, be
-			sure to edit the parameters near the top of the file
-			(eg paths to ECCO2 data, and the location of the ROMS
-			northern boundary).
-
-cmip5_field.py: Reads CMIP5 output for the given model, experiment, and variable
-                name. Returns the monthly climatology as well as the grid
-		(longitude, latitude, and depth arrays).
-		To run: The function cmip5_field is designed to be called by
-		        other functions; see for example
-			cmip5_atmos_climatology_netcdf.py. Note that for this
-			function to work, you must be running on raijin and be
-			part of the ua6 project.
-
-eraint_climatology_netcdf.py: Calculates the ERA-Interim monthly climatology
-                              from 1992-2005 inclusive, for 11 atmospheric
-			      variables (all the variables which ROMS and/or
-			      FESOM depend on). Save to a NetCDF file.
-			      To run: First edit the variable output_file, near
-			              the top of the file, to suit your
-				      filesystem. Then open python or ipython
-				      and type
-				      "run eraint_climatology_netcdf.py".
-
-ecco2_climatology_netcdf.py: Like eraint_climatology_netcdf.py, but for ECCO2
-                             ocean variables rather than ERA-Interim atmoshperic
-			     variables, interpolated to the northern boundary
-			     of the ROMS domain (set in ecco2_field.py).
-			     To run: First edit the variable output_file, near
-			             the top of the file, to suit your
-				     filesystem. Then open python or ipython and
-				     type "run ecco2_climatology_netcdf.py".
-
-cmip5_atmos_climatology_netcdf.py: For the given CMIP5 model, calculates the
-                        monthly climatology from 1992-2005 inclusive for 11
-			atmospheric variables. Interpolates to the ERA-Interim
-			grid and saves to a NetCDF file. Note that to run this
-			script, you must have previously run
-			eraint_climatology_netcdf.py.
-			To run: First edit the variables output_file and
-			        eraint_file, near the top of the file, to suit
-				your filesystem. Then make sure that you have
-				scipy version 0.14 or higher (on raijin, this
-				means switching to python/2.7.6; instructions
-				at the top of the file). To call this function
-				for all CMIP5 models, open python or ipython and
-				type "run cmip5_atmos_climatology_netcdf.py".
-				To call this function for just one model, e.g.
-				ACCESS1-0, open python or ipython and type
-				"from cmip5_atmos_climatology_netcdf import *"
-				and then
-				"cmip5_atmos_climatology_netcdf('ACCESS1-0')".
-
-cmip5_ocean_climatology_netcdf.py: For the given CMIP5 model, calculates the
-                       monthly climatology from 1992-2005 inclusive for 4 ocean
-		       variables. Interpolates to the ECCO2 grid at the northern
-		       boundary of ROMS and saves to a NetCDF file. Note that to
-		       run this script, you must have previously run
-		       ecco2_climatology_netcdf.py.
-		       To run: First edit the variables output_file and
-		               ecco2_file, near the top of the file, to suit
-			       your filesystem. Then make sure that you have
-			       scipy version 0.14 or higher (on raijin, this
-			       means switching to python/2.7.6; instructions at
-			       the top of the file). To call this function for
-			       all CMIP5 models, open python or ipython and type
-			       "run cmip5_ocean_climatology_netcdf.py".
-			       To call this function for just one model, e.g.
-			       ACCESS1-0, open python or ipython and type
-			       "from cmip5_ocean_climatology_netcdf import *"
-			       and then
-			       "cmip5_ocean_climatology_netcdf('ACCESS1-0')".
-
-mmm_atmos_netcdf.py: Calculate the multi-model mean of atmospheric climatology
-                     files created using cmip5_atmos_climatology_netcdf.py.
-		     To run: First edit the variable "directory" near the top
-		             of the file. Then open python or ipython and type
-			     "run mmm_atmos_netcdf.py".
-
-mmm_ocean_netcdf.py: Calculate the multi-model mean of ocean climatology files
-                     created using cmip5_ocean_climatology_netcdf.py.
-		     To run: First edit the variable "directory" near the top of
-		             the file. Then open python or ipython and type
-			     "run mmm_ocean_netcdf.py".
-
-cmip5_eraint_rms_errors.py: Calculates root-mean-square errors (as in Gleckler
-                            et al., 2008) for each of 39 CMIP5 models and the
-			    multi-model mean, with respect to 11 ERA-Interim
-			    atmospheric variables. The domain is the Southern
-			    Ocean (all longitudes, and latitudes from the
-			    northern boundary of ROMS to the southernmost ocean
-			    point not in an ice shelf cavity) and the monthly
-			    climatology averaged over 1992-2005 inclusive.
-			    Also calculate the relative errors as in Gleckler
-			    et al. and make a "portrait plot" of coloured tiles
-			    in a model vs. variable matrix. Save both rms errors
-			    and relative errors into text files. Note that to
-			    run this script, you must have previously run
-			    eraint_climatology_netcdf.py,
-			    cmip5_atmos_climatology_netcdf.py, and
-			    mmm_atmos_netcdf.py.
-			    To run: First edit the variable "directory", near
-			            the top of the file, to suit your
-				    filesystem, and "roms_grid" to point to the
-				    roms grid file. Then open python or ipython
-				    and type "run cmip5_eraint_rms_errors.py".
-
-cmip5_ecco2_rms_errors.py: Same as cmip5_eraint_rms_errors.py, but for ECCO2
-                           ocean variables rather than ERA-Interim atmospheric
-			   variables, at the northern boundary of ROMS
-			   (currently 30S). Note that to run this script, you
-			   must have previously run
-			   ecco2_climatology_netcdf.py,
-			   cmip5_ocean_climatology_netcdf.py, and
-			   mmm_ocean_netcdf.py.
-			   To run: First edit the variable "directory", near
-			           the top of the file, to suit your filesystem.
-				   Then open python or ipython and type
-				   "run cmip5_ecco2_rms_errors.py".
-
-
 ***NICE FIGURES***
 
 zice.py: Saves a contour plot of ice shelf draft, with the land masked in white,
@@ -574,47 +425,6 @@ zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
 		       only have to specify which parameters have changed since
 		       the last plot.
 
-cmip5_plot.py: Compare output from CMIP5 models to ERA-Interim (for atmosphere
-               variables) or ECCO2 (for ocean variables) by plotting the given
-	       variable, time-averaged over the given season and zonally
-	       averaged over the Southern Ocean (for atmosphere variables) or
-	       the northern boundary of ROMS (for ocean variables). The plot
-	       will have the given variable on the x-axis and latitude (for
-	       atmosphere variables) or depth (for ocean variables) on the
-	       y-axis. Note that in order to run this script, you must first
-	       run eraint_climatology_netcdf.py, ecco2_climatology_netcdf.py,
-	       cmip5_atmos_climatology_netcdf.py,
-	       cmip5_ocean_climatology_netcdf.py, mmm_atmos_netcdf.py, and
-	       mmm_ocean_netcdf.py to generate the necessary NetCDF files.
-	       To run: First edit the variable "directory", near the top of the
-	               file, to suit your filesystem, and the variable
-		       "roms_grid" to point to your ROMS grid file. (Note that
-		       your choice of roms_grid will affect the latitude bounds
-		       on atmosphere plots but not ocean plots, which read
-		       NetCDF files which have already been interpolated to
-		       the northern boundary of ROMS). Then open python or
-		       ipython and type "run cmip5_plot.py". The script will
-		       prompt you for the variable name, season code, models
-		       to include ('MMM' is an option for multi-model mean),
-		       and whether to save the plot (and if so, what the
-		       filename should be) or display it on the screen.
-		       As with circumpolar_plot.py, circumpolar_cice_plot.py,
-		       and zonal_plot.py, the interface will repeat as many
-		       times as you like, and you only have to specify which
-		       parameters have changed since the last plot.
-
-cmip5_all_plots.py: Call cmip5_plot.py for all models (including the multi-model
-                    mean), all variables (atmosphere and ocean), and all
-		    seasons. Note that in order to run this script, you must
-		    have previously run eraint_climatology_netcdf.py,
-		    ecco2_climatology_netcdf.py,
-		    cmip5_atmos_climatology_netcdf.py,
-		    cmip5_ocean_climatology_netcdf.py, mmm_atmos_netcdf.py, and
-		    mmm_ocean_netcdf.py. Also, the directory "cmip5/" must
-		    exist.
-		    To run: Open python or ipython and type
-		            "run cmip5_all_plots.py".
-
 overturning_plot.py: Calculate the meridional overturning streamfunction at the
                      last timestep of the given ROMS history/averages file and
 		     make a contour plot in z-space.
@@ -622,27 +432,6 @@ overturning_plot.py: Calculate the meridional overturning streamfunction at the
 		             "run overturning_plot.py". You will be prompted
 			     for the path to the ROMS history/averages file
 			     and the filename with which to save the plot.
-
-cmip5_max_uwind.py: Create two plots: (1) the maximum zonal wind speed between
-                    30S and 65S, and (2) the latitude of that maximum zonal
-		    wind speed, both against longitude. Plot results for
-		    ERA-Interim as well as the given CMIP5 models, averaged
-		    over the given season, for the 1992-2005 climatology.
-		    Note that in order to run this script, you must have
-		    previously run eraint_climatology_netcdf.py,
-		    cmip5_atmos_climatology_netcdf.py, and mmm_atmos_netcdf.py.
-		    To run: First edit the variable "directory", near the top
-		            of the file, to suit your filesystem. Then open
-			    python or ipython and type "run cmip5_max_uwind.py".
-			    The script will prompt you for the models to include
-			    ('MMM' is an option for multi-model-mean), the
-			    season code, and whether to save the plots (and if
-			    so, what the filenames should be) or display them
-			    on the screen. As with circumpolar_plot.py,
-			    circumpolar_cice_plot.py, zonal_plot.py, and
-			    cmip5_plot.py, the interface will repeat as many
-			    times as you like, and you only have to specify
-			    which parameters have changed since the last plot.
 
 uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
                   velocity vectors at the given depth (surface, bottom, or
@@ -787,6 +576,40 @@ make_zonal_slices.sh: Example of a bash script that calls sose_roms_seasonal.py
 			      output file name or the maximum depth to plot.
 			      Then just type "./make_zonal_slices.sh" in the
 			      shell and it will go.
+
+aice_hi_seasonal.py: Creates a 4x2 plot of seasonally averaged sea ice
+                     concentration (top row) and thickness (bottom row) over
+		     the last year of simulation.
+		     To run: Open python or ipython and type
+		             "run aice_hi_seasonal.py". The script will prompt
+			     you for the CICE output file and whether you want
+			     to save the figure (and if so, what filename) or
+			     display it on the screen. This script does not
+			     repeat.
+
+freezingpt_slice.py: Plot the difference from the freezing temperature for a
+                     single i-slice (depth versus y) with no time-averaging,
+		     spatial averaging, or interpolation. This helps to show
+		     where there is spurious supercooling.
+		     To run: Open python or ipython and type
+		             "run freezingpt_slice.py". The script will prompt
+			     you for the path to the ROMS history file, the
+			     timestep and i-index to plot, the deepest depth
+			     to plot, optional bounds on the colour scale,
+			     and if you want to save the figure (and if so,
+			     what filename) or display it on the screen. This
+			     script repeats as many times as you like.
+
+i_slice.py: Plot the given variable for a single i-slice (depth versus y) with
+            no time-averaging, spatial averaging, interpolation, or velocity
+	    rotation. This helps to show where there are advective errors.
+	    To run: Open python or ipython and type "run i_slice.py". The
+	            script will prompt you for the path to the ROMS history
+		    file, the variable name, the timestep and i-index to plot,
+		    the deepest depth to plot, optional bounds on the colour
+		    scale, and if you want to save the figure (and if so, what
+		    filename) or display it on the screen. This script repeats
+		    as many times as you like.
 
 
 ***ANIMATIONS***

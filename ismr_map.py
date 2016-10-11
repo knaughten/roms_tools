@@ -21,8 +21,8 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
     lon_max = [-59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 180]
     lat_min = [-73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
     lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
-    # Area of each ice shelf in m^2 (printed to screen during massloss.py, 
-    # update if the grid changes)
+    # Area of each ice shelf in m^2 (printed to screen during
+    # timeseries_massloss.py, update if the grid changes)
     area = [12754001970.4, 52008964915.9, 47287926558.6, 353435138251.0, 31290573250.5, 5162051654.52, 3990382861.08, 4680996769.75, 32446806852.2, 7694313052.38, 13537287121.0, 4918446447.87, 6482036686.01, 30521756982.6, 15158334399.6, 64359735004.9, 4575785549.65, 45327465354.5, 8110511960.62, 7088165282.99, 54898163328.1, 68006982027.4, 429252991746.0]
     # Observed melt rate (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
     obs_ismr = [0.1, 0.4, 3.1, 0.3, 1.7, 16.2, 17.7, 7.8, 4.3, 0.6, 1.5, 1.4, 7.7, 2.8, 1.7, 0.6, -0.4, 0.4, 0.7, 0.5, 0.5, 0.1, 0.1]
@@ -56,7 +56,7 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
     # Skip the values for the entire continent
     for line in f:
         try:
-            pass
+            tmp = float(line)
         except(ValueError):
             break
     # Set up array for melt rate values at each ice shelf
@@ -130,7 +130,7 @@ def ismr_map (grid_path, log_path, save=False, fig_name=None):
         error[region] = error_tmp
 
     # Edit zice so tiny ice shelves won't be contoured
-    zice[error.mask] = 0.0
+    #zice[error.mask] = 0.0
 
     # Convert grid to spherical coordinates
     x = -(lat+90)*cos(lon*deg2rad+pi/2)
