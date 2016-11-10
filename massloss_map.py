@@ -80,11 +80,11 @@ def massloss_map (grid_path, log_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask_rho = id.variables['mask_rho'][:-15,:-2]
-    mask_zice = id.variables['mask_zice'][:-15,:-2]
-    zice = id.variables['zice'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask_rho = id.variables['mask_rho'][:-15,:-1]
+    mask_zice = id.variables['mask_zice'][:-15,:-1]
+    zice = id.variables['zice'][:-15,:-1]
     id.close()
     
     # Make sure longitude goes from -180 to 180, not 0 to 360

@@ -25,11 +25,11 @@ def bwtemp_plot (file_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
     # Read the last year of bottom water temp (assume 5-day averages here) and
     # average over time
-    bwtemp = mean(id.variables['temp'][-73:,0,:-15,:-2], axis=0)
+    bwtemp = mean(id.variables['temp'][-73:,0,:-15,:-1], axis=0)
     id.close()
 
     # Convert grid to spherical coordinates

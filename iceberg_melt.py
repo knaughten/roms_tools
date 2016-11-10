@@ -3,13 +3,11 @@ from numpy import *
 from scipy.interpolate import griddata
 
 # Read Martin and Adcroft's monthly climatology of freshwater fluxes
-# from iceberg melt, and add to the precipitation fields used by
-# ROMS and CICE. I suppose I should technically use a separate field
-# such as runoff, but this is easier and has the same effect!
+# from iceberg melt, interpolate to the ROMS grid, and save as a
+# forcing file.
 # Input:
-# file = path to ROMS FC forcing file, containing one year of monthly
-#        averages for precipitation ("rain") in m/12h
-def add_iceberg_melt (file):
+# out_file = path to desired output file
+def iceberg_melt (out_file):
 
     # Naming conventions for iceberg files
     iceberg_head = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.1861-1960.'
@@ -17,7 +15,7 @@ def add_iceberg_melt (file):
     # Iceberg grid file
     iceberg_grid = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.static.nc'
     # ROMS grid file
-    roms_grid ='/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
+    roms_grid ='/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
     # Density of freshwater
     rho_w = 1e3
     # Seconds in 12 hours
@@ -28,6 +26,8 @@ def add_iceberg_melt (file):
     lon_roms = id.variables['lon_rho'][:,:]
     lat_roms = id.variables['lat_rho'][:,:]
     id.close()
+    num_lon = size(lon_roms, 1)
+    num_lat = size(lon_roms, 0)
 
     # Read the iceberg grid
     id = Dataset(iceberg_grid, 'r')
@@ -38,6 +38,28 @@ def add_iceberg_melt (file):
     # Make sure longitudes are between 0 and 360
     index = lon_iceberg < 0
     lon_iceberg[index] = lon_iceberg[index] + 360
+
+    # Set up output file
+    out_id = Dataset(out_file, 'w')
+    # Define dimensions
+    out_id.createDimension('xi_rho', num_lon)
+    out_id.createDimension('eta_rho', num_lat)
+    out_id.createDimension('time', None)
+    # Define variables
+    out_id.createVariable('lon_rho', 'f8', ('eta_rho', 'xi_rho'))
+    out_id.variables['lon_rho'].long_name = 'longitude of rho-points'
+    out_id.variables['lon_rho'].units = 'degree_east'
+    out_id.variables['lon_rho'][:,:] = lon_roms
+    out_id.createVariable('lat_rho', 'f8', ('eta_rho', 'xi_rho'))
+    out_id.variables['lat_rho'].long_name = 'latitude of rho-points'
+    out_id.variables['lat_rho'].units = 'degree_north'
+    out_id.variables['lat_rho'][:,:] = lat_roms
+    out_id.createVariable('time', 'f8', ('time'))
+    out_id.variables['time'].units = 'days since 1992-01-01 00:00:0.0'
+    out_id.variables['time'].cycle_length = 365.25
+    out_id.createVariable('icebergs', 'f8', ('time', 'eta_rho', 'xi_rho'))
+    out_id.variables['icebergs'].long_name = 'freshwater flux from iceberg melt'
+    out_id.variables['icebergs'].units = 'm_per_12hr'
 
     # Loop over months
     for month in range(12):
@@ -56,10 +78,12 @@ def add_iceberg_melt (file):
         melt_roms = interp_iceberg2roms(melt_iceberg, lon_iceberg, lat_iceberg, lon_roms, lat_roms)
         # Convert to m per 12 h
         melt_roms = melt_roms/rho_w*seconds_per_12h
-        # Add to precipitation field for this month
-        id = Dataset(file, 'a')
-        id.variables['rain'][month,:,:] = id.variables['rain'][month,:,:] + melt_roms
-        id.close()
+        # Calculate time values centered in the middle of each month
+        time = 365.25/12*(month+0.5)
+        # Save to output file
+        out_id.variables['time'][month] = time
+        out_id.variables['icebergs'][month,:,:] = melt_roms
+    out_id.close()
 
 
 # Given a field A on the iceberg grid, linearly interpolate to the ROMS grid.
@@ -93,14 +117,17 @@ def interp_iceberg2roms (A, lon_iceberg, lat_iceberg, lon_roms, lat_roms):
     result = griddata(points, values, xi, method='linear', fill_value=0.0)
     # Un-flatten the result
     A_interp = reshape(result, shape(lon_roms))
+    # Enforce periodic boundary
+    A_interp[:,0] = A_interp[:,-2]
+    A_interp[:,-1] = A_interp[:,1]
 
     return A_interp
 
 
 if __name__ == "__main__":
 
-    file = raw_input('Path to ROMS input FC file containing one year of monthly data: ')
-    add_iceberg_melt(file)
+    file = raw_input('Path to desired output file: ')
+    iceberg_melt(file)
 
     
 

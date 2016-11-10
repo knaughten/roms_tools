@@ -320,8 +320,8 @@ if __name__ == "__main__":
 
     # Grid parameters; check grid_file and *.in file to make sure these are correct
     Tcline = 40
-    theta_s = 0.9
-    theta_b = 4
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
 

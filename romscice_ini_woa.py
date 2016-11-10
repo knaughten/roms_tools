@@ -253,6 +253,10 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
         front_tmp[mask_zice_tmp==1] = 1
         front[:,j,:] = front_tmp
 
+    # Enforce the periodic boundary
+    B[:,:,0] = B[:,:,-2]
+    B[:,:,-1] = B[:,:,1]
+
     return B
 
 
@@ -260,7 +264,7 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
 if __name__ == "__main__":
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
     # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
     # woa_netcdf.py)
     woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
@@ -269,8 +273,8 @@ if __name__ == "__main__":
 
     # Grid parameters: check grid_file and *.in file to make sure these are correct
     Tcline = 40
-    theta_s = 0.9
-    theta_b = 4
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
 

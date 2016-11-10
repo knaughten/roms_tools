@@ -23,9 +23,17 @@ month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', '
 
 # Read grid from the first file
 id = Dataset(directory + 'iceh' + str(start_file) + '.nc', 'r')
-lon = id.variables['TLON'][:-15,:]
-lat = id.variables['TLAT'][:-15,:]
+lon_tmp = id.variables['TLON'][:-15,:]
+lat_tmp = id.variables['TLAT'][:-15,:]
 id.close()
+
+# Wrap the periodic boundary by 1 cell
+lon = ma.empty([size(lon_tmp,0), size(lon_tmp,1)+1])
+lat = ma.empty([size(lat_tmp,0), size(lat_tmp,1)+1])
+lon[:,:-1] = lon_tmp
+lon[:,-1] = lon_tmp[:,0]
+lat[:,:-1] = lat_tmp
+lat[:,-1] = lat_tmp[:,0]
 
 # Calculate x and y coordinates for polar projection
 x = -(lat+90)*cos(lon*deg2rad+pi/2)
@@ -53,8 +61,12 @@ def animate(i):
     id = Dataset(directory + 'iceh' + str(file_num) + '.nc', 'r')
     time_id = id.variables['time']
     time = num2date(time_id[i], units=time_id.units, calendar=time_id.calendar.lower()) 
-    data = id.variables['aice'][i,:-15,:]
+    data_tmp = id.variables['aice'][i,:-15,:]
     id.close()
+    # Wrap the periodic boundary
+    data = ma.empty([size(data_tmp,0), size(data_tmp,1)+1])
+    data[:,:-1] = data_tmp
+    data[:,-1] = data_tmp[:,0]
     # Clear plot to save memory
     ax.collections = []
     # Plot data

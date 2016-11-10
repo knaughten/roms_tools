@@ -40,8 +40,9 @@ romscice_ini_ecco.py: Builds a ROMS initialisation file using ECCO2 data for
 
 romscice_nbc.py: Builds a ROMS northern lateral boundary condition file from 1
                  year of monthly ECCO2 data for temperature, salinity, and
-		 velocity (set sea surface height to zero). Also contains useful
-		 code for calculating volume averages.
+		 meridional velocity (set zonal velocity and sea surface height
+		 to zero). Also contains useful code for calculating volume
+		 averages.
 		 To run: Edit user parameters near the top of the script
 		         (mainly just file paths). Then make sure that you have
 			 scipy version 0.14 or higher (on raijin, this means
@@ -69,7 +70,8 @@ convert_era.job: A self-submitting batch job which converts 1 year of
 romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
                           atmospheric forcing file (plus 50 12-hour timesteps
 			  of ERA-Interim precipitation) to a ROMS-CICE forcing
-			  file.
+			  file. Rotate the winds to local x-y space for ROMS
+			  grid.
 			  To run: Edit user parameters near the top of the
 			          script (mainly just file paths). This script
 				  is designed to be called by a self-submitting
@@ -142,15 +144,6 @@ repeat_forcing_monthly.py: Same as repeat_forcing but for monthly forcing fields
 				   then open python or ipython and type
 				   "run repeat_forcing_monthly.py".
 
-romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
-                   components interpolated from TPXO 7.2.
-		   To run: Edit the paths to input and output files near the
-		           top of the script. Then make sure that you have
-			   scipy version 0.14 or higher (on raijin, this means
-			   switching to python/2.7.6; instructions at the top
-			   of the file). Then open python or ipython and type
-			   "run romscice_tides.py".
-
 romscice_nbc_zeta.py: Interpolate AVISO sea surface height climatology
                       (annual average) to the northern boundary of the ROMS
 		      grid. Save to the existing lateral boundary condition
@@ -171,34 +164,12 @@ nbdry_grid_hack.py: Modify the ROMS grid so that the northernmost 15 rows
 		    To run: Open python or ipython and type
 		            "run nbdry_grid_hack.py".
 
-add_iceberg_melt.py: Read Martin and Adcroft's monthly climatology of
-                     freshwater fluxes from iceberg melt, and add to the
-		     precipitation fields used by ROMS and CICE.
-		     To run: Open python or ipython and type
-		             "run add_iceberg_melt.py". You will be prompted
-			     for the path to a ROMS-CICE forcing file
-			     containing one year of monthly averaged
-			     precipitation; the iceberg fluxes will be added
-			     to this.
-
 add_tide_period.py: Given a ROMS tide file with tidal potential amplitude and
                     phase angle (created using Kate's potential tide scripts),
 		    add the tidal period in seconds for each component.
 		    To run: First edit the variable "tide_file" to point to the
 		            correct file to edit. Then open python or ipython
 			    and type "run add_tide_period.py".
-
-eraint_rotate_winds.py: Rotate the winds in a ROMS-CICE forcing file,
-                        interpolated from ERA-Interim as in
-			romscice_atm_subdaily.py or romscice_atm_monthly.py,
-			so that they are in local x-y space (i.e. positive
-			Uwind points directly to the cell to the right;
-			positive Vwind points directly to the cell above) rather
-			than lon-lat space, which is slightly rotated.
-			To run: Open python or ipython and type
-			        "run eraint_rotate_winds.py". You will be
-				prompted for the path to the ROMS grid file and
-				the forcing file to rotate.
 
 remove_cavities.py: Remove the ice shelf cavities from the given ROMS grid file
                     and fill them in with land. After you run this script, I
@@ -216,6 +187,14 @@ uvp_grid_fix.py: The Matlab scripts I use to generate the ROMS grid assume that
 		 To run: Open python or ipython and type "run uvp_grid_fix.py".
 		         You will be prompoted for the path to the ROMS grid
 			 file you wish to edit.
+
+iceberg_melt.py: Read Martin and Adcroft's monthly climatology of freshwater
+                 fluxes from iceberg melt, interpolate to the ROMS grid, and
+		 save as a forcing file.
+		 To run: First make sure the paths to the input iceberg data
+		         are correct. Then open python or ipython and type
+			 "run iceberg_melt.py". The script will prompt you for
+			 the filename of the output ROMS forcing file.
 
 
 ***POST-PROCESSING DIAGNOSTICS***
@@ -327,13 +306,6 @@ timeseries_3D.py: Calculates and plots timeseries of total ocean heat content,
 
 
 ***NICE FIGURES***
-
-zice.py: Saves a contour plot of ice shelf draft, with the land masked in white,
-         and the non-ice-shelf-covered ocean masked in grey. This script could
-	 be easily modified to make a contour plot of any lat-lon variable.
-	 To run: Open python or ipython, and type "run zice.py". The script
-	         will prompt you for the paths to the ROMS grid file and the
-		 desired output figure. 
 
 circumpolar_plot.py: Generates a circumpolar Antarctic plot of the given
                      variable from ROMS. If the variable is depth-dependent,
@@ -611,6 +583,42 @@ i_slice.py: Plot the given variable for a single i-slice (depth versus y) with
 		    filename) or display it on the screen. This script repeats
 		    as many times as you like.
 
+cice_vectorplot.py: For any vector in the CICE output (velocities, stresses,
+                    etc.) make a circumpolar Antarctic plot of its magnitude,
+		    overlaid with the vectors themselves.
+		    To run: Open python or ipython and type
+		            "run cice_vectorplot.py". The script will prompt you
+			    for the path to the CICE history file, the timestep
+			    to plot, the names of the vector components,
+			    optional bounds on the colour scale for magnitude,
+			    and if you want to save the figure (and if so, what
+			    filename) or display it on the screen. This script
+			    repeats as many times as you like.
+
+effective_thickness.py: Make a circumpolar plot of effective sea ice thickness
+                        (area*height).
+			To run: Open python or ipython and type
+			        "run effective_thickness.py". The script will
+				prompt you for the path to the CICE history
+				file, the timestep to plot, optional bounds on
+				the colour scale, and if you want to save the
+				figure (and if so, what filename) or display it
+				on the screen. This script repeats as many
+				times as you like.
+
+temp_salt_seasonal.py: Make a 4x2 plot showing lat vs. depth slides of
+                       seasonally averaged temperature (top) and salinity
+		       (bottom) at the given longitude, over the last year of
+		       simulation.
+		       To run: Open python or ipython and type
+		               "run temp_salt_seasonal.py". The script will
+			       prompt you for paths to the ROMS output file,
+			       the longitude to plot, the deepest depth to
+			       plot, and whether you want to save the figure
+			       (and if so, what filename) or display it on
+			       the screen. This script repeats as many times
+			       as you like.
+
 
 ***ANIMATIONS***
 
@@ -624,6 +632,35 @@ aice_animation.py: Create an animation of sea ice concentration for the given
 			   "run aice_animation.py". Note that this isn't an
 			   encapsulated function but rather just a script, so
 			   be careful with existing variable names.
+
+
+***FIGURES FOR ADVECTION PAPER***
+
+adv_amery_tsplots.py: For each advection experiment, plot zonal slices of
+                      temperature and salinity through 71E (Amery Ice Shelf)
+		      at the end of the simulation. This is really just a
+		      special case of zonal_plot.py.
+		      To run: Make sure the paths to each simulation are
+		              correct. Then open python or ipython and type
+			      "run adv_amery_tsplots.py".
+
+adv_freezingpt_slice.py: Plot the difference from the freezing temperature at
+                         a specific timestep through the Weddell Sea in the
+			 worst-performing advection experiment. There is no
+			 time-averaging, spatial averaging, or interpolation.
+			 This shows off the spurious supercooling. It is
+			 really just a special case of freezingpt_slice.py.
+			 To run: Make sure the file_path is correct. Then open
+			         python or ipython and type
+				 "run adv_freezingpt_slice.py".
+
+adv_timeseries_volume.py: Plot timeseries of total sea ice volume for all the
+                          advection experiments. Before running this script,
+			  you must run timeseries_seaice for each experiment.
+			  To run: Make sure the paths to directories and the
+			          sea ice logfiles are correct. Then open
+				  python or ipython and type
+				  "run adv_timeseries_volume.py".
 
 
 ***UTILITY FUNCTIONS***

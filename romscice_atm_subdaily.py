@@ -10,7 +10,7 @@ from scipy.interpolate import LinearNDInterpolator, RectBivariateSpline
 # FC_yyyy_subdaily_orig.nc: one year of 12-hour measurements for total 
 #                           precipitation (tp) and snowfall (sf) 
 # to two ROMS-CICE input forcing files with the correct units and naming 
-# conventions:
+# conventions, and winds rotated correctly:
 # AN_yyyy_subdaily.nc: one year of 6-hour measurements for surface pressure
 #                   (Pair), temperature (Tair), specific humidity (Qair), 
 #                   cloud fraction (cloud), and winds (Uwind, Vwind)
@@ -32,11 +32,11 @@ def convert_file (year, count):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
-    input_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily_orig.nc'
-    input_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/FC_' + str(year) + '_subdaily_orig.nc'
-    output_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/AN_' + str(year) + '_subdaily.nc'
-    output_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/FC_' + str(year) + '_subdaily.nc'
+    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
+    input_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/AN_' + str(year) + '_subdaily_orig.nc'
+    input_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/FC_' + str(year) + '_subdaily_orig.nc'
+    output_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/AN_' + str(year) + '_subdaily.nc'
+    output_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/FC_' + str(year) + '_subdaily.nc'
     logfile = str(year) + '.log'
 
     Lv = 2.5e6 # Latent heat of vapourisation, J/kg
@@ -53,6 +53,7 @@ def convert_file (year, count):
     grid_fid = Dataset(grid_file, 'r')
     lon_roms = grid_fid.variables['lon_rho'][:,:]
     lat_roms = grid_fid.variables['lat_rho'][:,:]
+    angle = grid_fid.variables['angle'][:,:]
     grid_fid.close()
     num_lon = size(lon_roms, 1)
     num_lat = size(lon_roms, 0)
@@ -150,9 +151,12 @@ def convert_file (year, count):
         cloud[cloud < 0] = 0.0
         cloud[cloud > 1] = 1.0
         oatm_fid.variables['cloud'][t,:,:] = cloud
-        uwind = interp_era2roms(u10, lon_era, lat_era, lon_roms, lat_roms)
+        uwind_lonlat = interp_era2roms(u10, lon_era, lat_era, lon_roms, lat_roms)
+        vwind_lonlat = interp_era2roms(v10, lon_era, lat_era, lon_roms, lat_roms)
+        # Rotate winds to ROMS grid
+        uwind = uwind_lonlat*cos(angle) + vwind_lonlat*sin(angle)
+        vwind = vwind_lonlat*cos(angle) - uwind_lonlat*sin(angle)
         oatm_fid.variables['Uwind'][t,:,:] = uwind
-        vwind = interp_era2roms(v10, lon_era, lat_era, lon_roms, lat_roms)
         oatm_fid.variables['Vwind'][t,:,:] = vwind
         oatm_fid.close()
 
@@ -162,6 +166,7 @@ def convert_file (year, count):
     # Convert time units
     ppt_time = ppt_time/24.0 # days since 1900-01-01 00:00:0.0
     ppt_time = ppt_time - 92*365 - 22 # days since 1992-01-01 00:00:0.0; note that there were 22 leap years between 1900 and 1992
+    ppt_time = ppt_time - 0.5 # switch from precipitation over the preceding 12 hours to precipitation over the following 12 hours; this is easier for ROMS
     ippt_fid.close()
 
     if count == 0:
@@ -271,6 +276,10 @@ def interp_era2roms (A, lon_era, lat_era, lon_roms, lat_roms):
     for i in range(num_lon):
         for j in range(num_lat):
             B[j,i] = interp_function(lon_roms[j,i], -lat_roms[j,i])
+
+    # Enforce periodic boundary
+    B[:,0] = B[:,-2]
+    B[:,-1] = B[:,1]
 
     return B
         

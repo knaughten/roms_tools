@@ -13,8 +13,8 @@ from rotate_vector_roms import *
 def overturning_plot (grid_path, file_path, fig_name):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
 
@@ -24,12 +24,11 @@ def overturning_plot (grid_path, file_path, fig_name):
     grid_id.close()
     # Read grid variables
     id = Dataset(file_path, 'r')
-    v = id.variables['v'][-1,:,:-15,:-3]  # -1 means last timestep
-    h = id.variables['h'][:-15,:-3]
-    zice = id.variables['zice'][:-15,:-3]
-    zeta = id.variables['zeta'][-1,:-15,:-3]
-    lon = id.variables['lon_rho'][:-15,:-3]
-    lat = id.variables['lat_rho'][:-15,:-3]
+    h = id.variables['h'][:-15,1:-1]
+    zice = id.variables['zice'][:-15,1:-1]
+    zeta = id.variables['zeta'][-1,:-15,1:-1]
+    lon = id.variables['lon_rho'][:-15,1:-1]
+    lat = id.variables['lat_rho'][:-15,1:-1]
     # Read both velocities in x-y space
     u_xy = id.variables['u'][-1,:,:-15,:]
     v_xy = id.variables['v'][-1,:,:-15,:]    
@@ -41,7 +40,7 @@ def overturning_plot (grid_path, file_path, fig_name):
         u_lonlat, v_lonlat = rotate_vector_roms(u_xy[k,:,:], v_xy[k,:,:], angle)
         v[k,:,:] = v_lonlat[:,:]
     # Throw away the periodic boundary overlap
-    v = v[:,:,:-3]
+    v = v[:,:,1:-1]
 
     # Calculate Cartesian integrands and z-coordinates
     dx, dy, dz, z = cartesian_grid_3d(lon, lat, h, zice, theta_s, theta_b, hc, N, zeta)

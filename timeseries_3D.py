@@ -17,8 +17,8 @@ from rotate_vector_roms import *
 def timeseries_3D (grid_path, file_path, log_path):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     rho0 = 1000.0    # Reference density (kg/m^3)
@@ -57,11 +57,11 @@ def timeseries_3D (grid_path, file_path, log_path):
 
     print 'Analysing grid'
     id = Dataset(grid_path, 'r')
-    h = id.variables['h'][:-15,:-3]
-    zice = id.variables['zice'][:-15,:-3]    
-    lon = id.variables['lon_rho'][:-15,:-3]
-    lat = id.variables['lat_rho'][:-15,:-3]
-    mask = id.variables['mask_rho'][:-15,:-3]
+    h = id.variables['h'][:-15,1:-1]
+    zice = id.variables['zice'][:-15,1:-1]    
+    lon = id.variables['lon_rho'][:-15,1:-1]
+    lat = id.variables['lat_rho'][:-15,1:-1]
+    mask = id.variables['mask_rho'][:-15,1:-1]
     # Keep the overlapping periodic boundary on "angle" for now
     angle = id.variables['angle'][:-15,:]
     id.close()
@@ -83,7 +83,7 @@ def timeseries_3D (grid_path, file_path, log_path):
 
         print 'Calculating time-dependent dV'
         # Read time-dependent sea surface height
-        zeta = id.variables['zeta'][start_t:end_t,:-15,:-3]
+        zeta = id.variables['zeta'][start_t:end_t,:-15,1:-1]
         # Calculate time-dependent dz
         dz = ma.empty([num_time_curr, N, size(lon,0), size(lon,1)])
         for t in range(num_time_curr):
@@ -97,9 +97,9 @@ def timeseries_3D (grid_path, file_path, log_path):
         dV = ma.masked_where(tile(mask, (num_time_curr,N,1,1))==0, tile(dx, (num_time_curr,1,1,1))*tile(dy, (num_time_curr,1,1,1))*dz)
 
         print 'Reading data'
-        temp = id.variables['temp'][start_t:end_t,:,:-15,:-3]
-        salt = id.variables['salt'][start_t:end_t,:,:-15,:-3]
-        rho = id.variables['rho'][start_t:end_t,:,:-15,:-3] + rho0
+        temp = id.variables['temp'][start_t:end_t,:,:-15,1:-1]
+        salt = id.variables['salt'][start_t:end_t,:,:-15,1:-1]
+        rho = id.variables['rho'][start_t:end_t,:,:-15,1:-1] + rho0
         # Keep overlapping periodic boundary for u and v
         u_xy = id.variables['u'][start_t:end_t,:,:-15,:]
         v_xy = id.variables['v'][start_t:end_t,:,:-15,:]
@@ -113,8 +113,8 @@ def timeseries_3D (grid_path, file_path, log_path):
         for t in range(num_time_curr):
             for k in range(N):
                 u_tmp, v_tmp = rotate_vector_roms(u_xy[t,k,:,:], v_xy[t,k,:,:], angle)
-                u[t,k,:,:] = u_tmp[:,:-3]
-                v[t,k,:,:] = v_tmp[:,:-3]
+                u[t,k,:,:] = u_tmp[:,1:-1]
+                v[t,k,:,:] = v_tmp[:,1:-1]
 
         print 'Building timeseries'
         for t in range(num_time_curr):

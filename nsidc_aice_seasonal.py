@@ -36,8 +36,15 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
     # Read CICE grid and time values
     id = Dataset(cice_file, 'r')
-    cice_lon = id.variables['TLON'][:-15,:]
-    cice_lat = id.variables['TLAT'][:-15,:]
+    cice_lon_tmp = id.variables['TLON'][:-15,:]
+    cice_lat_tmp = id.variables['TLAT'][:-15,:]
+    # Wrap the periodic boundary by 1 cell
+    cice_lon = ma.empty([size(cice_lon_tmp,0), size(cice_lon_tmp,1)+1])
+    cice_lat = ma.empty([size(cice_lat_tmp,0), size(cice_lat_tmp,1)+1])
+    cice_lon[:,:-1] = cice_lon_tmp
+    cice_lon[:,-1] = cice_lon_tmp[:,0]
+    cice_lat[:,:-1] = cice_lat_tmp
+    cice_lat[:,-1] = cice_lat_tmp[:,0]
     time_id = id.variables['time']
     # Get the year, month, and day (all 1-based) for each output step
     # These are 5-day averages marked with the last day's date.
@@ -89,8 +96,8 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         ndays_season[0] += 1
 
     # Initialise seasonal averages of CICE output
-    cice_data = ma.empty([4, size(cice_lon,0), size(cice_lon,1)])
-    cice_data[:,:,:] = 0.0
+    cice_data_tmp = ma.empty([4, size(cice_lon_tmp,0), size(cice_lon_tmp,1)])
+    cice_data_tmp[:,:,:] = 0.0
     # Process one season at a time
     for season in range(4):
         season_days = 0  # Number of days in season; this will be incremented
@@ -143,12 +150,12 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Start accumulating data weighted by days
-        cice_data[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
+        cice_data_tmp[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
         season_days += start_days
 
         # Beween start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
-            cice_data[season,:,:] += id.variables['aice'][t,:-15,:]*5
+            cice_data_tmp[season,:,:] += id.variables['aice'][t,:-15,:]*5
             season_days += 5
 
         # Figure out how many of the 5 days averaged in end_t_season are
@@ -172,7 +179,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             print 'Error for season ' + season_names[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
             return
 
-        cice_data[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
+        cice_data_tmp[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
         season_days += end_days
 
         # Check that we got the correct number of days        
@@ -181,10 +188,15 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Finished accumulating data, now convert from sum to average
-        cice_data[season,:,:] /= season_days
+        cice_data_tmp[season,:,:] /= season_days
 
     # Finished reading all CICE data
     id.close()
+
+    # Wrap the periodic boundary
+    cice_data = ma.empty([size(cice_data_tmp,0), size(cice_data_tmp,1), size(cice_data_tmp,2)+1])
+    cice_data[:,:,:-1] = cice_data_tmp
+    cice_data[:,:,-1] = cice_data_tmp[:,0]
 
     # Read NSIDC grid from the January file
     id = Dataset(nsidc_head_0 + '199501' + nsidc_tail, 'r')

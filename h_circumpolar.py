@@ -11,18 +11,18 @@ from matplotlib.pyplot import *
 def h_circumpolar (grid_path, fig_name):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     deg2rad = pi/180
 
     # Read data
     id = Dataset(grid_path, 'r')
-    data = id.variables['h'][:-15,:-2]
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask = id.variables['mask_rho'][:-15,:-2]
+    data = id.variables['h'][:-15,:-1]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask = id.variables['mask_rho'][:-15,:-1]
     id.close()
 
     # Mask with land mask

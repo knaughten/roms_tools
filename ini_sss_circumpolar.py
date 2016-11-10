@@ -14,22 +14,22 @@ from matplotlib.pyplot import *
 def ini_sss_circumpolar (grid_path, file_path, fig_name):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     deg2rad = pi/180
 
     # Read surface temps
     id = Dataset(file_path, 'r')
-    data = id.variables['salt'][0,-1,:-15,:-2]
+    data = id.variables['salt'][0,-1,:-15,:-1]
     id.close()
 
     # Read lat and lon
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask = id.variables['mask_rho'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask = id.variables['mask_rho'][:-15,:-1]
     id.close()
 
     # Mask with land mask

@@ -87,7 +87,7 @@ def timeseries_massloss (file_path, log_path):
 
     print 'Reading data'
     # Read melt rate and convert from m/s to m/y
-    ismr = id.variables['m'][:,:-15,:-3]*365.25*24*60*60
+    ismr = id.variables['m'][:,:-15,1:-1]*365.25*24*60*60
     id.close()
 
     print 'Setting up arrays'
@@ -199,9 +199,9 @@ def calc_grid (file_path):
 
     # Read grid variables
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-3]
-    lat = id.variables['lat_rho'][:-15,:-3]
-    zice = id.variables['zice'][:-15,:-3]
+    lon = id.variables['lon_rho'][:-15,1:-1]
+    lat = id.variables['lat_rho'][:-15,1:-1]
+    zice = id.variables['zice'][:-15,1:-1]
     id.close()
 
     # Calculate dx and dy in another script

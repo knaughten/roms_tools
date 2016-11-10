@@ -39,8 +39,8 @@ def timeseries_seaice (file_path, log_path):
 
     print 'Analysing grid'
     id = Dataset(file_path, 'r')
-    lon = id.variables['TLON'][:-15,:-3]
-    lat = id.variables['TLAT'][:-15,:-3]
+    lon = id.variables['TLON'][:-15,:]
+    lat = id.variables['TLAT'][:-15,:]
     # Calculate area on the tracer grid
     dx, dy = cartesian_grid_2d(lon, lat)
     dA = dx*dy
@@ -53,8 +53,8 @@ def timeseries_seaice (file_path, log_path):
     print 'Reading data'
     # Read sea ice concentration and height
     # Throw away overlapping periodic boundary and northern sponge layer
-    aice = id.variables['aice'][:,:-15,:-3]
-    hi = id.variables['hi'][:,:-15,:-3]
+    aice = id.variables['aice'][:,:-15,:]
+    hi = id.variables['hi'][:,:-15,:]
     id.close()
 
     print 'Setting up arrays'

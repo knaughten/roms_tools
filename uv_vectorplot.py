@@ -30,8 +30,8 @@ def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=
     grid_id.close()
     # Read grid and velocity data
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
     if depth_key == 1:
         # Surface u and v
         u = id.variables['u'][tstep-1,-1,:-15,:]
@@ -49,8 +49,8 @@ def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=
     # Rotate velocities to lat-lon space
     u_lonlat, v_lonlat = rotate_vector_roms(u, v, angle)
     # Throw away the overlapping periodic boundary
-    u_rho = u_lonlat[:,:-2]
-    v_rho = v_lonlat[:,:-2]
+    u_rho = u_lonlat[:,:-1]
+    v_rho = v_lonlat[:,:-1]
     # Calculate speed for the background filled contour plot
     speed = sqrt(u_rho**2 + v_rho**2)
 

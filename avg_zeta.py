@@ -12,9 +12,9 @@ def avg_zeta (file_path):
     time = file.variables['ocean_time'][:]
     # Convert time from seconds to years
     time = time/(365*24*60*60)
-    lon = file.variables['lon_rho'][:-15,:-3]
-    lat = file.variables['lat_rho'][:-15,:-3]
-    mask = file.variables['mask_rho'][:-15,:-3]
+    lon = file.variables['lon_rho'][:-15,1:-1]
+    lat = file.variables['lat_rho'][:-15,1:-1]
+    mask = file.variables['mask_rho'][:-15,1:-1]
     avg_zeta = []
 
     # Calculate dx and dy in another script
@@ -26,7 +26,7 @@ def avg_zeta (file_path):
     for l in range(size(time)):
         print 'Processing timestep ' + str(l+1) + ' of ' + str(size(time))
         # Read zeta at this timestep
-        zeta = file.variables['zeta'][l,:-15,:-3]
+        zeta = file.variables['zeta'][l,:-15,1:-1]
         # Calculate area-weighted average
         avg_zeta.append(sum(zeta*dA)/sum(dA))
 

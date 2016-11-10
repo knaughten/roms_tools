@@ -28,8 +28,8 @@ from rotate_vector_roms import *
 def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     deg2rad = pi/180
@@ -99,13 +99,13 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
 
     # Throw away the overlapping periodic boundary
     if choose_depth:
-        data_full = data_full[:,:,:-2]
+        data_full = data_full[:,:,:-1]
     else:
-        data = data[:,:-2]
-    lon = lon[:,:-2]
-    lat = lat[:,:-2]
-    h = h[:,:-2]
-    zice = zice[:,:-2]
+        data = data[:,:-1]
+    lon = lon[:,:-1]
+    lat = lat[:,:-1]
+    h = h[:,:-1]
+    zice = zice[:,:-1]
 
     # Convert to spherical coordinates
     x = -(lat+90)*cos(lon*deg2rad+pi/2)

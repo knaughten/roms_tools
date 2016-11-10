@@ -9,8 +9,8 @@ from matplotlib.pyplot import *
 def zice_circumpolar (grid_path, fig_name):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     deg2rad = pi/180
@@ -24,10 +24,10 @@ def zice_circumpolar (grid_path, fig_name):
 
     # Read data
     id = Dataset(grid_path, 'r')
-    zice = -1*id.variables['zice'][:-15,:-2]
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask_rho = id.variables['mask_rho'][:-15,:-2]
+    zice = -1*id.variables['zice'][:-15,:-1]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask_rho = id.variables['mask_rho'][:-15,:-1]
     id.close()
 
     # Mask the open ocean and land

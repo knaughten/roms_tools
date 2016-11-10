@@ -45,10 +45,10 @@ def timeseries_dpt (grid_path, file_path, log_path):
 
     print 'Reading grid'
     id = Dataset(grid_path, 'r')
-    h = id.variables['h'][:-15,:-3]
-    zice = id.variables['zice'][:-15,:-3]
-    lon = id.variables['lon_rho'][:-15,:-3]
-    lat = id.variables['lat_rho'][:-15,:-3]
+    h = id.variables['h'][:-15,1:-1]
+    zice = id.variables['zice'][:-15,1:-1]
+    lon = id.variables['lon_rho'][:-15,1:-1]
+    lat = id.variables['lat_rho'][:-15,1:-1]
     # Keep the overlapping periodic boundary on "angle" for now
     angle = id.variables['angle'][:-15,:]
     id.close()
@@ -62,7 +62,7 @@ def timeseries_dpt (grid_path, file_path, log_path):
     for t in range(num_time):
         time.append(new_time[t])
     # Calculate time-dependent water column thickness: h + zice + zeta
-    zeta = id.variables['zeta'][:,:-15,:-3]
+    zeta = id.variables['zeta'][:,:-15,1:-1]
     wct = tile(h, (num_time,1,1)) + tile(zice, (num_time,1,1)) + zeta
     # Read barotropic velocities in x-y space
     ubar_xy = id.variables['ubar'][:,:-15,:]
@@ -75,7 +75,7 @@ def timeseries_dpt (grid_path, file_path, log_path):
     for t in range(num_time):        
         ubar_tmp, vbar_tmp = rotate_vector_roms(ubar_xy[t,:,:], vbar_xy[t,:,:], angle)
         # Throw away the overlapping periodic boundary before saving
-        ubar[t,:,:] = ubar_tmp[:,:-3]
+        ubar[t,:,:] = ubar_tmp[:,1:-1]
 
     print 'Extracting zonal slice through Drake Passage'    #
     num_lat = size(lat,0)

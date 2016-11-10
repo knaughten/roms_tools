@@ -17,9 +17,9 @@ def grid_res (grid_path, save=False, fig_name=None):
 
     # Read grid
     id = Dataset(grid_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask = id.variables['mask_rho'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask = id.variables['mask_rho'][:-15,:-1]
     id.close()
 
     # Get differentials

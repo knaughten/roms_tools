@@ -29,8 +29,15 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
 
     # Read CICE grid and time values
     id = Dataset(cice_file, 'r')
-    cice_lon = id.variables['TLON'][:-15,:]
-    cice_lat = id.variables['TLAT'][:-15,:]
+    cice_lon_tmp = id.variables['TLON'][:-15,:]
+    cice_lat_tmp = id.variables['TLAT'][:-15,:]
+    # Wrap the periodic boundary by 1 cell
+    cice_lon = ma.empty([size(cice_lon_tmp,0), size(cice_lon_tmp,1)+1])
+    cice_lat = ma.empty([size(cice_lat_tmp,0), size(cice_lat_tmp,1)+1])
+    cice_lon[:,:-1] = cice_lon_tmp
+    cice_lon[:,-1] = cice_lon_tmp[:,0]
+    cice_lat[:,:-1] = cice_lat_tmp
+    cice_lat[:,-1] = cice_lat_tmp[:,0]
     time_id = id.variables['time']
     # Get the year, month, and day (all 1-based) for each output step
     # These are 5-day averages marked with the last day's date.
@@ -82,10 +89,10 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
         ndays_season[0] += 1
 
     # Initialise seasonal averages of CICE output
-    aice = ma.empty([4, size(cice_lon,0), size(cice_lon,1)])
-    aice[:,:,:] = 0.0
-    hi = ma.empty([4, size(cice_lon,0), size(cice_lon,1)])
-    hi[:,:,:] = 0.0
+    aice_tmp = ma.empty([4, size(cice_lon_tmp,0), size(cice_lon_tmp,1)])
+    aice_tmp[:,:,:] = 0.0
+    hi_tmp = ma.empty([4, size(cice_lon_tmp,0), size(cice_lon_tmp,1)])
+    hi_tmp[:,:,:] = 0.0
     # Process one season at a time
     for season in range(4):
         season_days = 0  # Number of days in season; this will be incremented
@@ -138,14 +145,14 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Start accumulating data weighted by days
-        aice[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
-        hi[season,:,:] += id.variables['hi'][start_t_season,:-15,:]*start_days
+        aice_tmp[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
+        hi_tmp[season,:,:] += id.variables['hi'][start_t_season,:-15,:]*start_days
         season_days += start_days
 
         # Beween start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
-            aice[season,:,:] += id.variables['aice'][t,:-15,:]*5
-            hi[season,:,:] += id.variables['hi'][t,:-15,:]*5
+            aice_tmp[season,:,:] += id.variables['aice'][t,:-15,:]*5
+            hi_tmp[season,:,:] += id.variables['hi'][t,:-15,:]*5
             season_days += 5
 
         # Figure out how many of the 5 days averaged in end_t_season are
@@ -169,8 +176,8 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
             print 'Error for season ' + season_names[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
             return
 
-        aice[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
-        hi[season,:,:] += id.variables['hi'][end_t_season,:-15,:]*end_days
+        aice_tmp[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
+        hi_tmp[season,:,:] += id.variables['hi'][end_t_season,:-15,:]*end_days
         season_days += end_days
 
         # Check that we got the correct number of days        
@@ -179,11 +186,19 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Finished accumulating data, now convert from sum to average
-        aice[season,:,:] /= season_days
-        hi[season,:,:] /= season_days
+        aice_tmp[season,:,:] /= season_days
+        hi_tmp[season,:,:] /= season_days
 
     # Finished reading all CICE data
     id.close()
+
+    # Wrap the periodic boundary
+    aice = ma.empty([size(aice_tmp,0), size(aice_tmp,1), size(aice_tmp,2)+1])
+    hi = ma.empty([size(hi_tmp,0), size(hi_tmp,1), size(hi_tmp,2)+1])
+    aice[:,:,:-1] = aice_tmp
+    aice[:,:,-1] = aice_tmp[:,:,0]
+    hi[:,:,:-1] = hi_tmp
+    hi[:,:,-1] = hi_tmp[:,:,0]    
 
     # Convert to spherical coordinates
     cice_x = -(cice_lat+90)*cos(cice_lon*deg2rad+pi/2)

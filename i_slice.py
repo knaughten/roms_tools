@@ -21,8 +21,8 @@ from calc_z import *
 def i_slice (file_path, var_name, tstep, i_val, depth_min, colour_bounds=None, save=False, fig_name=None):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
 

@@ -30,8 +30,15 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
 
     # Read CICE grid and time values
     id = Dataset(cice_file, 'r')
-    cice_lon = id.variables['TLON'][:-15,:]
-    cice_lat = id.variables['TLAT'][:-15,:]
+    cice_lon_tmp = id.variables['TLON'][:-15,:]
+    cice_lat_tmp = id.variables['TLAT'][:-15,:]
+    # Wrap the periodic boundary by 1 cell
+    cice_lon = ma.empty([size(cice_lon_tmp,0), size(cice_lon_tmp,1)+1])
+    cice_lat = ma.empty([size(cice_lat_tmp,0), size(cice_lat_tmp,1)+1])
+    cice_lon[:,:-1] = cice_lon_tmp
+    cice_lon[:,-1] = cice_lon_tmp[:,0]
+    cice_lat[:,:-1] = cice_lat_tmp
+    cice_lat[:,-1] = cice_lat_tmp[:,0]
     time_id = id.variables['time']
     # Get the year, month, and day (all 1-based) for each output step
     # These are 5-day averages marked with the last day's date.
@@ -83,8 +90,8 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
         end_day[1] = 29
 
     # Calculate monthly average of CICE output
-    cice_data = ma.empty(shape(cice_lon))
-    cice_data[:,:] = 0.0
+    cice_data_tmp = ma.empty(shape(cice_lon_tmp))
+    cice_data_tmp[:,:] = 0.0
     num_days = 0
     
     # Figure out how many of the 5 days averaged in start_t are actually within
@@ -109,12 +116,12 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
         return
 
     # Start accumulating data weighted by days
-    cice_data[:,:] += id.variables['aice'][start_t,:-15,:]*start_days
+    cice_data_tmp[:,:] += id.variables['aice'][start_t,:-15,:]*start_days
     num_days += start_days
 
     # Beween start_t and end_t, we want all the days
     for t in range(start_t+1, end_t):
-        cice_data[:,:] += id.variables['aice'][t,:-15,:]*5
+        cice_data_tmp[:,:] += id.variables['aice'][t,:-15,:]*5
         num_days += 5
 
     # Figure out how many of the 5 days averaged in end_t are actually within
@@ -139,7 +146,7 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
         print 'Error: ending index is month ' + str(cice_time[end_t].month) + ', day ' + str(cice_time[end_t].day)
         return
 
-    cice_data[:,:] += id.variables['aice'][end_t,:-15,:]*end_days
+    cice_data_tmp[:,:] += id.variables['aice'][end_t,:-15,:]*end_days
     num_days += end_days
 
     # Check that we got the correct number of days
@@ -150,7 +157,12 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     # Finished accumulating data
     id.close()
     # Convert from sum to average
-    cice_data[:,:] /= num_days
+    cice_data_tmp[:,:] /= num_days
+
+    # Wrap the periodic boundary
+    cice_data = ma.empty([size(cice_data_tmp,0), size(cice_data_tmp,1)+1])
+    cice_data[:,:-1] = cice_data_tmp
+    cice_data[:,-1] = cice_data_tmp[:,0]
 
     # Construct NSIDC file path
     if month+1 < 10:

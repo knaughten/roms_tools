@@ -20,10 +20,10 @@ def mld_plot (file_path, tstep, colour_bounds, save=False, fig_name=None):
 
     # Read grid, zice, Hsbl
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    zice = id.variables['zice'][:-15,:-2]
-    hsbl = id.variables['Hsbl'][tstep-1,:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    zice = id.variables['zice'][:-15,:-1]
+    hsbl = id.variables['Hsbl'][tstep-1,:-15,:-1]
     id.close()
     # Mask out the ice shelves and change the sign
     mld = ma.masked_where(zice!=0, -hsbl)

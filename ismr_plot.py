@@ -29,13 +29,13 @@ def ismr_plot (file_path, save=False, fig_name=None):
 
     # Read the grid
     id = Dataset(file_path, 'r')
-    lon = id.variables['lon_rho'][:-15,:-2]
-    lat = id.variables['lat_rho'][:-15,:-2]
-    mask_rho = id.variables['mask_rho'][:-15,:-2]
-    zice = id.variables['zice'][:-15,:-2]
+    lon = id.variables['lon_rho'][:-15,:-1]
+    lat = id.variables['lat_rho'][:-15,:-1]
+    mask_rho = id.variables['mask_rho'][:-15,:-1]
+    zice = id.variables['zice'][:-15,:-1]
     # Read the last year of ice shelf melt rates (assume 5-day averages here),
     # average over time, and convert from m/s to m/y
-    ismr = mean(id.variables['m'][-73:,:-15,:-2], axis=0)*60*60*24*365.25
+    ismr = mean(id.variables['m'][-73:,:-15,:-1], axis=0)*60*60*24*365.25
     id.close()
     # Mask the open ocean and land out of the melt rates
     ismr = ma.masked_where(zice==0, ismr)

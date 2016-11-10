@@ -1,7 +1,9 @@
 from netCDF4 import Dataset
 from numpy import *
 
-# Convert a ROMS grid file to CICE grid and kmt files.
+# Convert a ROMS grid file to CICE grid and kmt files. Note the CICE grid
+# will have two less points on either dimension because it only wants
+# computational cells.
 # Input:
 # roms_grid_name = path to existing ROMS grid file
 # cice_grid_name = path to desired CICE grid file
@@ -15,41 +17,20 @@ def cice_grid (roms_grid_name, cice_grid_name, cice_kmt_name):
     cice_kmt = Dataset(cice_kmt_name, 'w')
 
     # Read variables
-    ulon_tmp = roms.variables['lon_psi'][:,:]
-    ulat_tmp = roms.variables['lat_psi'][:,:]
-    # Convert angle to degrees
-    angle = roms.variables['angle'][:]*180/pi
+    # CICE u-grid corresponds to ROMS psi-grid
+    ulon = roms.variables['lon_psi'][1:,1:]
+    ulat = roms.variables['lat_psi'][1:,1:]
+    # Convert angle (on shared tracer grid) to degrees
+    angle = roms.variables['angle'][1:-1,1:-1]*180/pi
     # Mask out ice shelf cavities for sea ice
-    kmt = roms.variables['mask_rho'][:,:] - roms.variables['mask_zice'][:,:]
+    kmt = roms.variables['mask_rho'][1:-1,1:-1] - roms.variables['mask_zice'][1:-1,1:-1]
 
-    i = arange(angle.shape[1])
-    j = arange(angle.shape[0])
-
-    # Get one more index in each dimension for lat and lon; linearly extend
-    ulon = zeros([size(j), size(i)])
-    ulon[:-1,:-1] = ulon_tmp
-    # Longitude is a bit tricky because of the mod 360
-    for jj in range(size(j)):
-        ulon_1back = ulon[jj,-2]
-        ulon_2back = ulon[jj,-3]
-        if ulon_2back - ulon_1back > 300:
-            ulon_2back -= 360
-        ulon[jj,-1] = 2*ulon_1back - ulon_2back
-    for ii in range(size(i)):
-        ulon_1back = ulon[-2,ii]
-        ulon_2back = ulon[-3,ii]
-        if ulon_2back - ulon_1back < -300:
-            ulon_2back += 360
-        ulon[-1,ii] = 2*ulon_1back - ulon_2back        
-    ulat = zeros([size(j), size(i)])
-    ulat[:-1,:-1] = ulat_tmp
-    # Latitude is easy
-    ulat[-1,:] = 2*ulat[-2,:] - ulat[-3,:]
-    ulat[:,-1] = 2*ulat[:,-2] - ulat[:,-3]
+    num_lon = size(ulon,1)
+    num_lat = size(ulon,0)
 
     # Write variables
-    cice_grid.createDimension('i', size(i))
-    cice_grid.createDimension('j', size(j))
+    cice_grid.createDimension('i', num_lon)
+    cice_grid.createDimension('j', num_lat)
 
     cice_grid.createVariable('ulon', 'f8', ('j', 'i'))
     cice_grid.variables['ulon'].units = 'degree_east'
@@ -63,8 +44,8 @@ def cice_grid (roms_grid_name, cice_grid_name, cice_kmt_name):
     cice_grid.variables['angle'].units = 'radians'
     cice_grid.variables['angle'][:,:] = angle
 
-    cice_kmt.createDimension('i', size(i))
-    cice_kmt.createDimension('j', size(j))
+    cice_kmt.createDimension('i', num_lon)
+    cice_kmt.createDimension('j', num_lat)
 
     cice_kmt.createVariable('kmt', 'f8', ('j', 'i'))
     cice_kmt.variables['kmt'].units = '1'

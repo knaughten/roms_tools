@@ -9,6 +9,7 @@ from calc_z import *
 # Output 12 sets of monthly-averaged data, one for each month of the given year.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
 # the interp_ecco2roms function to find where these filenames are defined.
+# NB: This clamps u and ubar to zero at the northern boundary.
 
 # NB for raijin users: RegularGridInterpolator needs python/2.7.6 but the
 # default is 2.7.3. Before running this script, switch them as follows:
@@ -26,17 +27,16 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
+    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
     theta_base = '../ROMS-CICE-MCT/data/ECCO2/raw/THETA.1440x720x50.' + str(year)
     salt_base = '../ROMS-CICE-MCT/data/ECCO2/raw/SALT.1440x720x50.' + str(year)
-    uvel_base = '../ROMS-CICE-MCT/data/ECCO2/raw/UVEL.1440x720x50.' + str(year)
     vvel_base = '../ROMS-CICE-MCT/data/ECCO2/raw/VVEL.1440x720x50.' + str(year)
     output_file = '../ROMS-CICE-MCT/data/ECCO2/ecco2_cube92_lbc_' + str(year) + '.nc'
 
     # Grid parameters; check grid_file and *.in to make sure these are correct
     Tcline = 40
-    theta_s = 0.9
-    theta_b = 4
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
     # Northernmost index of ECCO2 grid to read (1-based)
@@ -219,9 +219,6 @@ def convert_file (year):
         salt_fid = Dataset(salt_base + tail, 'r')
         salt_raw = transpose(salt_fid.variables['SALT'][0,:,0:nbdry_ecco,:])
         salt_fid.close()
-        uvel_fid = Dataset(uvel_base + tail, 'r')
-        uvel_raw = transpose(uvel_fid.variables['UVEL'][0,:,0:nbdry_ecco,:])
-        uvel_fid.close()
         vvel_fid = Dataset(vvel_base + tail, 'r')
         vvel_raw = transpose(vvel_fid.variables['VVEL'][0,:,0:nbdry_ecco,:])
         vvel_fid.close()
@@ -240,12 +237,6 @@ def convert_file (year):
         salt[-1,:,1:-1] = ma.copy(salt_raw[0,:,:])
         salt[:,:,0] = ma.copy(salt[:,:,1])
         salt[:,:,-1] = ma.copy(salt[:,:,-2])
-        uvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
-        uvel[1:-1,:,1:-1] = ma.copy(uvel_raw)
-        uvel[0,:,1:-1] = ma.copy(uvel_raw[-1,:,:])
-        uvel[-1,:,1:-1] = ma.copy(uvel_raw[0,:,:])
-        uvel[:,:,0] = ma.copy(uvel[:,:,1])
-        uvel[:,:,-1] = ma.copy(uvel[:,:,-2])
         vvel = ma.array(zeros((size(lon_ecco), size(lat_ecco), size(depth_ecco))))
         vvel[1:-1,:,1:-1] = ma.copy(vvel_raw)
         vvel[0,:,1:-1] = ma.copy(vvel_raw[-1,:,:])
@@ -255,21 +246,14 @@ def convert_file (year):
 
         # Regridding happens here...
         print 'Interpolating temperature'
-        temp_interp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, -0.5)
+        temp_interp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(theta), True)
         print 'Interpolating salinity'
-        salt_interp = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, 34.5)
-        print 'Interpolating u'
-        u_interp = interp_ecco2roms(uvel, lon_ecco, lat_ecco, depth_ecco, lon_u, lat_u, z_u, 0)
+        salt_interp = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(salt), True)
         print 'Interpolating v'
-        v_interp = interp_ecco2roms(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0)
+        v_interp = interp_ecco2roms(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0, False)
 
-        # Calculate vertical averages of u and v to get ubar and vbar
+        # Calculate vertical average of v to get vbar
         # Be sure to treat land mask carefully so we don't divide by 0
-        ubar_interp = sum(u_interp*dz_u, axis=0)
-        wct_u = h_u[-1,:] + zice_u[-1,:]
-        index = wct_u == 0
-        ubar_interp[~index] = ubar_interp[~index]/wct_u[~index]
-        ubar_interp[index] = 0.0
         vbar_interp = sum(v_interp*dz_v, axis=0)
         wct_v = h_v[-1,:] + zice_v[-1,:]
         index = wct_v == 0
@@ -277,17 +261,19 @@ def convert_file (year):
         vbar_interp[index] = 0.0
 
         # Calculate time values centered in the middle of each month,
-        # relative to 1995
-        time = 365.25*(year-1995) + 365.25/12*(month+0.5)
+        # relative to 1992
+        time = 365.25*(year-1992) + 365.25/12*(month+0.5)
 
         # Save data to NetCDF file
         out_fid = Dataset(output_file, 'a')
         out_fid.variables['ocean_time'][month] = time
         out_fid.variables['temp_north'][month,:,:] = temp_interp
         out_fid.variables['salt_north'][month,:,:] = salt_interp
-        out_fid.variables['u_north'][month,:,:] = u_interp
+        # Clamp u to zero
+        out_fid.variables['u_north'][month,:,:] = 0.0
         out_fid.variables['v_north'][month,:,:] = v_interp
-        out_fid.variables['ubar_north'][month,:] = ubar_interp
+        # Clamp ubar to zero
+        out_fid.variables['ubar_north'][month,:] = 0.0
         out_fid.variables['vbar_north'][month,:] = vbar_interp
         out_fid.variables['zeta_north'][month,:] = 0.0
         out_fid.close()
@@ -314,15 +300,17 @@ def convert_file (year):
 #              mask: something close to the mean value of A so that the splines
 #              don't freak out (suggest -0.5 for temperature, 34.5 for salinity,
 #              0 for u and v)
+# wrap = boolean flag indicating that we are on the ROMS rho-grid or v-grid, 
+#        and should enforce the periodic boundary
 # Output:
 # B = array of size pxr containing values on the ROMS grid (dimension depth x
 #     longitude)
-def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_roms, fill_value):
+def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_roms, fill_value, wrap):
 
     # Fill the ECCO2 land mask with a constant value close to the mean of A.
     # This is less than ideal because it will skew the interpolation slightly
     # along the coast, but it doesn't matter because the northern boundary is
-    # far away from the coast.
+    # far away from the region of interest.
     Afill = A
     Afill[A.mask] = fill_value
 
@@ -331,6 +319,11 @@ def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_r
     # Call this function at the ROMS grid points (pass positive values for
     # ROMS depth)
     B = interp_function((lon_roms, lat_roms, -z_roms))
+
+    if wrap:
+        # Enforce periodic boundary
+        B[:,0] = B[:,-2]
+        B[:,-1] = B[:,1]
 
     return B
 

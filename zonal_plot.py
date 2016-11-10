@@ -28,8 +28,8 @@ from rotate_vector_roms import *
 def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
-    theta_s = 0.9
-    theta_b = 4.0
+    theta_s = 4.0
+    theta_b = 0.9
     hc = 40
     N = 31
 
@@ -72,14 +72,6 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     lon_2d = id.variables['lon_rho'][:-15,:]
     lat_2d = id.variables['lat_rho'][:-15,:]
     id.close()
-
-    # Throw away periodic boundary overlap
-    data_3d = data_3d[:,:,:-2]
-    zeta = zeta[:,:-2]
-    h = h[:,:-2]
-    zice = zice[:,:-2]
-    lon_2d = lon_2d[:,:-2]
-    lat_2d = lat_2d[:,:-2]        
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
