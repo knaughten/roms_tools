@@ -56,30 +56,28 @@ def cice_vectorplot (file_path, tstep, xname, yname, cmax=None, save=False, fig_
     speed = sqrt(u**2 + v**2)
 
     # Calculate X and Y coordinates for plotting circumpolar projection
-    X = -(lat+90)*cos(lon*deg2rad+pi/2)
-    Y = (lat+90)*sin(lon*deg2rad+pi/2)
+    x = -(lat+90)*cos(lon*deg2rad+pi/2)
+    y = (lat+90)*sin(lon*deg2rad+pi/2)
 
-    # Calculate vector components in spherical coordinate space
-    # (just differentiate and rearrange spherical coordinate transformation)
-    dlon_dt = u/(r*cos(lat*deg2rad)*deg2rad)
-    dlat_dt = v/(r*deg2rad)
-    dX_dt = -dlat_dt*cos(lon*deg2rad+pi/2) + (lat+90)*sin(lon*deg2rad+pi/2)*dlon_dt*deg2rad
-    dY_dt = dlat_dt*sin(lon*deg2rad+pi/2) + (lat+90)*cos(lon*deg2rad+pi/2)*dlon_dt*deg2rad
+    theta = arctan2(v, u)
+    theta_circ = theta - lon*deg2rad
+    u_circ = speed*cos(theta_circ)
+    v_circ = speed*sin(theta_circ)
 
     # Average X, Y, dX_dt, and dY_dt over block x block intervals
     # Calculate number of blocks
-    size0 = int(ceil(size(X,0)/float(block)))
-    size1 = int(ceil((size(X,1)-1)/float(block)))
+    size0 = int(ceil(size(x,0)/float(block)))
+    size1 = int(ceil((size(x,1)-1)/float(block)))
     # Set up arrays for averaged fields
-    X_block = ma.empty([size0, size1])
-    Y_block = ma.empty([size0, size1])
-    dX_dt_block = ma.empty([size0, size1])
-    dY_dt_block = ma.empty([size0, size1])
+    x_block = ma.empty([size0, size1])
+    y_block = ma.empty([size0, size1])
+    u_circ_block = ma.empty([size0, size1])
+    v_circ_block = ma.empty([size0, size1])
     # Set up arrays containing boundary indices
-    posn0 = range(0, size(X,0), block)
-    posn0.append(size(X,0))
-    posn1 = range(0, size(X,1), block)
-    posn1.append(size(X,1))
+    posn0 = range(0, size(x,0), block)
+    posn0.append(size(x,0))
+    posn1 = range(0, size(x,1), block)
+    posn1.append(size(x,1))
     # Double loop to average each block (can't find a more efficient way to do
     # this)
     for j in range(size0):
@@ -88,10 +86,10 @@ def cice_vectorplot (file_path, tstep, xname, yname, cmax=None, save=False, fig_
             end0 = posn0[j+1]
             start1 = posn1[i]
             end1 = posn1[i+1]
-            X_block[j,i] = mean(X[start0:end0, start1:end1])
-            Y_block[j,i] = mean(Y[start0:end0, start1:end1])
-            dX_dt_block[j,i] = mean(dX_dt[start0:end0, start1:end1])
-            dY_dt_block[j,i] = mean(dY_dt[start0:end0, start1:end1])
+            x_block[j,i] = mean(x[start0:end0, start1:end1])
+            y_block[j,i] = mean(y[start0:end0, start1:end1])
+            u_circ_block[j,i] = mean(u_circ[start0:end0, start1:end1])
+            v_circ_block[j,i] = mean(v_circ[start0:end0, start1:end1])
 
     # Set up colour scale levels
     if cmax is None:
@@ -104,11 +102,11 @@ def cice_vectorplot (file_path, tstep, xname, yname, cmax=None, save=False, fig_
     fig.add_subplot(1,1,1, aspect='equal')
     # Contour speed values at every point
     # Use pastel colour map so overlaid vectors will show up
-    contourf(X, Y, speed, lev, cmap='Paired', extend='both')
+    contourf(x, y, speed, lev, cmap='Paired', extend='both')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
     # Add vectors for each block
-    quiver(X_block, Y_block, dX_dt_block, dY_dt_block, color='black')
+    quiver(x_block, y_block, u_circ_block, v_circ_block, color='black')
     title(xname + ', ' + yname, fontsize=30)
     axis('off')
 

@@ -3,74 +3,85 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
-def adv_amery_tsplots ():
+# For each advection experiment, plot zonal slices of temperature and salinity
+# through 71E (Amery Ice Shelf) at the end of the simulation.
+def adv_amery_tsplots_indiv ():
 
-    paths = ['/short/m68/kaa561/advection/u3_lim/', '/short/m68/kaa561/advection/c4_l/']
-    labels = [r'a) Temperature ($^{\circ}$C), U3_LIM', r'b) Temperature ($^{\circ}$C), C4_LD', 'c) Salinity (psu), U3_LIM', 'd) Salinity (psu), C4_LD']
-    file_tail = 'ocean_avg_31dec.nc'
-    var_names = ['temp', 'salt']
-    tstep = 1 #366
+    num_simulations = 6
+    # Paths to simulation directories
+    paths = ['/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3limiters_lowdif/']
+    # End of figure names for each simulation
+    labels = ['_c4_lowdif.png', '_c4_highdif.png', '_a4_lowdif.png', '_a4_highdif.png', '_u3.png', '_u3_lim.png']
+    # Name of ocean output file to read
+    ocn_file = 'ocean_avg_0001.nc'
+    # Timestep to plot (average over last day in 1992)
+    tstep = 366
+    # Longitude to plot
     lon0 = 71
+    # Deepest depth to plot
     depth_min = -500
-    scale_min = [-2, 33.8]
-    scale_max = [3, 34.8]
-    scale_ticks = [1, 0.2]
+    # Bounds on colour scale for each variable
+    temp_bounds = [-2, 3]
+    salt_bounds = [33.8, 34.8]
+    # Bounds on latitudes to plot
     lat_min = -72
     lat_max = -50
 
+    # Grid parameters
     theta_s = 4.0
     theta_b = 0.9
     hc = 40
     N = 31
 
-    fig = figure(figsize=(18,12))
-    for sim in range(2):
-        for var in range(2):
-            id = Dataset(paths[sim]+file_tail, 'r')
-            data_3d = id.variables[var_names[var]][tstep-1,:,:,:]
-            zeta = id.variables['zeta'][tstep-1,:,:]
-            if sim==0 and var==0:
-                h = id.variables['h'][:,:]
-                zice = id.variables['zice'][:,:]
-                lon_2d = id.variables['lon_rho'][:,:]
-                lat_2d = id.variables['lat_rho'][:,:]
+    # Build titles for each variable based on longitude
+    if lon0 < 0:
+        temp_title = r'Temperature ($^{\circ}$C) at ' + str(int(round(-lon0))) + r'$^{\circ}$W'
+        salt_title = r'Salinity (psu) at ' + str(int(round(-lon0))) + r'$^{\circ}$W'
+        # Edit longitude to be between0 and 360, following ROMS convention
+        lon0 += 360
+    else:
+        temp_title = r'Temperature ($^{\circ}$C) at ' + str(int(round(lon0))) + r'$^{\circ}$E'
+        salt_title = r'Salinity (psu) at ' + str(int(round(lon0))) + r'$^{\circ}$E'
+
+    # Loop over simulations
+    for sim in range(num_simulations):
+        # Loop over variables
+        for var_name in ['temp', 'salt']:
+            # Read variable, sea surface height, and grid variables
+            id = Dataset(paths[sim] + ocn_file, 'r')
+            data_3d = id.variables[var_name][tstep-1,:,:-15,:]
+            zeta = id.variables['zeta'][tstep-1,:-15,:]
+            if sim == 0 and var_name == 'temp':
+                # Grid variables are the same for all simulations so we
+                # only need to read them once
+                h = id.variables['h'][:-15,:]
+                zice = id.variables['zice'][:-15,:]
+                lon_2d = id.variables['lon_rho'][:-15,:]
+                lat_2d = id.variables['lat_rho'][:-15,:]
             id.close()
+            # Get a 3D array of z-coordinates
             z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
+            # Interpolate the variable, z, and latitude to lon0
             data, z, lat = interp_lon(data_3d, z_3d, lat_2d, lon_2d, lon0)
-            ax = fig.add_subplot(2, 2, 2*var+sim+1)
-            img = pcolor(lat, z, data, vmin=scale_min[var], vmax=scale_max[var], cmap='jet')
-            title(labels[2*var+sim], fontsize=24)
-            if var == 1:
-                xlabel('Latitude', fontsize=16)
-            if sim == 0:
-                ylabel('Depth (m)', fontsize=16)
+            # Set up colour levels for plotting
+            if var_name == 'temp':
+                lev = linspace(temp_bounds[0], temp_bounds[1], num=40)
+            elif var_name == 'salt':
+                lev = linspace(salt_bounds[0], salt_bounds[1], num=40)
+            # Plot
+            fig = figure(figsize=(12,6))
+            contourf(lat, z, data, lev, cmap='jet', extend='both')
+            colorbar()
+            if var_name == 'temp':
+                title(temp_title)
+            elif var_name == 'salt':
+                title(salt_title)
+            xlabel('Latitude')
+            ylabel('Depth (m)')
             xlim([lat_min, lat_max])
             ylim([depth_min, 0])
-            if sim == 1:
-                if var == 0:
-                    cbaxes = fig.add_axes([0.93, 0.575, 0.01, 0.3])
-                elif var == 1:
-                    cbaxes = fig.add_axes([0.93, 0.125, 0.01, 0.3])
-                cbar = colorbar(img, ticks=arange(scale_min[var], scale_max[var]+scale_ticks[var], scale_ticks[var]), cax=cbaxes, extend='both')
-                cbar.ax.tick_params(labelsize=14)
-            lat_ticks = arange(lat_min+2, lat_max+1, 5)
-            ax.set_xticks(lat_ticks)
-            lat_labels = []
-            for val in lat_ticks:
-                lat_labels.append(str(int(round(-val))) + r'$^{\circ}$S')
-            ax.set_xticklabels(lat_labels, fontsize=14)
-            depth_ticks = range(depth_min, 0+100, 100)
-            ax.set_yticks(depth_ticks)
-            depth_labels = []
-            for val in depth_ticks:
-                depth_labels.append(str(int(round(-val))))
-            ax.set_yticklabels(depth_labels, fontsize=14)
-
-    suptitle(r'71$^{\circ}$E (Amery Ice Shelf), 31 December', fontsize=30)
-    #fig.show()
-    fig.savefig('adv_amery_tsplots.png')
-
-
+            # Save plot
+            fig.savefig(var_name + labels[sim])
 
 
 # Linearly interpolate data, z, and latitude to the specified longitude.
@@ -176,6 +187,7 @@ def interp_lon_helper (lon, lon0):
     return ie, iw, coeff1, coeff2
 
 
+# Command-line interface
 if __name__ == "__main__":
 
-    adv_amery_tsplots()
+    adv_amery_tsplots_indiv()

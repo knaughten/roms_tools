@@ -2,5 +2,6 @@
 *.png
 *.log
 *.jnl
+*.pdf
 area_comparison
 rignot_data

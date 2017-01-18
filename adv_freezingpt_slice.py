@@ -10,15 +10,16 @@ from calc_z import *
 def adv_freezingpt_slice ():
 
     # Path to ocean history file
-    file_path = '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_lowdif/ocean_his_0001.nc'
+    file_path = '/short/m68/kaa561/advection/c4_l/ocean_his_6july.nc'
     # Timestep to plot
-    tstep = 189
+    tstep = 1 #188
     # i-index to plot (1-based)
     i_val = 1250
     # Deepest depth to plot
     depth_min = -100
     # Bounds on colour scale
-    colour_bounds = [-0.3, 0.3]
+    scale_max = 0.3
+    scale_tick = 0.1
     # Bounds on latitudes to plot
     lat_min = -78
     lat_max = -72
@@ -44,7 +45,7 @@ def adv_freezingpt_slice ():
     id.close()
 
     # Calculate freezing point as seen by supercooling code
-    tfr = -0.054*salt
+    tfr = salt/(-18.48 + salt*18.48/1000.0)
     # Calculate difference from freezing point
     deltat = temp - tfr
 
@@ -54,32 +55,29 @@ def adv_freezingpt_slice ():
     z = z_3d[:,:,i_val-1]
     lat = tile(lat_2d[:,i_val-1], (N,1))
 
-    # Determine colour bounds
-    if colour_bounds is not None:
-        # Specified by user
-        scale_min = colour_bounds[0]
-        scale_max = colour_bounds[1]
-        if scale_min == -scale_max:
-            # Centered on zero; use a red-yellow-blue colour scale
-            colour_map = 'RdYlBu_r'
-        else:
-            # Use a rainbow colour scale
-            colour_map = 'jet'
-    else:
-        # Determine automatically
-        scale_min = amin(deltat)
-        scale_max = amax(deltat)
-        colour_map = 'jet'
-
     # Plot (pcolor not contour to show what each individual cell is doing)
-    fig = figure(figsize=(12,6))
-    pcolor(lat, z, deltat, vmin=scale_min, vmax=scale_max, cmap=colour_map)
-    colorbar()
-    title(r'Difference from freezing point ($^{\circ}$C) in Weddell Sea, 7 July')
-    xlabel('Latitude')
-    ylabel('Depth (m)')
+    fig, ax = subplots(figsize=(12,6))
+    pcolor(lat, z, deltat, vmin=-scale_max, vmax=scale_max, cmap='RdBu_r')
+    cbar = colorbar(extend='both', ticks=arange(-scale_max, scale_max+scale_tick, scale_tick))
+    cbar.ax.tick_params(labelsize=14)
+    title(r'Difference from freezing point ($^{\circ}$C) in Weddell Sea: C4_LD', fontsize=18)
+    xlabel('Latitude', fontsize=16)
+    ylabel('Depth (m)', fontsize=16)
     xlim([lat_min, lat_max])
     ylim([depth_min, 0])
+
+    lat_ticks = arange(lat_min+1, lat_max+1, 1)
+    xticks(lat_ticks)
+    lat_labels = []
+    for val in lat_ticks:
+        lat_labels.append(str(int(round(-val))) + r'$^{\circ}$S')
+    ax.set_xticklabels(lat_labels, fontsize=14)
+    depth_ticks = arange(depth_min, 0+25, 25)
+    yticks(depth_ticks)
+    depth_labels = []
+    for val in depth_ticks:
+        depth_labels.append(str(int(round(-val))))
+    ax.set_yticklabels(depth_labels, fontsize=14)
 
     # Finished
     if save:

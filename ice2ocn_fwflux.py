@@ -16,6 +16,9 @@ def ice2ocn_fwflux (file_path, tstep, fig_name):
 
     # Read data
     id = Dataset(file_path, 'r')
+    # I think there is a problem with salinity weighting here.
+    # There is a difference between kg/m^2/s of freshwater, and kg/m^2/s of
+    # salt.
     data_tmp = id.variables['fresh_ai'][tstep-1,:-15,:] - id.variables['fsalt_ai'][tstep-1,:-15,:]/1000.*60.*60.*24.*100.
     lon_tmp = id.variables['TLON'][:-15,:]
     lat_tmp = id.variables['TLAT'][:-15,:]

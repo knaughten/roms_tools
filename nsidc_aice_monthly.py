@@ -41,7 +41,7 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     cice_lat[:,-1] = cice_lat_tmp[:,0]
     time_id = id.variables['time']
     # Get the year, month, and day (all 1-based) for each output step
-    # These are 5-day averages marked with the last day's date.
+    # These are 5-day averages marked with the next day's date.
     cice_time = num2date(time_id[:], units=time_id.units, calendar=time_id.calendar.lower())
 
     # Loop backwards through time indices to find the last one we care about
@@ -49,11 +49,7 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     end_t = -1  # Missing value flag
     for t in range(size(cice_time)-1, -1, -1):
         # Note that cice_time[t].month is converted to 0-indexed
-        if cice_time[t].month-1 == month and cice_time[t].day == end_day[month]:
-            end_t = t
-            break
-        next_month = mod(month+1, 12)
-        if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+4):
+        if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
             end_t = t
             break
     # Make sure we actually found it
@@ -64,7 +60,7 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     # Continue looping backwards to find the first time index we care about
     start_t = -1  # Missing value flag
     for t in range(end_t, -1, -1):
-        if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month], start_day[month]+5):
+        if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
             start_t = t
             break
     # Make sure we actually found it
@@ -74,14 +70,17 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
 
     # Check if this is a leap year
     leap_year = False
-    if mod(cice_time[end_t].year, 4) == 0:
+    cice_year = cice_time[end_t].year
+    if month == 11:
+        cice_year = cice_time[start_t].year
+    if mod(cice_year, 4) == 0:
         # Years divisible by 4 are leap years
         leap_year = True
-        if mod(cice_time[end_t].year, 100) == 0:
+        if mod(cice_year, 100) == 0:
             # Unless they're also divisible by 100, in which case they aren't
             # leap years
             leap_year = False
-            if mod(cice_time[end_t].year, 400) == 0:
+            if mod(cice_year, 400) == 0:
                 # Unless they're also divisible by 400, in which case they are
                 # leap years after all
                 leap_year = True
@@ -96,19 +95,19 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     
     # Figure out how many of the 5 days averaged in start_t are actually within
     # this month
-    if cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 4:
+    if cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 5:
         # Starting day is in position 1 of 5; we care about all of them
         start_days = 5
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 3:
+    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 4:
         # Starting day is in position 2 of 5; we care about the last 4
         start_days = 4
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+ 2:
+    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+ 3:
         # Starting day is in position 3 of 5; we care about the last 3
         start_days = 3
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 1:
+    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 2:
         # Starting day is in position 4 of 5; we care about the last 2
         start_days = 2
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]:
+    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month] + 1:
         # Starting day is in position 5 of 5; we care about the last 1
         start_days = 1
     else:
@@ -127,19 +126,19 @@ def nsidc_aice_monthly (cice_file, month, save=False, fig_name=None):
     # Figure out how many of the 5 days averaged in end_t are actually within
     # this month
     next_month = mod(month+1, 12)
-    if cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 3:
+    if cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 4:
         # Ending day is in position 1 of 5; we care about the first 1
         end_days = 1
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 2:
+    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 3:
         # Ending day is in position 2 of 5; we care about the first 2
         end_days = 2
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 1:
+    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 2:
         # Ending day is in position 3 of 5; we care about the first 3
         end_days = 3
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]:
+    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month] + 1:
         # Ending day is in position 4 of 5; we care about the first 4
         end_days = 4
-    elif cice_time[end_t].month-1 == month and cice_time[end_t].day == end_day[month]:
+    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]:
         # Ending day is in position 5 of 5; we care about all 5
         end_days = 5
     else:

@@ -10,11 +10,11 @@ def adv_timeseries_volume ():
     # Number of output steps in the simulation (daily averages, 1 leap year)
     num_days = 366
     # Paths to simulation directories (in order of decreasing sea ice volume)
-    paths = ['/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3_highdif/']
+    paths = ['/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3_lowdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/c4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/a4_highdif/', '/short/m68/kaa561/ROMS-CICE-MCT/tmproms/run/advection/u3limiters_lowdif/']
     # Name of timeseries_seaice logfile in each directory
     logfile = 'seaice.log'
     # Abbreviations for each simulation to use in the legend
-    labels = ['C4_L', 'A4_L', 'U3_L', 'C4_H', 'A4_H', 'U3_H']
+    labels = ['C4_L', 'A4_L', 'U3_L','C4_H', 'A4_H', 'U3_LIM']
     # Colours for plotting each simulation
     colours = ['k', 'm', 'b', 'r', 'g', 'c']
 

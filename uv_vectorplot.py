@@ -54,33 +54,29 @@ def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=
     # Calculate speed for the background filled contour plot
     speed = sqrt(u_rho**2 + v_rho**2)
 
-    # Calculate X and Y coordinates for plotting circumpolar projection
-    X = -(lat+90)*cos(lon*deg2rad+pi/2)
-    Y  = (lat+90)*sin(lon*deg2rad+pi/2)
+    # Calculate x and y coordinates for plotting circumpolar projection
+    x = -(lat+90)*cos(lon*deg2rad+pi/2)
+    y  = (lat+90)*sin(lon*deg2rad+pi/2)
 
-    # Calculate velocity components in spherical coordinate space
-    # (just differentiate and rearrange spherical coordinate transformations)
-    dlon_dt = u_rho/(r*cos(lat*deg2rad)*deg2rad)
-    dlat_dt = v_rho/(r*deg2rad)
-    # Calculate velocity components in X-Y space (just differentiate and
-    # rearrange equations for X and Y above)
-    dX_dt = -dlat_dt*cos(lon*deg2rad+pi/2) + (lat+90)*sin(lon*deg2rad+pi/2)*dlon_dt*deg2rad
-    dY_dt = dlat_dt*sin(lon*deg2rad+pi/2) + (lat+90)*cos(lon*deg2rad+pi/2)*dlon_dt*deg2rad
+    theta = arctan2(v_rho, u_rho)
+    theta_circ = theta - lon*deg2rad
+    u_circ = speed*cos(theta_circ)
+    v_circ = speed*sin(theta_circ)
 
     # Average X, Y, dX_dt, and dY_dt over block x block intervals
     # Calculate number of blocks
-    size0 = int(ceil(size(X,0)/float(block)))
-    size1 = int(ceil((size(X,1)-1)/float(block)))
+    size0 = int(ceil(size(x,0)/float(block)))
+    size1 = int(ceil((size(x,1)-1)/float(block)))
     # Set up arrays for averaged fields
-    X_block = ma.empty([size0, size1])
-    Y_block = ma.empty([size0, size1])
-    dX_dt_block = ma.empty([size0, size1])
-    dY_dt_block = ma.empty([size0, size1])
+    x_block = ma.empty([size0, size1])
+    y_block = ma.empty([size0, size1])
+    u_circ_block = ma.empty([size0, size1])
+    v_circ_block = ma.empty([size0, size1])
     # Set up arrays containing boundary indices
-    posn0 = range(0, size(X,0), block)
-    posn0.append(size(X,0))
-    posn1 = range(0, size(X,1), block)
-    posn1.append(size(X,1))
+    posn0 = range(0, size(x,0), block)
+    posn0.append(size(x,0))
+    posn1 = range(0, size(x,1), block)
+    posn1.append(size(x,1))
     # Double loop to average each block (can't find a more efficient way to do
     # this)
     for j in range(size0):
@@ -89,21 +85,21 @@ def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=
             end0 = posn0[j+1]
             start1 = posn1[i]
             end1 = posn1[i+1]
-            X_block[j,i] = mean(X[start0:end0, start1:end1])
-            Y_block[j,i] = mean(Y[start0:end0, start1:end1])
-            dX_dt_block[j,i] = mean(dX_dt[start0:end0, start1:end1])
-            dY_dt_block[j,i] = mean(dY_dt[start0:end0, start1:end1])
+            x_block[j,i] = mean(x[start0:end0, start1:end1])
+            y_block[j,i] = mean(y[start0:end0, start1:end1])
+            u_circ_block[j,i] = mean(u_circ[start0:end0, start1:end1])
+            v_circ_block[j,i] = mean(v_circ[start0:end0, start1:end1])
 
     # Make the plot
     fig = figure(figsize=(16,12))
     fig.add_subplot(1,1,1, aspect='equal')
     # Contour speed values at every point
     # Use pastel colour map so overlaid vectors will show up
-    contourf(X, Y, speed, 50, cmap='Paired')
+    contourf(x, y, speed, 50, cmap='Paired')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
     # Add vectors for each block
-    quiver(X_block, Y_block, dX_dt_block, dY_dt_block, color='black')
+    quiver(x_block, y_block, u_circ_block, v_circ_block, color='black')
     if depth_key == 1:
         title('Surface velocity (m/s)', fontsize=30)
     elif depth_key == 2:

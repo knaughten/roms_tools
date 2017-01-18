@@ -42,9 +42,9 @@ def temp_salt_seasonal (file_path, lon0, depth_bdry, save=False, fig_name=None):
     temp_min = -2.5
     temp_max = 7.5
     temp_ticks = 2
-    salt_min = 34.3
+    salt_min = 33.8
     salt_max = 34.8
-    salt_ticks = 0.1
+    salt_ticks = 0.2
 
     # Choose what to write on the title about longitude
     if lon0 < 0:
