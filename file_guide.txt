@@ -619,6 +619,89 @@ temp_salt_seasonal.py: Make a 4x2 plot showing lat vs. depth slides of
 			       the screen. This script repeats as many times
 			       as you like.
 
+ssflux_tamura_monthly.py: Make a figure comparing monthly-averaged sea ice
+                          to ocean salt fluxes, from Tamura's dataset to CICE
+			  output.
+			  To run: First make sure the paths to monthly-averaged,
+			          unit-corrected (to kg/m^2/s) Tamura data files
+				  are correct. Then open python or ipython and
+				  type "run ssflux_tamura_monthly.py". The
+				  script will prompt you for paths to the CICE
+				  output file, the month, and whether you want
+				  to save the figure (and if so, what filename)
+				  or display it on the screen. This script
+				  repeats as many times as you like.
+
+ssflux_tamura_seasonal.py: Make a figure comparing seasonally-averaged sea ice
+                           to ocean salt fluxes, from Tamura's dataset to CICE
+			   output.
+			   To run: First make sure the paths to
+			           monthly-averaged, unit-corrected (to
+				   kg/m^2/s) Tamura data files are correct. Then
+				   open python or iptyhon and type
+				   "run ssflux_tamura_seasonal.py". The script
+				   will prompt you for paths to the CICE output
+				   file and whether you want to save the figure
+				   (and if so, what filename) or display it on
+				   the screen. This script is non-repeating.
+
+sose_seasonal.py: Make a 4x2 plot showing lat vs. depth slices of seasonally
+                  averaged temperature (top) and salinity (bottom) at the given
+		  longitude, for the 2005-2010 SOSE climatology.
+		  To run: First make sure the path to the SOSE seasonal
+		          climatology file is correct (if you don't have this
+			  file, ask Kaitlin). Then open python or ipython and
+			  type "run sose_seasonal.py". The script will
+			  prompt you for the longitude to interpolate to, the
+			  deepest depth to plot, and whether to save the
+			  figure (and if so, what filename) or display it on
+			  the screen. This script is non-repeating.
+
+ice_drift_seasonal.py: Create a 2x2 plot replicating Figure 1 of Holland &
+                       Kimura 2016, showing sea ice velocity vectors overlaying
+		       sea ice concentration for the seasonal averages FMA, MMJ,
+		       ASO, NDJ.
+		       To run: Open python or ipython and type
+		               "run ice_drift_seasonal.py". The script will
+			       prompt you for the path to a CICE output file
+			       containing 5-day averages for at least one
+			       complete Feb-Jan period. It will also ask whether
+			       you want to save the figure (and if so, what
+			       filename) or display it on the screen. This
+			       script is non-repeating.
+
+seaice_budget.py: Create four plots showing timeseries of the thermodynamic vs
+                  dynamic volume tendency, averaged over (1) the continental
+		  shelf (defined as anywhere south of 60S with seafloor
+		  shallower than 1500 m), and (2) the offshore region
+		  (everywhere else). Two plots are the absolute volume
+		  tendencies (units of cm/day), the other two are cumulative
+		  over the simulation (cm).
+		  To run: Open python or ipython and type
+		          "run seaice_budget.py." The script will prompt you for
+			  the path to the CICE output file, the path to the ROMS
+			  grid file, and whether you want to save the figures
+			  (and if so, what filenames) or display them on the
+			  screen.
+
+seaice_budget_thermo.py: Create four plots showing timeseries of the
+                         thermodynamic terms of sea ice growth and melt:
+			 congelation, frazil ice formation, snow-to-ice
+			 flooding, top melt, basal melt, and lateral melt.
+			 These variables are averaged over (1) the continental
+			 shelf (defined as anywhere south of 60S with seafloor
+			 shallower than 1500 m), and (2) the offshore region
+			 (everywhere else). Two plots are the absolute volume
+			 tendencies (units of cm/day), the other two are
+			 cumulative over the simulation (cm).
+			 To run: Open python or ipython and type
+			         "run seaice_budget_thermo.py". The script will
+				 prompt you for the path to the CICE output
+				 file, the path to the ROMS grid file, and
+				 whether you want to save the figures (and if
+				 so, what filenames) or display them on the
+				 screen.
+
 
 ***ANIMATIONS***
 
@@ -636,12 +719,20 @@ aice_animation.py: Create an animation of sea ice concentration for the given
 
 ***FIGURES FOR ADVECTION PAPER***
 
-adv_amery_tsplots.py: For each advection experiment, plot zonal slices of
-                      temperature and salinity through 71E (Amery Ice Shelf)
-		      at the end of the simulation. This is really just a
-		      special case of zonal_plot.py.
-		      To run: Make sure the paths to each simulation are
-		              correct. Then open python or ipython and type
+adv_amery_tsplots_indiv.py: For each advection experiment, plot zonal slices of
+                            temperature and salinity through 71E (Amery Ice
+			    Shelf) at the end of the simulation. This is really
+			    just a special case of zonal_plot.py.
+		            To run: Make sure the paths to each simulation are
+		                    correct. Then open python or ipython and
+				    type "run adv_amery_tsplots_indiv.py".
+
+adv_amery_tsplots.py: Create a 2x2 plot showing zonal slices of temperature and
+                      salinity through 71E (Amery Ice Shelf) at the end of the
+		      U3_LIM and C4_LD simulations.
+		      To run: Make sure the paths to the simulation directories
+		              and 31 December ROMS files are correct. Then
+			      open python or ipython and type
 			      "run adv_amery_tsplots.py".
 
 adv_freezingpt_slice.py: Plot the difference from the freezing temperature at
@@ -661,6 +752,38 @@ adv_timeseries_volume.py: Plot timeseries of total sea ice volume for all the
 			          sea ice logfiles are correct. Then open
 				  python or ipython and type
 				  "run adv_timeseries_volume.py".
+
+adv_frazil.py: Create a 3x2 plot of annually averaged frazil formation for each
+               advection experiment: the absolute values for U3_LIM, and the
+	       anomalies from U3_LIM for the other 5 experiments.
+	       To run: Make sure the paths to the simulation directories and
+	               annually averaged CICE files are correct. Then open
+		       python or ipython and type "run adv_frazil.py".
+
+adv_thickness.py: Like adv_frazil.py, but for sea ice effective thickness on
+                  23 August (the sea ice area max).
+		  To run: Make sure the paths to the simulation directories and
+	                  23 August CICE files are correct. Then open python or
+			  ipython and type "run adv_frazil.py".
+
+adv_sss.py: Like adv_thickness.py, but for sea surface salinity.
+            To run: Make sure the paths to the simulation directories and 23
+	            August CICE files are correct. Then open python or ipython
+		    and type "run adv_sss.py".
+
+adv_mld.py: Like adv_thickness.py, but for mixed layer depth as calculated by
+            the KPP parameterisation.
+	    To run: Make sure the paths to the simulation directories and 23
+	            August ROMS files are correct. Then open python or ipython
+		    and type "run adv_mld.py".
+
+adv_polynyas.py: Create a 1x2 plot of sea ice concentration along the coast of
+                 Wilkes Land on 23 August (the sea ice area max), showing the
+		 difference in polynya size between the U3_LIM and C4_LD
+		 simulations.
+		 To run: Make sure the paths to the simulation directories and
+		         23 August CICE files are correct. Then open python or
+			 ipython and type "run adv_polynyas.py".
 
 
 ***UTILITY FUNCTIONS***

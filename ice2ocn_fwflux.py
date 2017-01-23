@@ -13,13 +13,18 @@ from matplotlib.pyplot import *
 def ice2ocn_fwflux (file_path, tstep, fig_name):
 
     deg2rad = pi/180
+    rho_fw = 1000.0
+    mps_to_cmpday = 8.64e6
 
     # Read data
     id = Dataset(file_path, 'r')
-    # I think there is a problem with salinity weighting here.
-    # There is a difference between kg/m^2/s of freshwater, and kg/m^2/s of
-    # salt.
-    data_tmp = id.variables['fresh_ai'][tstep-1,:-15,:] - id.variables['fsalt_ai'][tstep-1,:-15,:]/1000.*60.*60.*24.*100.
+    # Read freshwater and salt fluxes, also salinity
+    fresh_ai = id.variables['fresh_ai'][tstep-1,:-15,:]
+    fsalt_ai = id.variables['fsalt_ai'][tstep-1,:-15,:]
+    sss = id.variables['sss'][tstep-1,:-15,:]
+    # Convert fsalt from kg/m^2/s of salt to cm/day of freshwater
+    data_tmp = fresh_ai - fsalt_ai*1e3/sss/rho_fw*mps_to_cmpday
+    # Read grid
     lon_tmp = id.variables['TLON'][:-15,:]
     lat_tmp = id.variables['TLAT'][:-15,:]
     id.close()

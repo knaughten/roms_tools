@@ -52,19 +52,20 @@ def cice_vectorplot (file_path, tstep, xname, yname, cmax=None, save=False, fig_
 
     # Rotate from local x-y space to lon-lat space
     u, v = rotate_vector_cice(u_xy, v_xy, angle)
-    # Calculate magnitude for the background filled contour plot
+    # Calculate magnitude of vector
     speed = sqrt(u**2 + v**2)
-
-    # Calculate X and Y coordinates for plotting circumpolar projection
-    x = -(lat+90)*cos(lon*deg2rad+pi/2)
-    y = (lat+90)*sin(lon*deg2rad+pi/2)
-
+    # Convert vector to polar coordinates, rotate to account for longitude in
+    # circumpolar projection, and convert back to vector components
     theta = arctan2(v, u)
     theta_circ = theta - lon*deg2rad
     u_circ = speed*cos(theta_circ)
     v_circ = speed*sin(theta_circ)
 
-    # Average X, Y, dX_dt, and dY_dt over block x block intervals
+    # Calculate x and y coordinates for plotting circumpolar projection
+    x = -(lat+90)*cos(lon*deg2rad+pi/2)
+    y = (lat+90)*sin(lon*deg2rad+pi/2)    
+
+    # Average x, y, u_circ, and v_circ over block x block intervals
     # Calculate number of blocks
     size0 = int(ceil(size(x,0)/float(block)))
     size1 = int(ceil((size(x,1)-1)/float(block)))

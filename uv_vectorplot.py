@@ -51,19 +51,20 @@ def uv_vectorplot (grid_path, file_path, tstep, depth_key, save=False, fig_name=
     # Throw away the overlapping periodic boundary
     u_rho = u_lonlat[:,:-1]
     v_rho = v_lonlat[:,:-1]
-    # Calculate speed for the background filled contour plot
+    # Calculate speed
     speed = sqrt(u_rho**2 + v_rho**2)
-
-    # Calculate x and y coordinates for plotting circumpolar projection
-    x = -(lat+90)*cos(lon*deg2rad+pi/2)
-    y  = (lat+90)*sin(lon*deg2rad+pi/2)
-
+    # Convert velocity to polar coordinates, rotate to account for longitude in
+    # circumpolar projection, and convert back to vector components
     theta = arctan2(v_rho, u_rho)
     theta_circ = theta - lon*deg2rad
     u_circ = speed*cos(theta_circ)
     v_circ = speed*sin(theta_circ)
 
-    # Average X, Y, dX_dt, and dY_dt over block x block intervals
+    # Calculate x and y coordinates for plotting circumpolar projection
+    x = -(lat+90)*cos(lon*deg2rad+pi/2)
+    y  = (lat+90)*sin(lon*deg2rad+pi/2)    
+
+    # Average x, y, u_circ, and v_circ over block x block intervals
     # Calculate number of blocks
     size0 = int(ceil(size(x,0)/float(block)))
     size1 = int(ceil((size(x,1)-1)/float(block)))

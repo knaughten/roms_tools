@@ -3,6 +3,15 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
+# Make a 4x2 plot showing lat vs. depth slices of seasonally averaged 
+# temperature (top) and salinity (bottom) at the given longitude, for the
+# 2005-2010 SOSE climatology.
+# Input:
+# lon0 = the specific longitude to plot (between -180 and 180)
+# depth_bdry = deepest depth to plot (negative, in m)
+# save = optional boolean flag; if True, the figure will be saved with file name
+#        fig_name; if False, the figure will display on the screen
+# fig_name = optional string containing filename for figure, if save=True
 def sose_seasonal (lon0, depth_bdry, save=False, fig_name=None):
 
     # Path to SOSE seasonal climatology file
@@ -69,6 +78,7 @@ def sose_seasonal (lon0, depth_bdry, save=False, fig_name=None):
         if season == 0:
             ylabel('depth (m)', fontsize=18)
         if season == 3:
+            # Add colourbar
             cbaxes1 = fig.add_axes([0.92, 0.55, 0.01, 0.3])
             cbar1 = colorbar(img, cax=cbaxes1, ticks=arange(temp_min, temp_max+temp_ticks, temp_ticks))
             cbar1.ax.tick_params(labelsize=16)
@@ -82,6 +92,7 @@ def sose_seasonal (lon0, depth_bdry, save=False, fig_name=None):
             ylabel('depth (m)', fontsize=18)
         xlabel('Latitude', fontsize=18)
         if season == 3:
+            # Add colourbar
             cbaxes2 = fig.add_axes([0.92, 0.15, 0.01, 0.3])
             cbar2 = colorbar(img, cax=cbaxes2, ticks=arange(salt_min, salt_max+salt_ticks, salt_ticks))
             cbar2.ax.tick_params(labelsize=16)

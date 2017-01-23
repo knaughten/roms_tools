@@ -85,7 +85,7 @@ def temp_salt_seasonal (file_path, lon0, depth_bdry, save=False, fig_name=None):
 
     # Continue looping backwards to find the first time index we care about
     # (which contains 1 December the previous year in its averaging period)
-    start_t = -1  # Missing value falg
+    start_t = -1  # Missing value flag
     for t in range(end_t-60, -1, -1):
         if time[t].month == end_month[-1] and time[t].day in range(end_day[-1]-1, end_day[-1]+1):
             start_t = t

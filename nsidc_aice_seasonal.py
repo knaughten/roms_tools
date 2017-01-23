@@ -27,7 +27,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
     end_day = [28, 31, 31, 30]
     # Number of days in each season (again, ignore leap years for now)
     ndays_season = [90, 92, 92, 91]
-    # Number of days in each month (no leap years, this is just for NSIDC)
+    # Number of days in each month (this is just for NSIDC)
     ndays_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     # Season names for titles
     season_names = ['DJF', 'MAM', 'JJA', 'SON']
@@ -91,6 +91,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         # Update last day in February
         end_day[0] += 1
         ndays_season[0] += 1
+        ndays_month[1] += 1
 
     # Initialise seasonal averages of CICE output
     cice_data_tmp = ma.empty([4, size(cice_lon_tmp,0), size(cice_lon_tmp,1)])
@@ -147,7 +148,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         cice_data_tmp[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
         season_days += start_days
 
-        # Beween start_t_season and end_t_season, we want all the days
+        # Between start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
             cice_data_tmp[season,:,:] += id.variables['aice'][t,:-15,:]*5
             season_days += 5
