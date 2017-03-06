@@ -34,7 +34,7 @@ def grid_res (grid_path, save=False, fig_name=None):
     y = (lat+90)*sin(lon*deg2rad+pi/2)
 
     # Colour levels
-    lev = linspace(0, 20, num=50)
+    lev = linspace(0, amax(res), num=50) #20, num=50)
 
     # Plot
     fig = figure(figsize=(16,12))

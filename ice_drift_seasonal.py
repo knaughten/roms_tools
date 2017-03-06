@@ -38,7 +38,7 @@ def ice_drift_seasonal (cice_file, save=False, fig_name=None):
     id = Dataset(cice_file, 'r')
     lon_tmp = id.variables['TLON'][:-15,:]
     lat_tmp = id.variables['TLAT'][:-15,:]
-    angle_tmp = id.variables['ANGLET'][:-15,:]
+    angle_tmp = id.variables['ANGLE'][:-15,:]
     # Wrap the periodic boundary by 1 cell
     lon = ma.empty([size(lon_tmp,0), size(lon_tmp,1)+1])
     lat = ma.empty([size(lat_tmp,0), size(lat_tmp,1)+1])

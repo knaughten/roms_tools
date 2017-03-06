@@ -1,4 +1,4 @@
-from netCDF4 import Dataset
+from netCDF4 import Dataset, num2date
 from numpy import *
 from matplotlib.pyplot import *
 from rotate_vector_cice import *
@@ -17,6 +17,7 @@ from rotate_vector_cice import *
 def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=False, fig_name=None):
 
     deg2rad = pi/180
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
     # Read the variable
     id = Dataset(file_path, 'r')
@@ -28,7 +29,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
 
     # Check for vector variables that need to be rotated
     if var_name in ['uvel', 'vvel', 'uatm', 'vatm', 'uocn', 'vocn', 'strairx', 'strairy', 'strtltx', 'strtlty', 'strcorx', 'strcory', 'strocnx', 'strocny', 'strintx', 'strinty']:
-        angle = id.variables['ANGLET'][:-15,:]
+        angle = id.variables['ANGLE'][:-15,:]
         if var_name in ['uvel', 'uatm', 'uocn', 'strairx', 'strtltx', 'strcorx', 'strocnx', 'strintx']:
             # u-variable
             u_data = data_tmp[:,:]
@@ -66,6 +67,8 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
     # Read the correct lat and lon for this grid
     lon_tmp = id.variables[lon_name][:-15,:]
     lat_tmp = id.variables[lat_name][:-15,:]
+    time_id = id.variables['time']
+    time = num2date(time_id[tstep-1], units=time_id.units, calendar=time_id.calendar.lower())
     id.close()
 
     # Wrap the periodic boundary by 1 cell
@@ -110,7 +113,8 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
     contourf(x, y, data, lev, cmap=colour_map, extend='both')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
-    title(var_name+' ('+units+')', fontsize=30)
+    title('Sea ice concentration\n' + str(time.day) + ' ' + month_names[time.month-1] + ' ' + str(time.year), fontsize=24)
+    #title(var_name+' ('+units+')', fontsize=30)
     axis('off')
 
     if save:

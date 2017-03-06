@@ -26,9 +26,9 @@ def timeseries_3D (grid_path, file_path, log_path):
     C2K = 273.15     # Celsius to Kelvin conversion
 
     time = []
-    ohc = []
+#    ohc = []
     avgsalt = []
-    tke = []
+#    tke = []
     # Check if the log file exists
     if exists(log_path):
         print 'Reading previously calculated values'
@@ -41,18 +41,18 @@ def timeseries_3D (grid_path, file_path, log_path):
             except(ValueError):
                 # Reached the header for the next variable
                 break
-        for line in f:
-            try:
-                ohc.append(float(line))
-            except(ValueError):
-                break
+#        for line in f:
+#            try:
+#                ohc.append(float(line))
+#            except(ValueError):
+#                break
         for line in f:
             try:
                 avgsalt.append(float(line))
             except(ValueError):
                 break
-        for line in f:
-            tke.append(float(line))
+#        for line in f:
+#            tke.append(float(line))
         f.close()
 
     print 'Analysing grid'
@@ -97,33 +97,33 @@ def timeseries_3D (grid_path, file_path, log_path):
         dV = ma.masked_where(tile(mask, (num_time_curr,N,1,1))==0, tile(dx, (num_time_curr,1,1,1))*tile(dy, (num_time_curr,1,1,1))*dz)
 
         print 'Reading data'
-        temp = id.variables['temp'][start_t:end_t,:,:-15,1:-1]
+#        temp = id.variables['temp'][start_t:end_t,:,:-15,1:-1]
         salt = id.variables['salt'][start_t:end_t,:,:-15,1:-1]
         rho = id.variables['rho'][start_t:end_t,:,:-15,1:-1] + rho0
         # Keep overlapping periodic boundary for u and v
-        u_xy = id.variables['u'][start_t:end_t,:,:-15,:]
-        v_xy = id.variables['v'][start_t:end_t,:,:-15,:]
+#        u_xy = id.variables['u'][start_t:end_t,:,:-15,:]
+#        v_xy = id.variables['v'][start_t:end_t,:,:-15,:]
 
-        print 'Interpolating velocities onto rho-grid'
-        # We are actually rotating them at the same time as interpolating
-        # which is a bit of unnecessary work (sum of squares won't change with
-        # rotation) but not much extra work, and it's conveneint
-        u = ma.empty(shape(temp))
-        v = ma.empty(shape(temp))
-        for t in range(num_time_curr):
-            for k in range(N):
-                u_tmp, v_tmp = rotate_vector_roms(u_xy[t,k,:,:], v_xy[t,k,:,:], angle)
-                u[t,k,:,:] = u_tmp[:,1:-1]
-                v[t,k,:,:] = v_tmp[:,1:-1]
+#        print 'Interpolating velocities onto rho-grid'
+#        # We are actually rotating them at the same time as interpolating
+#        # which is a bit of unnecessary work (sum of squares won't change with
+#        # rotation) but not much extra work, and it's conveneint
+#        u = ma.empty(shape(temp))
+#        v = ma.empty(shape(temp))
+#        for t in range(num_time_curr):
+#            for k in range(N):
+#                u_tmp, v_tmp = rotate_vector_roms(u_xy[t,k,:,:], v_xy[t,k,:,:], angle)
+#                u[t,k,:,:] = u_tmp[:,1:-1]
+#                v[t,k,:,:] = v_tmp[:,1:-1]
 
         print 'Building timeseries'
         for t in range(num_time_curr):
             # Integrate temp*rho*Cp*dV to get OHC
-            ohc.append(sum((temp[t,:,:,:]+C2K)*rho[t,:,:,:]*Cp*dV[t,:,:,:]))
+#            ohc.append(sum((temp[t,:,:,:]+C2K)*rho[t,:,:,:]*Cp*dV[t,:,:,:]))
             # Average salinity (weighted with rho*dV)
             avgsalt.append(sum(salt[t,:,:,:]*rho[t,:,:,:]*dV[t,:,:,:])/sum(rho[t,:,:,:]*dV[t,:,:,:]))
             # Integrate 0.5*rho*speed^2*dV to get TKE
-            tke.append(sum(0.5*rho[t,:,:,:]*(u[t,:,:,:]**2 + v[t,:,:,:]**2)*dV[t,:,:,:]))
+#            tke.append(sum(0.5*rho[t,:,:,:]*(u[t,:,:,:]**2 + v[t,:,:,:]**2)*dV[t,:,:,:]))
 
         # Get ready for next 10 time indices
         if end_t == num_time:
@@ -132,13 +132,13 @@ def timeseries_3D (grid_path, file_path, log_path):
 
     id.close()
 
-    print 'Plotting ocean heat content'
-    clf()
-    plot(time, ohc)
-    xlabel('Years')
-    ylabel('Southern Ocean Heat Content (J)')
-    grid(True)
-    savefig('ohc.png')
+#    print 'Plotting ocean heat content'
+#    clf()
+#    plot(time, ohc)
+#    xlabel('Years')
+#    ylabel('Southern Ocean Heat Content (J)')
+#    grid(True)
+#    savefig('ohc.png')
 
     print 'Plotting average salinity'
     clf()
@@ -148,28 +148,28 @@ def timeseries_3D (grid_path, file_path, log_path):
     grid(True)
     savefig('avgsalt.png')
 
-    print 'Plotting total kinetic energy'
-    clf()
-    plot(time, tke)
-    xlabel('Years')
-    ylabel('Southern Ocean Total Kinetic Energy (J)')
-    grid(True)
-    savefig('tke.png')
+#    print 'Plotting total kinetic energy'
+#    clf()
+#    plot(time, tke)
+#    xlabel('Years')
+#    ylabel('Southern Ocean Total Kinetic Energy (J)')
+#    grid(True)
+#    savefig('tke.png')
 
     print 'Saving results to log file'
     f = open(log_path, 'w')
     f.write('Time (years):\n')
     for elm in time:
         f.write(str(elm) + '\n')
-    f.write('Southern Ocean Heat Content (J):\n')
-    for elm in ohc:
-        f.write(str(elm) + '\n')
+#    f.write('Southern Ocean Heat Content (J):\n')
+#    for elm in ohc:
+#        f.write(str(elm) + '\n')
     f.write('Southern Ocean Average Salinity (psu):\n')
     for elm in avgsalt:
         f.write(str(elm) + '\n')
-    f.write('Southern Ocean Total Kinetic Energy (J):\n')
-    for elm in tke:
-        f.write(str(elm) + '\n')
+#    f.write('Southern Ocean Total Kinetic Energy (J):\n')
+#    for elm in tke:
+#        f.write(str(elm) + '\n')
     f.close()
 
 

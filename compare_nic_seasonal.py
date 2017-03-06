@@ -1,22 +1,44 @@
 from numpy import *
 from netCDF4 import Dataset, num2date
 from matplotlib.pyplot import *
+from rotate_vector_cice import *
 
-# Make a figure comparing sea ice concentration from NSIDC (1995 data) and CICE
-# (latest year of spinup under repeated 1995 forcing) for each season.
-# Input:
-# cice_file = path to CICE output file with 5-day averages, containing at least
-#             one complete Dec-Nov period (if there are multiple such periods, 
-#             this script uses the last one)
-# save = optional boolean to save the figure to a file, rather than displaying
-#        it on the screen
-# fig_name = if save=True, path to the desired filename for figure
-def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
+def compare_nic_seasonal (cice_file, var_name, colour_bounds=None, save=False, fig_name=None):
 
-    nsidc_head = '../nsidc_aice/seaice_conc_monthly_sh'
-    nsidc_head_0 = nsidc_head + '_f11_'
-    nsidc_head_1 = nsidc_head + '_f13_'
-    nsidc_tail = '_v02r00.nc'
+    nic_dir_head = '/g/data/gh5/access_om_025-CORE_NYF/output'
+    output_number = 137
+    nic_dir_tail = '/ice/HISTORY/'
+    nic_file_head = 'iceh.0'
+    nic_year_number = 133
+    max_j = 300
+
+    id = Dataset(cice_file, 'r')
+    units = id.variables[var_name].units
+    if var_name in ['uvel', 'vvel', 'strairx', 'strairy', 'strocnx', 'strocny']:
+        rotate = True
+        angle = id.variables['ANGLE'][:-15,:]
+        if var_name == 'uvel':
+            cmp_flag = 'x'
+            other_name = 'vvel'
+        elif var_name == 'vvel':
+            cmp_flag = 'y'
+            other_name = 'uvel'
+        elif var_name in ['strairx', 'strocnx']:
+            cmp_flag = 'x'
+            other_name = var_name.replace('x', 'y')
+        elif var_name in ['strairy', 'strocny']:
+            cmp_flag = 'y'
+            other_name = var_name.replace('x', 'y')            
+    else:
+        rotate = False
+    grid_string = id.variables[var_name].coordinates
+    if grid_string.startswith('ULON'):
+        lon_name = 'ULON'
+        lat_name = 'ULAT'
+    else:
+        lon_name = 'TLON'
+        lat_name = 'TLAT'
+    id.close()
 
     # Starting and ending months (1-based) for each season
     start_month = [12, 3, 6, 9]
@@ -27,7 +49,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
     end_day = [28, 31, 31, 30]
     # Number of days in each season (again, ignore leap years for now)
     ndays_season = [90, 92, 92, 91]
-    # Number of days in each month (this is just for NSIDC)
+    # Number of days in each month (this is just for Nic's output)
     ndays_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     # Season names for titles
     season_names = ['DJF', 'MAM', 'JJA', 'SON']
@@ -36,8 +58,8 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
     # Read CICE grid and time values
     id = Dataset(cice_file, 'r')
-    cice_lon_tmp = id.variables['TLON'][:-15,:]
-    cice_lat_tmp = id.variables['TLAT'][:-15,:]
+    cice_lon_tmp = id.variables[lon_name][:-15,:]
+    cice_lat_tmp = id.variables[lat_name][:-15,:]
     # Wrap the periodic boundary by 1 cell
     cice_lon = ma.empty([size(cice_lon_tmp,0), size(cice_lon_tmp,1)+1])
     cice_lat = ma.empty([size(cice_lat_tmp,0), size(cice_lat_tmp,1)+1])
@@ -91,7 +113,7 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         # Update last day in February
         end_day[0] += 1
         ndays_season[0] += 1
-        ndays_month[1] += 1
+        # Don't update ndays_month because Nic's setup has no leap years
 
     # Initialise seasonal averages of CICE output
     cice_data_tmp = ma.empty([4, size(cice_lon_tmp,0), size(cice_lon_tmp,1)])
@@ -145,12 +167,30 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             return
 
         # Start accumulating data weighted by days
-        cice_data_tmp[season,:,:] += id.variables['aice'][start_t_season,:-15,:]*start_days
+        if rotate:
+            this_cmp = id.variables[var_name][start_t_season,:-15,:]
+            other_cmp = id.variables[other_name][start_t_season,:-15,:]
+            if cmp_flag == 'x':
+                data_tmp, other_tmp = rotate_vector_cice(this_cmp, other_cmp, angle)
+            elif cmp_flag == 'y':
+                other_tmp, data_tmp = rotate_vector_cice(other_cmp, this_cmp, angle)
+            cice_data_tmp[season,:,:] += data_tmp*start_days
+        else:
+            cice_data_tmp[season,:,:] += id.variables[var_name][start_t_season,:-15,:]*start_days
         season_days += start_days
 
         # Between start_t_season and end_t_season, we want all the days
         for t in range(start_t_season+1, end_t_season):
-            cice_data_tmp[season,:,:] += id.variables['aice'][t,:-15,:]*5
+            if rotate:
+                this_cmp = id.variables[var_name][t,:-15,:]
+                other_cmp = id.variables[other_name][t,:-15,:]
+                if cmp_flag == 'x':
+                    data_tmp, other_tmp = rotate_vector_cice(this_cmp, other_cmp, angle)
+                elif cmp_flag == 'y':
+                    other_tmp, data_tmp = rotate_vector_cice(other_cmp, this_cmp, angle)
+                cice_data_tmp[season,:,:] += data_tmp*5
+            else:
+                cice_data_tmp[season,:,:] += id.variables[var_name][t,:-15,:]*5
             season_days += 5
 
         # Figure out how many of the 5 days averaged in end_t_season are
@@ -174,7 +214,16 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
             print 'Error for season ' + season_names[season] + ': ending index is month ' + str(cice_time[end_t_season].month) + ', day ' + str(cice_time[end_t_season].day)
             return
 
-        cice_data_tmp[season,:,:] += id.variables['aice'][end_t_season,:-15,:]*end_days
+        if rotate:
+            this_cmp = id.variables[var_name][end_t_season,:-15,:]
+            other_cmp = id.variables[other_name][end_t_season,:-15,:]
+            if cmp_flag == 'x':
+                data_tmp, other_tmp = rotate_vector_cice(this_cmp, other_cmp, angle)
+            elif cmp_flag == 'y':
+                other_tmp, data_tmp = rotate_vector_cice(other_cmp, this_cmp, angle)
+            cice_data_tmp[season,:,:] += data_tmp*end_days
+        else:
+            cice_data_tmp[season,:,:] += id.variables[var_name][end_t_season,:-15,:]*end_days
         season_days += end_days
 
         # Check that we got the correct number of days        
@@ -187,106 +236,92 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
 
     # Finished reading all CICE data
     id.close()
-
     # Wrap the periodic boundary
     cice_data = ma.empty([size(cice_data_tmp,0), size(cice_data_tmp,1), size(cice_data_tmp,2)+1])
     cice_data[:,:,:-1] = cice_data_tmp
-    cice_data[:,:,-1] = cice_data_tmp[:,0]
+    cice_data[:,:,-1] = cice_data_tmp[:,:,0]
 
-    # Read NSIDC grid from the January file
-    id = Dataset(nsidc_head_0 + '199501' + nsidc_tail, 'r')
-    nsidc_lon = id.variables['longitude'][:,:]
-    nsidc_lat = id.variables['latitude'][:,:]
+    # Read Nic's grid from the January file
+    id = Dataset(nic_dir_head + str(output_number) + nic_dir_tail + nic_file_head + str(nic_year_number) + '-01.nc', 'r')
+    nic_lon = id.variables[lon_name][:max_j,:]
+    nic_lat = id.variables[lat_name][:max_j,:]
     id.close()
 
-    # Initialise seasonal averages of NSIDC data
-    nsidc_data = ma.empty([4, size(nsidc_lon,0), size(nsidc_lon,1)])
-    nsidc_data[:,:,:] = 0.0
-    # Process one season at a time
+    nic_data = ma.empty([4, size(nic_lon,0), size(nic_lon,1)])
+    nic_data[:,:,:] = 0.0
     for season in range(4):
-        # Figure out which months we care about
         if season == 0:
-            # DJF
-            nsidc_months = [12, 1, 2]
+            months = [12, 1, 2]
         elif season == 1:
-            # MAM
-            nsidc_months = [3, 4, 5]
+            months = [3, 4, 5]
         elif season == 2:
-            # JJA
-            nsidc_months = [6, 7, 8]
+            months = [6, 7, 8]
         elif season == 3:
-            # SON
-            nsidc_months = [9, 10, 11]
-        season_days = 0 # Number of days in season; this will be incremented
+            months = [9, 10, 11]
+        season_days = 0
 
-        # Process one month at a time
-        for month in nsidc_months:
-            # Construct NSIDC file path
-            if month < 10:
-                nsidc_file = nsidc_head_0 + '19950' + str(month) + nsidc_tail
+        for month in months:
+            if month == 12:
+                filename = nic_dir_head + str(output_number-1) + nic_dir_tail + nic_file_head + str(nic_year_number-1) + '-' + str(month) + '.nc'
             else:
-                nsidc_file = nsidc_head_1 + '1995' + str(month) + nsidc_tail
-            # Read concentration data
-            id = Dataset(nsidc_file, 'r')
-            nsidc_data_raw = id.variables['seaice_conc_monthly_cdr'][0,:,:]
-            # Read std just for the mask
-            nsidc_mask = id.variables['stdev_of_seaice_conc_monthly_cdr'][0,:,:]
-            id.close()
-            # Set land mask
-            nsidc_data_tmp = ma.empty(shape(nsidc_data_raw))
-            nsidc_data_tmp[:,:] = 0.0
-            nsidc_data_tmp[~nsidc_mask.mask] = nsidc_data_raw[~nsidc_mask.mask]
-            nsidc_data_tmp[nsidc_mask.mask] = ma.masked
-            # Accumulate master array, weighted with number of days per month
-            nsidc_data[season,:,:] += nsidc_data_tmp*ndays_month[month-1]
+                if month < 10:
+                    filename = nic_dir_head + str(output_number) + nic_dir_tail + nic_file_head + str(nic_year_number) + '-0' + str(month) + '.nc'
+                else:
+                    filename = nic_dir_head + str(output_number) + nic_dir_tail + nic_file_head + str(nic_year_number) + '-' + str(month) + '.nc'
+            id = Dataset(filename, 'r')
+            nic_data[season,:,:] += id.variables[var_name][0,:max_j,:]*ndays_month[month-1]
             season_days += ndays_month[month-1]
-
-        # Convert from sum to average
-        nsidc_data[season,:,:] /= season_days
+        nic_data[season,:,:] /= season_days
 
     # Convert both grids to spherical coordinates
     cice_x = -(cice_lat+90)*cos(cice_lon*deg2rad+pi/2)
     cice_y = (cice_lat+90)*sin(cice_lon*deg2rad+pi/2)
-    nsidc_x = -(nsidc_lat+90)*cos(nsidc_lon*deg2rad+pi/2)
-    nsidc_y = (nsidc_lat+90)*sin(nsidc_lon*deg2rad+pi/2)
+    nic_x = -(nic_lat+90)*cos(nic_lon*deg2rad+pi/2)
+    nic_y = (nic_lat+90)*sin(nic_lon*deg2rad+pi/2)
 
-    # Find boundaries for each side of plot based on extent of NSIDC grid
-    bdry1 = amax(nsidc_x[:,0])
-    bdry2 = amin(nsidc_x[:,-1])
-    bdry3 = amin(nsidc_y[:,0])
-    bdry4 = amax(nsidc_y[:,-1])
+    bdry1 = -35
+    bdry2 = 39
+    bdry3 = -35
+    bdry4 = 39
 
-    # Set consistent colour levels
-    lev = linspace(0, 1, num=50)
+    if colour_bounds is not None:
+        lev = linspace(colour_bounds[0], colour_bounds[1], num=50)
+        if colour_bounds[0] == -colour_bounds[1]:
+            colour_map = 'RdYlBu_r'
+        else:
+            colour_map = 'jet'
+    else:
+        if var_name in ['uvel', 'vvel', 'strairx', 'strairy', 'strocnx', 'strocny']:
+            max_val = max(amax(abs(nic_data)), amax(abs(cice_data)))
+            lev = linspace(-max_val, max_val, num=50)
+            colour_map = 'RdYlBu_r'
+        else:
+            min_val = min(amin(nic_data), amin(cice_data))
+            max_val = max(amax(nic_data), amax(cice_data))
+            lev = linspace(min_val, max_val, num=50)
+            colour_map = 'jet'
 
-    # Plot
     fig = figure(figsize=(20,9))
-    # Loop over seasons
     for season in range(4):
-        # NSIDC
         ax = fig.add_subplot(2, 4, season+1, aspect='equal')
-        contourf(nsidc_x, nsidc_y, nsidc_data[season,:,:], lev)
+        contourf(nic_x, nic_y, nic_data[season,:,:], lev, cmap=colour_map, extend='both')
         if season == 0:
-            text(-39, 0, 'NSIDC', fontsize=24, ha='right')
+            text(-39, 0, 'Nic', fontsize=24, ha='right')
         title(season_names[season], fontsize=24)
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
-        # CICE
         ax = fig.add_subplot(2, 4, season+5, aspect='equal')
-        img = contourf(cice_x, cice_y, cice_data[season,:,:], lev)
+        img = contourf(cice_x, cice_y, cice_data[season,:,:], lev, cmap=colour_map, extend='both')
         if season == 0:
-            text(-39, 0, 'CICE', fontsize=24, ha='right')
+            text(-39, 0, 'Me', fontsize=24, ha='right')
         xlim([bdry1, bdry2])
         ylim([bdry3, bdry4])
         axis('off')
-    # Add a horizontal colorbar at the bottom
     cbaxes = fig.add_axes([0.25, 0.04, 0.5, 0.02])
-    cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
+    cbar = colorbar(img, orientation='horizontal', cax=cbaxes)
     cbar.ax.tick_params(labelsize=16)
-    # Add the main title
-    suptitle('Sea ice concentration', fontsize=30)
-    # Decrease space between plots
+    suptitle(var_name + ' (' + units + ')', fontsize=30)
     subplots_adjust(wspace=0.025,hspace=0.025)
 
     # Finished
@@ -296,37 +331,51 @@ def nsidc_aice_seasonal (cice_file, save=False, fig_name=None):
         fig.show()
 
 
-# Command-line interface
 if __name__ == "__main__":
 
     cice_file = raw_input("Path to CICE file, containing at least one complete Dec-Nov period: ")
-    action = raw_input("Save figure (s) or display on screen (d)? ")
+    var_name = raw_input("Variable name: ")
+    colour_bounds = None
+    get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+    if get_bounds == 'y':
+        lower_bound = float(raw_input("Lower bound: "))
+        upper_bound = float(raw_input("Upper bound: "))
+        colour_bounds = [lower_bound, upper_bound]
+    action = raw_input("Save figure (s) or display in window (d)? ")
     if action == 's':
         save = True
         fig_name = raw_input("File name for figure: ")
     elif action == 'd':
         save = False
         fig_name = None
-    nsidc_aice_seasonal(cice_file, save, fig_name)
+    compare_nic_seasonal(cice_file, var_name, colour_bounds, save, fig_name)
 
-        
-        
-        
+    while True:
+        repeat = raw_input("Make another plot (y/n)? ")
+        if repeat == 'y':
+            while True:
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) variable name, (3) colour bounds, (4) save/display; or enter to continue: ")
+                if len(changes) == 0:
+                    break
+                else:
+                    if int(changes) == 1:
+                        cice_file = raw_input("Path to CICE file, containing at least one complete Dec-Nov period: ")
+                    elif int(changes) == 2:
+                        var_name = raw_input("Variable name: ")
+                    elif int(changes) == 3:
+                        colour_bounds = None
+                        get_bounds = raw_input("Set bounds on colour scale (y/n)? ")
+                        if get_bounds == 'y':
+                            lower_bound = float(raw_input("Lower bound: "))
+                            upper_bound = float(raw_input("Upper bound: "))
+                            colour_bounds = [lower_bound, upper_bound]
+                    elif int(changes) == 4:
+                        save = not save
+            if save:
+                fig_name = raw_input("File name for figure: ")
+            compare_nic_seasonal(cice_file, var_name, colour_bounds, save, fig_name)
+        else:
+            break
 
-        
 
-        
-
-        
-
-        
-        
-
-    
-        
-
-    
-        
-
-    
     

@@ -20,18 +20,18 @@ def sose_seasonal (lon0, depth_bdry, save=False, fig_name=None):
     season_names = ['DJF', 'MAM', 'JJA', 'SON']
 
     # Bounds on colour scale
-    temp_min = -2.5
-    temp_max = 7.5
-    temp_ticks = 2
+    temp_min = -2
+    temp_max = 3
+    temp_ticks = 1
     salt_min = 33.8
     salt_max = 34.8
-    salt_ticks = 0.2
+    salt_ticks = 0.4
 
     # Choose what to write on the title about longitude
     if lon0 < 0:
-        lon_string = ' at ' + str(int(round(-lon0))) + r'$^{\circ}$W'
+        lon_string = str(int(round(-lon0))) + r'$^{\circ}$W'
     else:
-        lon_string = ' at ' + str(int(round(lon0))) + r'$^{\circ}$E'
+        lon_string = str(int(round(lon0))) + r'$^{\circ}$E'
     # Edit longitude bounds to be from 0 to 360, to fit with ROMS convention
     if lon0 < 0:
         lon0 += 360

@@ -206,7 +206,7 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
 
     # Set consistent colour levels
     lev1 = linspace(0, 1, num=50)
-    lev2 = linspace(0, 2.5, num=50)
+    lev2 = linspace(0, 3, num=50)
 
     # Plot
     fig = figure(figsize=(20,9))
@@ -237,7 +237,7 @@ def aice_hi_seasonal (cice_file, save=False, fig_name=None):
         if season == 3:
             # Add colorbar
             cbaxes2 = fig.add_axes([0.92, 0.15, 0.01, 0.3])
-            cbar2 = colorbar(img, ticks=arange(0,2.5+0.5,0.5), cax=cbaxes2)
+            cbar2 = colorbar(img, ticks=arange(0,3+0.5,0.5), cax=cbaxes2)
             cbar2.ax.tick_params(labelsize=16)
     # Make plots closer together
     subplots_adjust(wspace=0.025,hspace=0.025)

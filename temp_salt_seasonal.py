@@ -96,7 +96,7 @@ def temp_salt_seasonal (file_path, lon0, depth_bdry, save=False, fig_name=None):
     # Make sure we actually found it
     if start_t == -1:
         print 'Error: ' + file_path + ' does not contain a complete Dec-Nov period'
-        return
+       return
 
     # Check if end_t occurs on a leap year
     leap_year = False

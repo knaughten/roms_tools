@@ -28,7 +28,7 @@ def cice_vectorplot (file_path, tstep, xname, yname, cmax=None, save=False, fig_
     id = Dataset(file_path, 'r')
     lon_tmp = id.variables['ULON'][:-15,:]
     lat_tmp = id.variables['ULAT'][:-15,:]
-    angle_tmp = id.variables['ANGLET'][:-15,:]
+    angle_tmp = id.variables['ANGLE'][:-15,:]
     u_xy_tmp = id.variables[xname][tstep-1,:-15,:]
     v_xy_tmp = id.variables[yname][tstep-1,:-15,:]
     id.close()

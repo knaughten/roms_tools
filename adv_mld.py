@@ -18,10 +18,10 @@ def adv_mld ():
     tstep = 1 #236 if all one file of daily averages for entire simulation
 
     # Bounds and ticks for colour scales
-    max_abs = 300
-    tick_abs = 100
-    max_anom = 200
-    tick_anom = 100
+    max_abs = 800
+    tick_abs = 200
+    max_anom = 400
+    tick_anom = 200
 
     # Degrees to radians conversion factor
     deg2rad = pi/180.
@@ -32,6 +32,11 @@ def adv_mld ():
     radius = 10.5
     # Boundary of regular grid to embed circle in
     circle_bdry = -70+90
+
+    lon_ticks = array([-120, -60, 60, 120, 180])
+    lat_ticks = array([-44, -42, -42, -44, -41])
+    lon_labels = [r'120$^{\circ}$W', r'60$^{\circ}$W', r'60$^{\circ}$E', r'120$^{\circ}$E', r'180$^{\circ}$']
+    lon_rot = [-60, 60, -60, 60, 0]
 
     # Read mixed layer depth from U3_LIM simulation; also grid and mask
     # variables
@@ -46,7 +51,7 @@ def adv_mld ():
     # Mask out the ice shelf cavities and switch sign on mixed layer depth
     index = zice != 0
     mask[index] = 0.0
-    data = ma.masked_where(zice!=0, -data)
+    data0 = ma.masked_where(zice!=0, -data)
 
     # Land mask
     land = ma.masked_where(mask==1, mask)
@@ -57,6 +62,9 @@ def adv_mld ():
     # Coordinates of centre of missing circle
     x_c = -(lat_c+90)*cos(lon_c*deg2rad+pi/2)
     y_c = (lat_c+90)*sin(lon_c*deg2rad+pi/2)
+    # Longitude labels
+    x_ticks = -(lat_ticks+90)*cos(lon_ticks*deg2rad+pi/2)
+    y_ticks = (lat_ticks+90)*sin(lon_ticks*deg2rad+pi/2)
     # Regular grid to embed missing circle in 
     x_reg, y_reg = meshgrid(linspace(-circle_bdry, circle_bdry, num=100), linspace(-circle_bdry, circle_bdry, num=100))
     # Mask everything except the circle out of the regular grid
@@ -73,6 +81,9 @@ def adv_mld ():
     # Shade the mixed layer depth (pcolor not contourf so we don't misrepresent
     # the model grid)
     img0 = pcolor(x, y, data0, vmin=0, vmax=max_abs, cmap='jet') #cmaps.viridis)
+    # Add longitude labels
+    for i in range(size(x_ticks)):
+        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i])
     axis('off')
     # Add title
     title(labels[0], fontsize=20)
@@ -85,7 +96,7 @@ def adv_mld ():
     for sim in range(1, len(paths)):
         # Read mixed layer depth
         id = Dataset(paths[sim]+file_tail, 'r')
-        data = id.variables['Hsbl'][tstep-1,:350,:]
+        data = id.variables['Hsbl'][tstep-1,:350,1:]
         id.close()
         # Mask out the ice shelf cavities and switch sign
         data = ma.masked_where(zice!=0, -data)

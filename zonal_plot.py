@@ -32,6 +32,8 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     theta_b = 0.9
     hc = 40
     N = 31
+    if var_name in ['w','AKv','AKt','AKs']:
+        N = 32
 
     # Read the variable
     id = Dataset(file_path, 'r')
@@ -172,7 +174,7 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
         # There is land everywhere at the northern boundary
         # Show the first 2 degrees of this land mask
         lat_max = max(lat[:,j_max]) + 2
-#    lat_max = -75
+#    lat_max = -50
     xlim([lat_min, lat_max])
     ylim([depth_min, 0])
 

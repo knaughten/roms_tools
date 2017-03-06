@@ -55,7 +55,7 @@ def freezingpt_slice (file_path, tstep, i_val, depth_min, colour_bounds=None, sa
         scale_max = colour_bounds[1]
         if scale_min == -scale_max:
             # Centered on zero; use a red-yellow-blue colour scale
-            colour_map = 'RdYlBu_r'
+            colour_map = 'RdBu_r'
         else:
             # Use a rainbow colour scale
             colour_map = 'jet'

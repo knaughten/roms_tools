@@ -1,4 +1,4 @@
-nfrom numpy import *
+from numpy import *
 from netCDF4 import Dataset, num2date
 from matplotlib.pyplot import *
 
@@ -87,7 +87,7 @@ def ssflux_tamura_monthly (cice_file, month, save=False, fig_name=None):
             # Unless they're also divisible by 100, in which case they aren't
             # leap years
             leap_year = False
-            if mod(cice_.year, 400) == 0:
+            if mod(cice_year, 400) == 0:
                 # Unless they're also divisible by 400, in which case they are
                 # leap years after all
                 leap_year = True

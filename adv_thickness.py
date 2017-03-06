@@ -31,10 +31,17 @@ def adv_thickness ():
     # Boundary of regular grid to embed circle in    
     circle_bdry = -70+90
 
+    lon_ticks = array([-120, -60, 60, 120, 180])
+    lat_ticks = array([-44, -42, -42, -44, -41])
+    lon_labels = [r'120$^{\circ}$W', r'60$^{\circ}$W', r'60$^{\circ}$E', r'120$^{\circ}$E', r'180$^{\circ}$']
+    lon_rot = [-60, 60, -60, 60, 0]
+
     # Read thickness data from U3_LIM simulation; also grid and mask variables
     id = Dataset(paths[0]+file_tail, 'r')
     # Effective thickness is concentration*thickness
     data_tmp = id.variables['aice'][0,:350,:]*id.variables['hi'][0,:350,:]
+    # Also read aice on its own for masking
+    aice_tmp = id.variables['aice'][0,:350,:]
     lon_tmp = id.variables['TLON'][:350,:]
     lat_tmp = id.variables['TLAT'][:350,:]
     mask_tmp = id.variables['tmask'][:350,:]
@@ -44,6 +51,7 @@ def adv_thickness ():
     lon = ma.empty([size(lon_tmp,0), size(lon_tmp,1)+1])
     lat = ma.empty([size(lat_tmp,0), size(lat_tmp,1)+1])
     mask = ma.empty([size(mask_tmp,0), size(mask_tmp,1)+1])
+    aice = ma.empty([size(aice_tmp,0), size(aice_tmp,1)+1])
     data0 = ma.empty([size(data_tmp,0), size(data_tmp,1)+1])
     lon[:,:-1] = lon_tmp
     lon[:,-1] = lon_tmp[:,0]
@@ -51,8 +59,13 @@ def adv_thickness ():
     lat[:,-1] = lat_tmp[:,0]
     mask[:,:-1] = mask_tmp
     mask[:,-1] = mask_tmp[:,0]
+    aice[:,:-1] = aice_tmp
+    aice[:,-1] = aice_tmp[:,0]
     data0[:,:-1] = data_tmp
     data0[:,-1] = data_tmp[:,0]
+
+    # Mask areas with less than 15% sea ice out of the thickness data
+    data0_mask = ma.masked_where(aice<0.15, data0)
 
     # Land mask
     land = ma.masked_where(mask==1, mask)
@@ -63,6 +76,10 @@ def adv_thickness ():
     # Coordinates of centre of missing circle
     x_c = -(lat_c+90)*cos(lon_c*deg2rad+pi/2)
     y_c = (lat_c+90)*sin(lon_c*deg2rad+pi/2)
+    # Longitude labels
+    x_ticks = -(lat_ticks+90)*cos(lon_ticks*deg2rad+pi/2)
+    y_ticks = (lat_ticks+90)*sin(lon_ticks*deg2rad+pi/2)
+    # Regular grid to embed missing circle in
     # Regular grid to embed missing circle in
     x_reg, y_reg = meshgrid(linspace(-circle_bdry, circle_bdry, num=100), linspace(-circle_bdry, circle_bdry, num=100))
     # Mask everything except the circle out of the regular grid
@@ -72,13 +89,18 @@ def adv_thickness ():
     # Set up figure
     fig = figure(figsize=(9,15))
     ax = fig.add_subplot(3, 2, 1, aspect='equal')
-    # First shade land
+    # Start with a lighter grey circle
+    contourf(x, y, zeros(shape(x)), 0, colors=(('0.9', '0.9', '0.9')))
+    # Shade land
     contourf(x, y, land, 1, colors=(('0.6', '0.6', '0.6')))
     # Fill in missing circle
     contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
     # Shade the thickness data (pcolor not contourf so we don't misrepresent
     # the model grid)
-    img0 = pcolor(x, y, data0, vmin=0, vmax=max_abs, cmap='jet') #cmaps.viridis)
+    img0 = pcolor(x, y, data0_mask, vmin=0, vmax=max_abs, cmap='jet') #cmaps.viridis)
+    # Add longitude labels
+    for i in range(size(x_ticks)):
+        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i])
     axis('off')
     # Add title
     title(labels[0], fontsize=20)

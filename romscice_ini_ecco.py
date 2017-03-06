@@ -1,5 +1,5 @@
-# Build a 1995 initialisation file for ROMS from the ECCO2 temperature and 
-# salinity reanalysis of January 1995. Set initial velocities and sea surface
+# Build a 1992 initialisation file for ROMS from the ECCO2 temperature and 
+# salinity reanalysis of January 1992. Set initial velocities and sea surface
 # height to zero. Under the ice shelves, extrapolate temperature and salinity
 # from the ice shelf front.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
@@ -311,12 +311,12 @@ if __name__ == "__main__":
 
     # File paths to edit here:
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
-    # Path to ECCO2 files for temperature and salinity in January 1995
-    theta_file = '../ROMS-CICE-MCT/data/THETA.1440x720x50.199501.nc'
-    salt_file = '../ROMS-CICE-MCT/data/SALT.1440x720x50.199501.nc'
+    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    # Path to ECCO2 files for temperature and salinity in January 1992
+    theta_file = '/short/m68/kaa561/metroms_iceshelf/data/THETA.1440x720x50.199201.nc'
+    salt_file = '/short/m68/kaa561/metroms_iceshelf/data/SALT.1440x720x50.199201.nc'
     # Path to desired output file
-    output_file = '../ROMS-CICE-MCT/data/ecco2_ini.nc'
+    output_file = '/short/m68/kaa561/metroms_iceshelf/data/ecco2_ini.nc'
 
     # Grid parameters; check grid_file and *.in file to make sure these are correct
     Tcline = 40

@@ -16,10 +16,10 @@ def adv_frazil ():
     file_tail = 'iceh_avg.nc'
 
     # Bounds and ticks for colour scales
-    max_abs = 0.2
-    tick_abs = 0.05
-    max_anom = 1.0
-    tick_anom = 0.5
+    max_abs = 1
+    tick_abs = 0.25
+    max_anom = 2.0
+    tick_anom = 1.0
 
     # Degrees to radians conversion factor
     deg2rad = pi/180.
@@ -30,6 +30,11 @@ def adv_frazil ():
     radius = 10.5
     # Boundary of regular grid to embed circle in
     circle_bdry = -70+90
+
+    lon_ticks = array([-120, -60, 60, 120, 180])
+    lat_ticks = array([-44, -42, -42, -44, -41])
+    lon_labels = [r'120$^{\circ}$W', r'60$^{\circ}$W', r'60$^{\circ}$E', r'120$^{\circ}$E', r'180$^{\circ}$']
+    lon_rot = [-60, 60, -60, 60, 0]
 
     # Read frazil data from U3_LIM simulation; also grid and mask variables
     id = Dataset(paths[0]+file_tail, 'r')
@@ -62,6 +67,9 @@ def adv_frazil ():
     # Coordinates of centre of missing circle
     x_c = -(lat_c+90)*cos(lon_c*deg2rad+pi/2)
     y_c = (lat_c+90)*sin(lon_c*deg2rad+pi/2)
+    # Longitude labels
+    x_ticks = -(lat_ticks+90)*cos(lon_ticks*deg2rad+pi/2)
+    y_ticks = (lat_ticks+90)*sin(lon_ticks*deg2rad+pi/2)
     # Regular grid to embed missing circle in
     x_reg, y_reg = meshgrid(linspace(-circle_bdry, circle_bdry, num=100), linspace(-circle_bdry, circle_bdry, num=100))
     # Mask everything except the circle out of the regular grid
@@ -78,6 +86,9 @@ def adv_frazil ():
     # Shade the frazil data (pcolor not contourf so we don't misrepresent the
     # model grid)
     img0 = pcolor(x, y, data0, vmin=0, vmax=max_abs, cmap='jet')
+    # Add longitude labels
+    for i in range(size(x_ticks)):
+        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i])
     axis('off')
     # Add title
     title(labels[0], fontsize=20)

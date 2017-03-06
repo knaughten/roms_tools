@@ -10,19 +10,19 @@ from calc_z import *
 def adv_freezingpt_slice ():
 
     # Path to ocean history file
-    file_path = '/short/m68/kaa561/advection/c4_l/ocean_his_6july.nc'
+    file_path = '/short/m68/kaa561/advection/c4_l/ocean_his_8aug.nc'
     # Timestep to plot
-    tstep = 1 #188
+    tstep = 1 #221
     # i-index to plot (1-based)
     i_val = 1250
     # Deepest depth to plot
     depth_min = -100
     # Bounds on colour scale
-    scale_max = 0.3
-    scale_tick = 0.1
+    scale_max = 0.5
+    scale_tick = 0.25
     # Bounds on latitudes to plot
-    lat_min = -78
-    lat_max = -72
+    lat_min = -71
+    lat_max = -67
     save = True
     fig_name = 'adv_freezingpt_slice.png'
 
