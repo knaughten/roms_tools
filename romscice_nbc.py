@@ -8,7 +8,7 @@ from calc_z import *
 # and velocity output, containing boundary conditions at the northern boundary.
 # Output 12 sets of monthly-averaged data, one for each month of the given year.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
-# the interp_ecco2roms function to find where these filenames are defined.
+# the interp_ecco2roms_nbc function to find where these filenames are defined.
 # NB: This clamps u and ubar to zero at the northern boundary.
 
 # NB for raijin users: RegularGridInterpolator needs python/2.7.6 but the
@@ -246,11 +246,11 @@ def convert_file (year):
 
         # Regridding happens here...
         print 'Interpolating temperature'
-        temp_interp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(theta), True)
+        temp_interp = interp_ecco2roms_nbc(theta, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(theta), True)
         print 'Interpolating salinity'
-        salt_interp = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(salt), True)
+        salt_interp = interp_ecco2roms_nbc(salt, lon_ecco, lat_ecco, depth_ecco, lon_rho, lat_rho, z_rho, mean(salt), True)
         print 'Interpolating v'
-        v_interp = interp_ecco2roms(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0, False)
+        v_interp = interp_ecco2roms_nbc(vvel, lon_ecco, lat_ecco, depth_ecco, lon_v, lat_v, z_v, 0, False)
 
         # Calculate vertical average of v to get vbar
         # Be sure to treat land mask carefully so we don't divide by 0
@@ -305,7 +305,7 @@ def convert_file (year):
 # Output:
 # B = array of size pxr containing values on the ROMS grid (dimension depth x
 #     longitude)
-def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_roms, fill_value, wrap):
+def interp_ecco2roms_nbc (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms, z_roms, fill_value, wrap):
 
     # Fill the ECCO2 land mask with a constant value close to the mean of A.
     # This is less than ideal because it will skew the interpolation slightly

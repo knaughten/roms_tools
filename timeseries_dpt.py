@@ -3,7 +3,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from os.path import *
 from rotate_vector_roms import *
-from zonal_plot import interp_lon_helper
+from interp_lon_roms import interp_lon_helper
 
 # Calculate and plot timeseries of the Drake Passage transport during a
 # ROMS simulation.

@@ -3,7 +3,7 @@
 # height to zero. Under the ice shelves, extrapolate temperature and salinity
 # from the ice shelf front.
 # NB: Users will likely need to edit paths to ECCO2 data! Scroll down below
-# the interp_ecco2roms function to find where these filenames are defined.
+# the interp_ecco2roms_ini function to find where these filenames are defined.
 
 # NB for raijin users: RegularGridInterpolator needs python/2.7.6 but the
 # default is 2.7.3. Before running this script, switch them as follows:
@@ -91,9 +91,9 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 
     # Regridding happens here...
     print 'Interpolating temperature'
-    temp = interp_ecco2roms(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
+    temp = interp_ecco2roms_ini(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
     print 'Interpolating salinity'
-    salt = interp_ecco2roms(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
+    salt = interp_ecco2roms_ini(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
 
     # Set initial velocities and sea surface height to zero
     u = zeros((N, num_lat, num_lon-1))
@@ -213,7 +213,7 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 # Output:
 # B = array of size pxqxr containing values on the ROMS grid (dimension depth x
 #     latitude x longitude)
-def interp_ecco2roms (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, fill):
+def interp_ecco2roms_ini (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, fill):
 
     # Radius of the Earth in m
     r = 6.371e6

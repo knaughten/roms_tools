@@ -1,6 +1,7 @@
 from numpy import *
 from netCDF4 import Dataset, num2date
 from matplotlib.pyplot import *
+from monthly_avg_cice import *
 
 # Make a figure comparing monthly-averaged sea ice to ocean salt fluxes, 
 # from Tamura's dataset to CICE output.
@@ -8,18 +9,15 @@ from matplotlib.pyplot import *
 # cice_file = path to CICE output file with 5-day averages; if it covers more
 #             than one instance of the given month, plot the last one
 # month = month number (0-indexed) from 0 to 11
+# cice_year = year that this month in cice_file corresponds to
 # save = optional boolean to save the figure to a file, rather than displaying
 #        it on the screen
 # fig_name = if save=True, path to the desired filename for figure
-def ssflux_tamura_monthly (cice_file, month, save=False, fig_name=None):
+def ssflux_tamura_monthly (cice_file, month, cice_year, save=False, fig_name=None):
 
     # Beginning and end of Tamura file paths
     tamura_head = '/short/m68/kaa561/tamura_fluxes/Tamura_ssflux_'
     tamura_tail = '_monthly.nc'
-    # Starting and ending days in each month
-    # Assume no leap years, we'll fix this later if we need
-    start_day = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    end_day = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     # Name of each month, for the title
     month_name = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
     # Degrees to radians conversion
@@ -31,10 +29,13 @@ def ssflux_tamura_monthly (cice_file, month, save=False, fig_name=None):
     # Conversion factor: m/s to cm/day
     mps_to_cmpday = 8.64e6
 
-    # Read the CICE grid and time values
+    # Read the CICE grid
     id = Dataset(cice_file, 'r')
     cice_lon_tmp = id.variables['TLON'][:-15,:]
     cice_lat_tmp = id.variables['TLAT'][:-15,:]
+    num_lon = id.variables['TLON'].shape[1]
+    num_lat = id.variables['TLAT'].shape[0]
+    id.close()
     # Wrap the periodic boundary by 1 cell
     cice_lon = ma.empty([size(cice_lon_tmp,0), size(cice_lon_tmp,1)+1])
     cice_lat = ma.empty([size(cice_lat_tmp,0), size(cice_lat_tmp,1)+1])
@@ -42,142 +43,15 @@ def ssflux_tamura_monthly (cice_file, month, save=False, fig_name=None):
     cice_lon[:,-1] = cice_lon_tmp[:,0]
     cice_lat[:,:-1] = cice_lat_tmp
     cice_lat[:,-1] = cice_lat_tmp[:,0]
-    time_id = id.variables['time']
-    # Get the year, month, and day (all 1-indexed) for each output step
-    # These are 5-day averages marked with the next day's date.
-    cice_time = num2date(time_id[:], units=time_id.units, calendar='standard')
 
-    # Get index of the next month
-    next_month = mod(month+1, 12)
-
-    # Loop backwards through time indices to find the last one we care about
-    # (which contains the last day of the month in its averaging period)
-    end_t = -1  # Missing value flag
-    for t in range(size(cice_time)-1, -1, -1):
-        # Note that cice_time[t].month is converted to 0-indexed
-        if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
-            end_t = t
-            break
-    # Make sure we actually found it
-    if end_t == -1:
-        print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
-        return
-
-    # Continue looping backwards to find the first time index we care about
-    start_t = -1  # Missing value flag
-    for t in range(end_t, -1, -1):
-        if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
-            start_t = t
-            break
-    # Make sure we actually found it
-    if start_t == -1:
-        print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
-        return
-
-    # Check if this is a leap year
-    leap_year = False
-    cice_year = cice_time[end_t].year
-    if month == 11:
-        # Timestep end_t is likely in the next year, so find the year of start_t
-        cice_year = cice_time[start_t].year
-    if mod(cice_year, 4) == 0:
-        # Years divisible by 4 are leap years
-        leap_year = True
-        if mod(cice_year, 100) == 0:
-            # Unless they're also divisible by 100, in which case they aren't
-            # leap years
-            leap_year = False
-            if mod(cice_year, 400) == 0:
-                # Unless they're also divisible by 400, in which case they are
-                # leap years after all
-                leap_year = True
-    if leap_year:
-        # Update last day in February
-        end_day[1] = 29
-
-    # Calculate monthly average of CICE output
-    cice_data_tmp = ma.empty(shape(cice_lon_tmp))
-    cice_data_tmp[:,:] = 0.0
-    num_days = 0
-
-    # Figure out how many of the 5 days averaged in start_t are actually within
-    # this month
-    if cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+5:
-        # Starting day is in position 1 of 5; we care about all of them
-        start_days = 5
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+4:
-        # Starting day is in position 2 of 5; we care about the last 4
-        start_days = 4
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+3:
-        # Starting day is in position 3 of 5; we care about the last 3
-        start_days = 3
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+2:
-        # Starting day is in position 4 of 5; we care about the last 2
-        start_days = 2
-    elif cice_time[start_t].month-1 == month and cice_time[start_t].day == start_day[month]+1:
-        # Starting day is in position 5 of 5; we care about the last 1
-        start_days = 1
-    else:
-        print 'Error: starting index is month ' + str(cice_time[start_t].month) + ', day ' + str(cice_time[start_t].day)
-        return
-
-    # Read the fields we need at start_t
-    fresh_ai = id.variables['fresh_ai'][start_t,:-15,:]
-    sss = id.variables['sss'][start_t,:-15,:]
-    rain_ai = id.variables['rain_ai'][start_t,:-15,:]
-    fsalt_ai = id.variables['fsalt_ai'][start_t,:-15,:]
-    # Start accumulating data weighted by days
-    # Convert to units of psu m/s (equivalent to kg/m^2/s of salt)
-    # Subtract rain from freshwater flux, since Tamura doesn't count precip
-    cice_data_tmp += -1/rho_fw*((fresh_ai-rain_ai)*sss*rho_sw/mps_to_cmpday - fsalt_ai*1e3)*start_days
-    num_days += start_days
-
-    # Between start_t and end_t, we want all the days
-    for t in range(start_t+1, end_t):
-        fresh_ai = id.variables['fresh_ai'][t,:-15,:]
-        sss = id.variables['sss'][t,:-15,:]
-        rain_ai = id.variables['rain_ai'][t,:-15,:]
-        fsalt_ai = id.variables['fsalt_ai'][t,:-15,:]
-        cice_data_tmp += -1/rho_fw*((fresh_ai-rain_ai)*sss*rho_sw/mps_to_cmpday - fsalt_ai*1e3)*5
-        num_days += 5
-
-    # Figure out how many of the 5 days averaged in end_t are actually within
-    # this month
-    if cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]+4:
-        # Ending day is in position 1 of 5; we care about the first 1
-        end_days = 1
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]+3:
-        # Ending day is in position 2 of 5; we care about the first 2
-        end_days = 2
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]+2:
-        # Ending day is in position 3 of 5; we care about the first 3
-        end_days = 3
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]+1:
-        # Ending day is in position 4 of 5; we care about the first 4
-        end_days = 4
-    elif cice_time[end_t].month-1 == next_month and cice_time[end_t].day == start_day[next_month]:
-        # Ending day is in position 5 of 5; we care about all 5
-        end_days = 5
-    else:
-        print 'Error: ending index is month ' + str(cice_time[end_t].month) + ', day ' + str(cice_time[end_t].day)
-        return
-
-    fresh_ai = id.variables['fresh_ai'][end_t,:-15,:]
-    sss = id.variables['sss'][end_t,:-15,:]
-    rain_ai = id.variables['rain_ai'][end_t,:-15,:]
-    fsalt_ai = id.variables['fsalt_ai'][end_t,:-15,:]
-    cice_data_tmp += -1/rho_fw*((fresh_ai-rain_ai)*sss*rho_sw/mps_to_cmpday - fsalt_ai*1e3)*end_days
-    num_days += end_days
-
-    # Check that we got the correct number of days
-    if num_days != end_day[month]:
-        print 'Error: found ' + str(num_days) + ' days instead of ' + str(end_day[month])
-        return
-
-    # Finished accumulating data
-    id.close()
-    # Convert from sum to average
-    cice_data_tmp /= num_days
+    # Get monthly averages of each variable we need
+    fresh_ai = monthly_avg_cice(cice_file, 'fresh_ai', [num_lat, num_lon], month)
+    sss = monthly_avg_cice(cice_file, 'sss', [num_lat, num_lon], month)
+    rain_ai = monthly_avg_cice(cice_file, 'rain_ai', [num_lat, num_lon], month)
+    fsalt_ai = monthly_avg_cice(cice_file, 'fsalt_ai', [num_lat, num_lon], month)
+    cice_data_tmp = -1/rho_fw*((fresh_ai-rain_ai)*sss*rho_sw/mps_to_cmpday - fsalt_ai*1e3)
+    # Chop off northern boundary
+    cice_data_tmp = cice_data_tmp[:-15,:]
     # Multiply by 1e6 so colour bar is easier to read
     cice_data_tmp *= 1e6
 
@@ -247,6 +121,7 @@ if __name__ == "__main__":
     cice_file = raw_input("Path to CICE file: ")
     # Convert month from 1-indexed to 0-indexed
     month = int(raw_input("Month number (1-12): "))-1
+    cice_year = int(raw_input("Year this month corresponds to in the CICE file: "))
     action = raw_input("Save figure (s) or display on screen (d)? ")
     if action == 's':
         save = True
@@ -255,7 +130,7 @@ if __name__ == "__main__":
         save = False
         fig_name = None
     # Make the plot
-    ssflux_tamura_monthly(cice_file, month, save, fig_name)
+    ssflux_tamura_monthly(cice_file, month, cice_year, save, fig_name)
 
     while True:
         # Repeat until the user wants to exit
@@ -263,7 +138,7 @@ if __name__ == "__main__":
         if repeat == 'y':
             while True:
                 # Ask for changes to the parameters until the user is done
-                changes = raw_input("Enter a parameter to change: (1) file path, (2) month number, (3) save/display; or enter to continue: ")
+                changes = raw_input("Enter a parameter to change: (1) file path, (2) month number, (3) year, (4) save/display; or enter to continue: ")
                 if len(changes) == 0:
                     # No more changes to parameters
                     break
@@ -275,13 +150,15 @@ if __name__ == "__main__":
                         # New month
                         month = int(raw_input("Month number (1-12): "))-1
                     elif int(changes) == 3:
+                        cice_year = int(raw_input("Year this month corresponds to in the CICE file: "))
+                    elif int(changes) == 4:
                         # Switch from save to display, or vice versa
                         save = not save
             if save:
                 # Get a new figure name
                 fig_name = raw_input("File name for figure: ")
             # Make the plot
-            ssflux_tamura_monthly(cice_file, month, save, fig_name)
+            ssflux_tamura_monthly(cice_file, month, cice_year, save, fig_name)
         else:
             break
             
