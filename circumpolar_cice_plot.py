@@ -113,7 +113,7 @@ def circumpolar_cice_plot (file_path, var_name, tstep, colour_bounds=None, save=
     contourf(x, y, data, lev, cmap=colour_map, extend='both')
     cbar = colorbar()
     cbar.ax.tick_params(labelsize=20)
-    title('Sea ice concentration\n' + str(time.day) + ' ' + month_names[time.month-1] + ' ' + str(time.year), fontsize=24)
+    title(var_name + ' (' + units +')\n' + str(time.day) + ' ' + month_names[time.month-1] + ' ' + str(time.year), fontsize=24)
     #title(var_name+' ('+units+')', fontsize=30)
     axis('off')
 

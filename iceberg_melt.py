@@ -10,16 +10,18 @@ from scipy.interpolate import griddata
 def iceberg_melt (out_file):
 
     # Naming conventions for iceberg files
-    iceberg_head = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.1861-1960.'
+    iceberg_head = '/short/m68/kaa561/metroms_iceshelf/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.1861-1960.'
     iceberg_tail = '.melt.nc'
     # Iceberg grid file
-    iceberg_grid = '/short/m68/kaa561/ROMS-CICE-MCT/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.static.nc'
+    iceberg_grid = '/short/m68/kaa561/metroms_iceshelf/data/originals/MartinAdcroft2010_iceberg_meltfluxes/icebergs.static.nc'
     # ROMS grid file
-    roms_grid ='/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
+    roms_grid ='/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
     # Density of freshwater
     rho_w = 1e3
     # Seconds in 12 hours
     seconds_per_12h = 60.*60.*12.
+    # Days per month (neglect leap years)
+    days_per_month = array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
 
     # Read ROMS grid
     id = Dataset(roms_grid, 'r')
@@ -78,10 +80,9 @@ def iceberg_melt (out_file):
         melt_roms = interp_iceberg2roms(melt_iceberg, lon_iceberg, lat_iceberg, lon_roms, lat_roms)
         # Convert to m per 12 h
         melt_roms = melt_roms/rho_w*seconds_per_12h
-        # Calculate time values centered in the middle of each month
-        time = 365.25/12*(month+0.5)
-        # Save to output file
-        out_id.variables['time'][month] = time
+        # Calculate time values: 15th of this month at midnight
+        out_id.variables['time'][month] = sum(days_per_month[0:month]) + 14
+        # Save data
         out_id.variables['icebergs'][month,:,:] = melt_roms
     out_id.close()
 

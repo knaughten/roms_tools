@@ -38,7 +38,7 @@ def freezingpt_slice (file_path, tstep, i_val, depth_min, colour_bounds=None, sa
     id.close()
 
     # Calculate freezing point as seen by supercooling code
-    tfr = -0.054*salt
+    tfr = salt/(-18.48 + salt*18.48/1000.0) #-0.054*salt
     # Calculate difference from freezing point
     deltat = temp - tfr
 

@@ -1,7 +1,7 @@
 from netCDF4 import Dataset, num2date
 from numpy import *
 
-def monthly_avg_cice (file_path, var, shape, month):
+def monthly_avg_cice (file_path, var, shape, month, instance=-1):
 
     # Starting and ending days in each month
     # Assume no leap years, we'll fix this later if we need
@@ -22,23 +22,45 @@ def monthly_avg_cice (file_path, var, shape, month):
 
     next_month = mod(month+1,12)
 
-    end_t = -1
-    for t in range(size(cice_time)-1, -1, -1):
-        if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
-            end_t = t
-            break
-    if end_t == -1:
-        print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
-        return
-
-    start_t = -1
-    for t in range(end_t, -1, -1):
-        if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
-            start_t = t
-            break
-    if start_t == -1:
-        print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
-        return
+    if instance == -1:
+        # Default: find the last instance of this month
+        end_t = -1
+        for t in range(size(cice_time)-1, -1, -1):
+            if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
+                end_t = t
+                break
+        if end_t == -1:
+            print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
+            return
+        start_t = -1
+        for t in range(end_t, -1, -1):
+            if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
+                start_t = t
+                break
+        if start_t == -1:
+            print 'Error: ' + cice_file + ' does not contain a complete ' + month_name[month]
+            return
+    else:
+        # Find the given instance of the month
+        count = 0
+        start_t = -1
+        for t in range(size(time)):
+            if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
+                count += 1
+                if count == instance:
+                    start_t = t
+                    break
+        if start_t == -1:
+            print 'Error: ' + file_path + ' does not contain ' + str(instance) + ' ' + month_name[month] + 's'
+            return
+        end_t = -1
+        for t in range(start_t+1, size(time)):
+            if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
+                end_t = t
+                break
+        if end_t == -1:
+            print 'Error: ' + file_path + ' does not contain  ' + str(instance) + ' ' + month_name[month] + 's'
+            return
 
     leap_year = False
     cice_year = cice_time[end_t].year
