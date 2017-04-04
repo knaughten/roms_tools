@@ -8,7 +8,7 @@ def add_tide_period ():
 
     # Tide file to add periods to
     # Order is q1, o1, p1, k1, n2, m2, s2, k2
-    tide_file = '../ROMS-CICE-MCT/data/pot_tides.nc'
+    tide_file = '../metroms_iceshelf/data/pot_tides.nc'
     # Periods in seconds
     # Order is m2, s2, n2, k2, k1, o1, p1, q1, mf, mm
     period = array([44714.165191868, 43200.0012869521, 86164.0770050671, 92949.6357005365, 45570.0535117177, 86637.1997716528, 43082.0503185947, 96726.0857029666, 2380715.86358729, 1180295.54554976])

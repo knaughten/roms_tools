@@ -7,7 +7,7 @@
 #PBS -v YEAR,COUNT
 
 # Call romscice_atm_subdaily.py for the given year, and self-submit enough times
-# to process the entire ECCO2 file for that year (the python script only
+# to process the entire ERA-Interim file for that year (the python script only
 # processes 100 6-hour timesteps at once, otherwise memory overflows).
 
 # To get it started for eg 1992, type

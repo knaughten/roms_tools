@@ -32,11 +32,11 @@ def convert_file (year, count):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
-    input_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/AN_' + str(year) + '_subdaily_orig.nc'
-    input_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/FC_' + str(year) + '_subdaily_orig.nc'
-    output_atm_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/AN_' + str(year) + '_subdaily.nc'
-    output_ppt_file = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/FC_' + str(year) + '_subdaily.nc'
+    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_good.nc'
+    input_atm_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/AN_' + str(year) + '_subdaily_orig.nc'
+    input_ppt_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/FC_' + str(year) + '_subdaily_orig.nc'
+    output_atm_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/AN_' + str(year) + '_subdaily.nc'
+    output_ppt_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/FC_' + str(year) + '_subdaily.nc'
     logfile = str(year) + '.log'
 
     Lv = 2.5e6 # Latent heat of vapourisation, J/kg

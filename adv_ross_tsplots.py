@@ -93,8 +93,8 @@ def adv_ross_tsplots ():
 
     # Main title
     suptitle(r'180$^{\circ}$E, 31 December (Ross Sea)', fontsize=30)
-    fig.show()
-    #fig.savefig('adv_ross_tsplots.png')
+    #fig.show()
+    fig.savefig('adv_ross_tsplots.png')
 
 
 # Command-line interface

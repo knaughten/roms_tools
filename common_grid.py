@@ -6,6 +6,15 @@ from rotate_vector_cice import *
 from monthly_avg_roms import *
 from monthly_avg_cice import *
 
+# Interpolate ROMS output to a regular quarter-degree grid for easy comparison
+# with FESOM. Write monthly averages of surface heat and salt flux, the
+# surface stress vector and its curl, and the sea ice velocity vector.
+# Input:
+# roms_file = path to ROMS output file containing 5-day averages for the entire
+#             simulation, starting on 1 January
+# cice_file = path to CICE output file containing 5-day averages for the same
+#             timesteps as ROMS_file
+# out_file = path to desired output file
 def common_grid (roms_file, cice_file, out_file):
 
     # Resolution of common grid (degrees, same for lat and lon)

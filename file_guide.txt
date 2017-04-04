@@ -62,7 +62,7 @@ convert_era.job: A self-submitting batch job which converts 1 year of
 			 qsub -v YEAR=1992,COUNT=0 convert_era.job
 			 You can also submit multiple years quickly with a bash
 			 loop:
-			 for i in `seq 1992 2009`;
+			 for i in `seq 1992 2005`;
 			 do
 			     qsub -v YEAR=$i,COUNT=0 convert_era.job
 			 done
@@ -85,7 +85,7 @@ fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
 		        import *", then "fix_file('filename')" where filename
 			is the path to the ERA-Interim file that has missing
 			timesteps. You can also easily call it in a loop, e.g.
-			for year in range(1992, 2009+1):
+			for year in range(1992, 2005+1):
 			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
 
 romscice_atm_smooth.py: At the beginning of spinups, when the ocean is
@@ -164,6 +164,18 @@ nbdry_grid_hack.py: Modify the ROMS grid so that the northernmost 15 rows
 		    To run: Open python or ipython and type
 		            "run nbdry_grid_hack.py".
 
+romscice_tides.py: Create a ROMS tide file containing the first 10 tidal
+                   components interpolated from TPXO 7.2. (This is NOT the same
+		   as Kate's potential tides option; it is for SSH_TIDES rather
+		   than POT_TIDES.)
+		   To run: Make sure the paths near the top of the file, to the
+		           ROMS grid, TPXO 7.2 file, and desired output file,
+			   are correct. Then make sure that you have scipy
+			   version 0.14 or higher (on raijin, this means
+			   switching to python/2.7.6; instructions at the top
+			   of the file). Then open python or ipython and type
+			   "run romscice_tides.py".
+
 add_tide_period.py: Given a ROMS tide file with tidal potential amplitude and
                     phase angle (created using Kate's potential tide scripts),
 		    add the tidal period in seconds for each component.
@@ -196,8 +208,62 @@ iceberg_melt.py: Read Martin and Adcroft's monthly climatology of freshwater
 			 "run iceberg_melt.py". The script will prompt you for
 			 the filename of the output ROMS forcing file.
 
+cice_ini.py: Make a CICE initial conditions file (non-standard option
+             ice_ic='mask') based on NSIDC satellite observations of sea ice
+	     concentration. Wherever concentration exceeds 15%, set it to 100%;
+	     everywhere else, set it to 0%. The CICE code will read this "mask"
+	     and set a constant sea ice thickness of 1 m and snow thickness of
+	     0.2 m.
+	     To run: Make sure you have an NSIDC file containing the CDR monthly
+	             average of sea ice concentration for the month you want.
+		     Then open python or ipython and type "run cice_ini.py".
+		     The script will prompt you for the path to the NSDIC file,
+		     the ROMS grid file, and the desired output file.
 
-***POST-PROCESSING DIAGNOSTICS***
+paul_holland_hack.py: Paul Holland prevents spurious deep convection by applying
+                      an extra 1500 Gt/y of freshwater flux spread evenly south
+		      of 60S. Using the ROMS grid, calculate what the rate of
+		      input should be in kg/m^2/s. Print the value to the
+		      screen.
+		      To run: Open python or ipython and type
+		              "run paul_holland_hack.py". The script will prompt
+			      you for the path to the ROMS grid file.
+
+romscice_evap.py: Read one year of ERA-Interim evaporation data (12-hourly), 
+                  interpolate to the ROMS grid, and add to the existing FC
+		  forcing file created using romscice_atm_subdaily.nc.
+		  To run: Edit user parameters near the top of the script
+		          (mainly just file paths). This script is designed to
+			  be called by a self-submitting batch job, e.g.
+			  era_evap.job.
+
+era_evap.job: A self-submitting batch job which converts 1 year of ERA-Interim
+              evaporation 12-hourly data into an existing ROMS-CICE forcing file
+	      (created using romscice_atm_subdaily.py) in chunks of 50 12-hour
+	      timesteps at once (otherwise the python memory overflows because
+	      this is a LOT of data). Depends on romscice_evap.py.
+	      To run: First edit user parameters in romscice_evap.py (see
+	              above). Then edit the PBS job settings at the top of this
+		      file. Then, to get the batch jobs started for a given
+		      year (say 1992, type
+		      qsub -v YEAR=1992,COUNT=0 era_evap.job
+		      You can also submit multiple years quickly with a bash
+		      loop:
+		      for i in `seq 1992 2005`;
+		      do
+			qsub -v YEAR=$i,COUNT=0 era_evap.job
+		      done
+
+romscice_gpcp.py: Convert one year of GPCP monthly averages for total
+                  precipitation to a ROMS-CICE input forcing file.
+		  To run: First make sure the paths near the top of the script
+		          (for the ROMS grid, GPCP input files, and desired
+			  output files) are correct. Then open python or ipython
+			  and type "run romscice_gpcp.py". The years 1992-2005
+			  will be processed in a loop.
+
+
+***POST-PROCESSING DIAGNOSTIC FILES***
 
 make_density_file.py: Given an ocean history or averages file with temperature
                       and salinity data, calculate density fields at each
@@ -208,6 +274,21 @@ make_density_file.py: Given an ocean history or averages file with temperature
 			      prompt you for the paths to the ROMS grid file,
 			      the ocean history or averages file, and the
 			      desired path to the new density file.
+
+common_grid.py: Interpolates ROMS output to a regular quarter-degree grid for
+                easy comparison with FESOM. Writes monthly averages of surface
+		heat and salt flux, the surface stress vector and its curl, and
+		the sea ice velocity vector.
+		To run: First concatenate your ROMS and CICE output into one
+		        long file for each model, containing 5-day averages for
+			the entire simulation starting from 1 Jan. Then open
+			python or ipython and type "run common_grid.py". The
+			script will prompt you for the paths to the ROMS and
+			CICE output files, and the desired output file on the
+			common grid.
+
+
+***DIAGNOSTIC FIGURES***
 
 plot_kinetic_energy.py: Extracts the kinetic energy values written in the
                         ocean.log files (you can supply as many ocean.log files
@@ -304,8 +385,16 @@ timeseries_3D.py: Calculates and plots timeseries of total ocean heat content,
 			  for the paths to the ROMS grid file, the ocean history
 			  or averages file, and the log file.
 
-
-***NICE FIGURES***
+aice_animation.py: Create an animation of sea ice concentration for the given
+                   simulation, and save as an mp4 file.
+		   To run: If you are on raijin, first type "module load ffmpeg"
+		           to make sure you will be able to write the mp4 file.
+			   Then edit the variables "directory", "num_ts", and
+			   "start_file" near the top of the file to suit your
+			   simulation. Then open python or ipython and type
+			   "run aice_animation.py". Note that this isn't an
+			   encapsulated function but rather just a script, so
+			   be careful with existing variable names.
 
 circumpolar_plot.py: Generates a circumpolar Antarctic plot of the given
                      variable from ROMS. If the variable is depth-dependent,
@@ -645,6 +734,21 @@ ssflux_tamura_seasonal.py: Make a figure comparing seasonally-averaged sea ice
 				   (and if so, what filename) or display it on
 				   the screen. This script is non-repeating.
 
+ssflux_tamura_annual.py: Make a figure comparing annually-averaged sea ice to
+                         ocean salt fluxes, from Tamura's dataset to CICE
+			 output.
+			 To run: First make sure the paths to monthly-averaged,
+			         unit-corrected (to kg/m^2/s) Tamura data files
+				 are correct. Then make sure you have an
+				 annually averaged CICE file. Then open python
+				 or ipython and type
+				 "run ssflux_tamura_annual.py". The script will
+				 prompt you for the path to this CICE file, the
+				 year it corresponds to, and whether you want
+				 to save the figure (and if so, what filename)
+				 or display it on the screen. This script
+				 is non-repeating.
+
 sose_seasonal.py: Make a 4x2 plot showing lat vs. depth slices of seasonally
                   averaged temperature (top) and salinity (bottom) at the given
 		  longitude, for the 2005-2010 SOSE climatology.
@@ -702,30 +806,67 @@ seaice_budget_thermo.py: Create four plots showing timeseries of the
 				 so, what filenames) or display them on the
 				 screen.
 
+compare_nic_seasonal.py: Make a 4x2 plot comparing seasonal averages of the
+                         given variable from my implementation of CICE in
+			 MetROMS (bottom) and Nic Hannah's implementation
+			 coupled to MOM (top).
+			 To run: Open python or ipython and type
+			         "run compare_nic_seasonal.py". The script will
+				 prompt you for the path to the CICE-MetROMS
+				 output file, the variable name to plot,
+				 optional colour bounds, and whether you want
+				 to save the figure (and if so, what filename)
+				 or display it on the screen. The script will
+				 repeat as many times as you like.
 
-***ANIMATIONS***
+era_gpcp.py: Plot precipitation (1992-2005 average) in the ERA-Interim versus
+             GPCP datasets over the Southern Ocean.
+	     To run: First make sure the ERA-Interim and GPCP paths near the top
+	             of the file are correct. Then open python or ipython and
+		     type "run era_gpcp.py". The figure will be saved under
+		     the filename "era_gpcp.png".
 
-aice_animation.py: Create an animation of sea ice concentration for the given
-                   simulation, and save as an mp4 file.
-		   To run: If you are on raijin, first type "module load ffmpeg"
-		           to make sure you will be able to write the mp4 file.
-			   Then edit the variables "directory", "num_ts", and
-			   "start_file" near the top of the file to suit your
-			   simulation. Then open python or ipython and type
-			   "run aice_animation.py". Note that this isn't an
-			   encapsulated function but rather just a script, so
-			   be careful with existing variable names.
+evap_era_monthly.py: Plot monthly-averaged evaporation as calculated by MetROMS
+                     (ROMS and CICE calculate separately, so merge them based
+		     on sea ice concentration) and compare it to ERA-Interim.
+		     To run: First make sure the ERA-Interim paths near the top
+		             of the file are correct. Then open python or
+			     ipython and type "run evap_era_monthly.py". The
+			     script will prompt you for paths to the ROMS and
+			     CICE output files (5-day averages for the same
+			     timesteps; if multiple instances of the given month
+			     are present the script will select the last one),
+			     the month to plot, optional colour bounds, and
+			     whether you want to save the figure (and if so,
+			     what filename) or display it on the screen. The
+			     script will repeat as many times as you like.
+
+holland_fig1.py: Recreate Figure 1 of Holland et al 2014
+                 (doi:10.1175/JCLI-D-13-00301.1) using ROMS output: annually
+		 averaged barotropic streamfunction, JJA mean mixed-layer depth
+		 (just plot the KPP boundary layer depth for now), annually
+		 averaged bottom water temperature and salinity.
+		 To run: Open python or ipython and type "run holland_fig1.py".
+		         The script will prompt you for the path to the ROMS
+			 grid file, and the ROMS output file containing exactly
+			 1 year of 5-day averages including a continuous
+			 June-August period. The figure will be displayed on
+			 the screen.
+
+temp_salt_slice.py: Create a 2x1 plot showing zonal slices (depth vs latitude)
+                    of temperature and salinity interpolated to the given
+		    longitude, at the given timestep.
+		    To run: Open python or ipython and type
+		            "run temp_salt_slice.py". The script will prompt you
+			    for the path to the ROMS averages file, the timestep
+			    to plot, the longitude to interpolate to, the
+			    deepest depth to plot, and whether you want to save
+			    the figure (and if so, what filename) or display it
+			    on the screen. This script repeats as many times
+			    as you want.			    
 
 
 ***FIGURES FOR ADVECTION PAPER***
-
-adv_amery_tsplots_indiv.py: For each advection experiment, plot zonal slices of
-                            temperature and salinity through 71E (Amery Ice
-			    Shelf) at the end of the simulation. This is really
-			    just a special case of zonal_plot.py.
-		            To run: Make sure the paths to each simulation are
-		                    correct. Then open python or ipython and
-				    type "run adv_amery_tsplots_indiv.py".
 
 adv_amery_tsplots.py: Create a 2x2 plot showing zonal slices of temperature and
                       salinity through 71E (Amery Ice Shelf) at the end of the
@@ -733,7 +874,15 @@ adv_amery_tsplots.py: Create a 2x2 plot showing zonal slices of temperature and
 		      To run: Make sure the paths to the simulation directories
 		              and 31 December ROMS files are correct. Then
 			      open python or ipython and type
-			      "run adv_amery_tsplots.py".
+			      "run adv_amery_tsplots.py". The figure will be
+			      saved under the filename adv_amery_tsplots.png.
+
+adv_ross_tsplots.py: Same as adv_amery_tsplots.py, but for the Ross Sea (180E).
+                     To run: Make sure the paths to the simulation directories
+		             and 31 December ROMS files are correct. Then open
+			     python or ipython and type
+			     "run adv_ross_tsplots.py". The figure will be
+			     saved under the filename adv_ross_tsplots.png.
 
 adv_freezingpt_slice.py: Plot the difference from the freezing temperature at
                          a specific timestep through the Weddell Sea in the
@@ -743,7 +892,9 @@ adv_freezingpt_slice.py: Plot the difference from the freezing temperature at
 			 really just a special case of freezingpt_slice.py.
 			 To run: Make sure the file_path is correct. Then open
 			         python or ipython and type
-				 "run adv_freezingpt_slice.py".
+				 "run adv_freezingpt_slice.py". The figure will
+				 be saved under the filename
+				 adv_freezingpt_slice.png.
 
 adv_timeseries_volume.py: Plot timeseries of total sea ice volume for all the
                           advection experiments. Before running this script,
@@ -751,39 +902,109 @@ adv_timeseries_volume.py: Plot timeseries of total sea ice volume for all the
 			  To run: Make sure the paths to directories and the
 			          sea ice logfiles are correct. Then open
 				  python or ipython and type
-				  "run adv_timeseries_volume.py".
+				  "run adv_timeseries_volume.py". The figure
+				  will be saved under the filename
+				  adv_timeseries_volume.png.
 
 adv_frazil.py: Create a 3x2 plot of annually averaged frazil formation for each
                advection experiment: the absolute values for U3_LIM, and the
 	       anomalies from U3_LIM for the other 5 experiments.
 	       To run: Make sure the paths to the simulation directories and
 	               annually averaged CICE files are correct. Then open
-		       python or ipython and type "run adv_frazil.py".
+		       python or ipython and type "run adv_frazil.py". The
+		       figure will be saved under the filename adv_frazil.png.
 
 adv_thickness.py: Like adv_frazil.py, but for sea ice effective thickness on
                   23 August (the sea ice area max).
 		  To run: Make sure the paths to the simulation directories and
 	                  23 August CICE files are correct. Then open python or
-			  ipython and type "run adv_frazil.py".
+			  ipython and type "run adv_thickness.py". The figure
+			  will be saved under the filename adv_thickness.png.
 
 adv_sss.py: Like adv_thickness.py, but for sea surface salinity.
             To run: Make sure the paths to the simulation directories and 23
 	            August CICE files are correct. Then open python or ipython
-		    and type "run adv_sss.py".
+		    and type "run adv_sss.py". The figure will be saved under
+		    the filename adv_sss.png.
 
 adv_mld.py: Like adv_thickness.py, but for mixed layer depth as calculated by
             the KPP parameterisation.
 	    To run: Make sure the paths to the simulation directories and 23
 	            August ROMS files are correct. Then open python or ipython
-		    and type "run adv_mld.py".
+		    and type "run adv_mld.py". The figure will be saved under
+		    the filename adv_mld.png.
 
-adv_polynyas.py: Create a 1x2 plot of sea ice concentration along the coast of
-                 Wilkes Land on 23 August (the sea ice area max), showing the
+adv_polynyas.py: Create a 1x2 plot of sea ice concentration near the Amery Ice
+                 Shelf on 23 August (the sea ice area max), showing the
 		 difference in polynya size between the U3_LIM and C4_LD
 		 simulations.
 		 To run: Make sure the paths to the simulation directories and
 		         23 August CICE files are correct. Then open python or
-			 ipython and type "run adv_polynyas.py".
+			 ipython and type "run adv_polynyas.py". The figure
+			 will be saved under the filename adv_polynyas.png.
+
+adv_u3_sss_anom.py: Plot the sea surface salinity anomaly between the U3 and
+                    U3_LIM simulations on 23 August (sea ice area maximum).
+		    To run: Make sure the paths to the simulation directories
+		            and 23 August CICE files are correct. Then open
+			    python or ipython and type "run adv_u3_sss_anom.py".
+			    The figure will be saved under the filename
+			    sss_u3_anom.png.
+
+timeseries_sss.py: Calculates and plots timeseries of area-averaged sea surface
+                   salinity and surface salt flux during a ROMS simulation.
+		   Also writes the timeseries to a log file so it doesn't have
+		   to be recomputed if the run is extended; at the beginning of
+		   this script, previous values will be read from the same log
+		   file if it exists.
+		   To run: Open python or ipython and type
+		           "run timeseries_sss.py". The script will prompt you
+			   for the path to the ROMS averages file and the log
+			   file.
+
+timeseries_i2osalt.py: Calculates and plots timeseries of area-averaged sea ice
+                       to ocean salt flux during a ROMS simulation. Also writes
+                       the timeseries to a log file so it doesn't have to be
+		       recomputed if the run is extended; at the beginning of
+		       this script, previous values will be read from the same
+		       log file if it exists.
+		       To run: Open python or ipython and type
+		               "run timeseries_i2osalt.py". The script will
+			       prompt you for the path to the CICE history file
+			       and the log file.
+
+
+***FIGURES FOR GARY'S LIMITERS PAPER***
+
+gadv_freezingpt_slice.py: As adv_freezingpt_slice.py, but for the U3 experiment
+                          through a different slice (through 8E) and timestep.
+			  To run: Make sure the path to the ocean history file
+			          is correct. Then open python or ipython and
+				  type "run gadv_freezingpt_slice.py". The
+				  figure will be saved with the filename
+				  "kn_fig1.png".
+
+gadv_frazil_thickness.py: Plot anomalies between the U3 and U3_LIM simulations
+                          in 2 circumpolar plots. On the left, annually
+			  averaged frazil formation (as in adv_frazil.py). On
+			  the right, effective sea ice thickness on 23 August
+			  (sea ice area max).
+			  To run: Make sure the paths to the simulation
+			          directories near the top of the file are
+				  correct. Then open python or ipython and type
+				  "run gadv_frazil_thickness.py". The figure
+				  will be saved with the filename "kn_fig2.png".
+
+gadv_frazil_bathy.py: Plot a section of the coastline from 25-45E. On the left,
+                      show anomalies in annually averaged frazil formation
+		      between the U3 and U3_LIM simulations. On the right, show
+		      bathymetry. This way the relationship between spurious
+		      supercooling and steep bathymetry is obvious.
+		      To run: Make sure the paths to the simulation directories
+		              and ROMS grid file near the top of the file are
+			      correct. Then open python or ipython and type
+			      "run gadv_frazil_bathy.py". The figure will be
+			      saved with the filename "kn_fig3.png".
 
 
 ***UTILITY FUNCTIONS***
@@ -823,6 +1044,49 @@ unesco.py: Calculates the UNESCO seawater equation of state (1980): given
 	   density.
 	   To run: The function unesco is designed to be called by another
 	           script. See make_density_file.py for an example.
+
+interp_era2roms.py: Given an array on the ERA-Interim grid, interpolate any
+                    missing values, and then interpolate to the ROMS grid.
+		    To run: The function interp_era2roms is designed to be
+		            called by another script. See
+			    romscice_atm_subdaily.py for an example.
+
+interp_lon_roms.py: Linearly interpolate ROMS data, z, and latitude to the
+                    specified longitude.
+		    To run: The function interp_lon_roms is designed to be
+		            called by another script. See zonal_plot.py for
+			    an example.
+
+interp_lon_sose.py: Linearly interpolate SOSE data to the specified longitude.
+                    To run: The function interp_lon_sose is designed to be
+		            called by another script. See sose_roms_seasonal.py
+			    for an example.
+
+monthly_avg_cice.py: Average the given variable in the given CICE file over the
+                     given month.
+		     To run: The function monthly_avg_cice is designed to be
+		             called by another script. See nsidc_aice_monthly.py
+			     for an example.
+
+monthly_avg_roms.py: Average the given variable in the given ROMS file over the
+                     given month.
+		     To run: The function monthly_avg_roms is designed to be
+		             called by another script. See common_grid.py
+			     for an example.
+
+seasonal_avg_cice.py: Calculate seasonal averages (DJF, MAM, JJA, SON) of the
+                      given variable in the given CICE file.
+		      To run: The function seasonal_avg_cice is designed to be
+		              called by another script. See aice_hi_seasonal.py
+			      for an example.
+
+seasonal_avg_roms.py: Calculate seasonal averages (DJF, MAM, JJA, SON) of the
+                      given variable in the given ROMS file.
+		      To run: The function seasonal_avg_roms is designed to be
+		              called by another script. See
+			      temp_salt_seasonal.py for an example.
+
+
 
 
 

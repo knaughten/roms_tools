@@ -2,8 +2,17 @@ from numpy import *
 from netCDF4 import Dataset, num2date
 from matplotlib.pyplot import *
 
+# Make a figure comparing annually-averaged sea ice to ocean salt fluxes,
+# from Tamura's dataset to CICE output.
+# Input:
+# cice_file = path to annually averaged CICE file
+# year = year of Tamura data to plot
+# save = optional boolean to save the figure to a file, rather than displaying
+#        it on the screen
+# fig_name = if save=True, path to the desired filename for figure
 def ssflux_tamura_annual (cice_file, year, save=False, fig_name=None):
 
+    # Path to Tamura file for this year
     tamura_file = '/short/m68/kaa561/tamura_fluxes/Tamura_ssflux_' + str(year) + '_monthly.nc'
     # Degrees to radians conversion
     deg2rad = pi/180.0

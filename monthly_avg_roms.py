@@ -1,6 +1,18 @@
 from netCDF4 import Dataset, num2date
 from numpy import *
 
+# Average the given variable in the given ROMS file over the given month.
+# Input:
+# file_path = path to ROMS output file containing 5-day averages, including at
+#             least one complete instance of the given month.
+# var = variable name
+# shape = vector containing the dimensions (excluding time) of the variable
+# month = month to average over (0-11)
+# instance = optional integer indicating which instance of the given month in
+#            this file we should use. For instance=1 use the first instance,
+#            etc. If instance=-1 (the default) the last instance is used.
+# Output:
+# monthly_data = array of data averaged over the given month.
 def monthly_avg_roms (file_path, var, shape, month, instance=-1):
 
     # Starting and ending days in each month
@@ -77,10 +89,15 @@ def monthly_avg_roms (file_path, var, shape, month, instance=-1):
             print 'Error: ' + file_path + ' does not contain  ' + str(instance) + ' ' + month_name[month] + 's'
             return        
 
-    leap_year = False
+    # Figure out what year it is, based on the year of the last timestep we care
+    # about
     roms_year = time[end_t].year
     if month == 11:
+        # December: the last timestep might be January next year
+        # Use the year of the first timestep we care about
         roms_year = time[start_t].year
+    # Check for leap years
+    leap_year = False
     if mod(roms_year, 4) == 0:
         leap_year = True
         if mod(roms_year, 100) == 0:
@@ -92,6 +109,8 @@ def monthly_avg_roms (file_path, var, shape, month, instance=-1):
 
     num_days = 0
 
+    # Figure out how many of the 5 days averaged in start_t are actually within
+    # this month
     if time[start_t].month-1 == month and time[start_t].day == start_day[month]+2:
         start_days = 5
     elif time[start_t].month-1 == month and time[start_t].day == start_day[month]+1:
@@ -106,13 +125,17 @@ def monthly_avg_roms (file_path, var, shape, month, instance=-1):
         print 'Error: starting index is month ' + str(time[start_t].month) + ', day ' + str(time[start_t].day)
         return
 
+    # Integrate data weighted by start_days
     monthly_data += id.variables[var][start_t,:]*start_days
     num_days += start_days
 
+    # Between start_t and end_t, we care about all the days
     for t in range(start_t+1, end_t):
         monthly_data += id.variables[var][t,:]*5
         num_days += 5
 
+    # Figure out how many of the 5 days averaged in end_t are actually within
+    # this month
     if time[end_t].month-1 == next_month and time[end_t].day == start_day[next_month]+1:
         end_days = 1
     elif time[end_t].month-1 == next_month and time[end_t].day == start_day[next_month]:
@@ -127,14 +150,17 @@ def monthly_avg_roms (file_path, var, shape, month, instance=-1):
         print 'Error: ending index is month ' + str(time[end_t].month) + ', day ' + str(time[end_t].day)
         return
 
+    # Integrate data weighted by end_days
     monthly_data += id.variables[var][end_t,:]*end_days
     num_days += end_days
 
+    # Make sure we got the right number of days
     if num_days != end_day[month]:
         print 'Error: found ' + str(num_days) + ' days instead of ' + str(end_day[month])
         return
 
     id.close()
+    # Convert from integral to average
     monthly_data /= num_days
 
     return monthly_data

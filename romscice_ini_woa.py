@@ -264,12 +264,12 @@ def interp_woa2roms (A, lon_woa, lat_woa, depth_woa, lon_roms_3d, lat_roms_3d, z
 if __name__ == "__main__":
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
+    grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
     # Path to World Ocean Atlas NetCDF file (converted from FESOM input using 
     # woa_netcdf.py)
     woa_file = '/short/y99/kaa561/FESOM/woa01_ts.nc'
     # Path to desired output file
-    output_file = '../ROMS-CICE-MCT/data/woa_ini.nc'
+    output_file = '../metroms_iceshelf/data/woa_ini.nc'
 
     # Grid parameters: check grid_file and *.in file to make sure these are correct
     Tcline = 40

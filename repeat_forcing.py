@@ -77,7 +77,7 @@ if __name__ == '__main__':
     # User parameters to edit here
 
     # Data where files <an_head>yyyy<tail> and <fc_head>yyyy<tail> exist
-    directory = '/short/m68/kaa561/ROMS-CICE-MCT/data/ERA_Interim/subdaily/30day_smoothed/'
+    directory = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/subdaily/30day_smoothed/'
     # First part of filename for AN and FC files
     an_head = 'AN_'
     fc_head = 'FC_'

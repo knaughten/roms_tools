@@ -2,7 +2,7 @@ from netCDF4 import *
 from numpy import *
 from matplotlib.pyplot import *
 
-# Create a 1x2 plot of sea ice concentration along the coast of Wilkes Land
+# Create a 1x2 plot of sea ice concentration near the Amery Ice Shelf
 # on 23 August (the sea ice area max), showing the difference in polynya size
 # between the U3_LIM and C4_LD simulations.
 def adv_polynyas ():

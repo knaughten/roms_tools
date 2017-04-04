@@ -2,18 +2,26 @@ from netCDF4 import Dataset
 from numpy import *
 from scipy.interpolate import RectBivariateSpline
 
+# Convert one year of GPCP monthly averages for total precipitation to a
+# ROMS-CICE input forcing file.
+# Input: year = integer containing the year to process
 def romscice_gpcp (year):
 
+    # ROMS grid
     grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    # Beginning of GPCP file paths
     gpcp_head = '/short/m68/kaa561/gpcp/gpcp_cdr_v23rB1_y' + str(year) + '_m'
+    # Path to output file
     output_file = '/short/m68/kaa561/metroms_iceshelf/data/GPCP/precip_' + str(year) + '_monthly.nc'
-    conv_factor = 5e-4 # mm/day to m/12h
+    # Conversion factor: mm/day to m/12h
+    conv_factor = 5e-4
     days_per_month = array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
 
+    # Check for leap years
     if year % 4 == 0:
         days_per_month[1] = 29
 
-    # Read ROMS latitude and longitude
+    # Read ROMS grid
     id = Dataset(grid_file, 'r')
     lon_roms = id.variables['lon_rho'][:,:]
     lat_roms = id.variables['lat_rho'][:,:]
@@ -83,6 +91,15 @@ def romscice_gpcp (year):
     out_id.close()
 
 
+# Interpolate the given data from the GPCP grid to the ROMS grid.
+# Input:
+# A = nxm array containing data on the GPCP grid
+# lon_gpcp = mx1 array containing GPCP longitude (0 to 360)
+# lat_gpcp = nx1 array containing GPCP latitude
+# lon_roms = pxq array containing ROMS longitude (0 to 360)
+# lat_roms = pxq array containing ROMS latitude
+# Output:
+# B = pxq array containing data interpolated to the ROMS grid (lat x lon)
 def interp_gpcp2roms (A, lon_gpcp, lat_gpcp, lon_roms, lat_roms):
 
     # First build a function to approximate A with 2D splines

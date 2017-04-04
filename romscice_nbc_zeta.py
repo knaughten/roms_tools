@@ -17,8 +17,8 @@ from scipy.spatial import KDTree
 def romscice_nbc_zeta (nbc_file):
 
     # Paths of ROMS grid file and input AVISO file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_good.nc'
-    aviso_file = '../ROMS-CICE-MCT/data/originals/aviso_climatology.nc'
+    grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    aviso_file = '../metroms_iceshelf/data/originals/aviso_climatology.nc'
 
     # Read ROMS grid at northern boundary
     id = Dataset(grid_file, 'r')

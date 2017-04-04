@@ -2,10 +2,15 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 
-def salinity_diff ():
+# Plot the sea surface salinity anomaly between the U3 and U3_LIM simulations
+# on 23 August (sea ice area maximum).
+def adv_u3_sss_anom ():
 
+    # Paths to simulation directories
     paths = ['/short/m68/kaa561/advection/u3_lim/', '/short/m68/kaa561/advection/u3/']
+    # File for 23 August daily average
     file_tail = 'iceh.1992-08-23.nc'
+    # Bounds on colour scale
     max_anom = 0.2
     tick_anom = 0.1
     # Degrees to radians conversion factor
@@ -75,8 +80,9 @@ def salinity_diff ():
     fig.savefig('sss_u3_anom.png')
 
 
+# Command-line interface
 if __name__ == "__main__":
 
-    salinity_diff()
+    adv_u3_sss_anom()
 
 

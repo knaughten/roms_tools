@@ -1,6 +1,18 @@
 from netCDF4 import Dataset, num2date
 from numpy import *
 
+# Average the given variable in the given CICE file over the given month.
+# Input:
+# file_path = path to CICE output file containing 5-day averages, including at
+#             least one complete instance of the given month.
+# var = variable name
+# shape = vector containing the dimensions (excluding time) of the variable
+# month = month to average over (0-11)
+# instance = optional integer indicating which instance of the given month in
+#            this file we should use. For instance=1 use the first instance,
+#            etc. If instance=-1 (the default) the last instance is used.
+# Output:
+# monthly_data = array of data averaged over the given month.
 def monthly_avg_cice (file_path, var, shape, month, instance=-1):
 
     # Starting and ending days in each month
@@ -62,10 +74,15 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
             print 'Error: ' + file_path + ' does not contain  ' + str(instance) + ' ' + month_name[month] + 's'
             return
 
-    leap_year = False
+    # Figure out what year it is, based on the year of the last timestep we care
+    # about
     cice_year = cice_time[end_t].year
     if month == 11:
+        # December: the last timestep might be January next year
+        # Use the year of the first timestep we care about
         cice_year = cice_time[start_t].year
+    # Check for leap years
+    leap_year = False
     if mod(cice_year, 4) == 0:
         leap_year = True
         if mod(cice_year, 100) == 0:
@@ -98,9 +115,11 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
         print 'Error: starting index is month ' + str(cice_time[start_t].month) + ', day ' + str(cice_time[start_t].day)
         return
 
+    # Integrate data weighted by start_days
     monthly_data += id.variables[var][start_t,:]*start_days
     num_days += start_days
 
+    # Between start_t and end_t, we care about all the days
     for t in range(start_t+1, end_t):
         monthly_data += id.variables[var][t,:]*5
         num_days +=5
@@ -126,14 +145,17 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
         print 'Error: ending index is month ' + str(cice_time[end_t].month) + ', day ' + str(cice_time[end_t].day)
         return
 
+    # Integrate data weighted by end_days
     monthly_data += id.variables[var][end_t,:]*end_days
     num_days += end_days
 
+    # Make sure we got the right number of days
     if num_days != end_day[month]:
         print 'Error: found ' + str(num_days) + ' days instead of ' + str(end_day[month])
         return
 
     id.close()
+    # Convert from integral to average
     monthly_data /= num_days
 
     return monthly_data

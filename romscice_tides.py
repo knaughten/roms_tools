@@ -16,11 +16,11 @@ from scipy.spatial import KDTree
 def romscice_tides ():
 
     # Path to ROMS grid file
-    grid_file = '../ROMS-CICE-MCT/apps/common/grid/circ30S_quarterdegree_10m.nc'
+    grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
     # Path to TPXO file
-    tpxo_file = '../ROMS-CICE-MCT/data/h_tpxo7.2.nc'
+    tpxo_file = '../metroms_iceshelf/data/h_tpxo7.2.nc'
     # Desired path to output file
-    out_file = '../ROMS-CICE-MCT/data/tides_tpxo72.nc' #_1yr.nc'
+    out_file = '../metroms_iceshelf/data/tides_tpxo72.nc' #_1yr.nc'
     # Bounds on latitude indices to read from TPXO2 (as close together as
     # possible while containing all the latitudes ROMS needs, so that there
     # aren't too many land points to fill with nearest neighbours which is

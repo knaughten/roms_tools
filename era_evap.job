@@ -6,6 +6,10 @@
 #PBS -j oe
 #PBS -v YEAR,COUNT
 
+# Call romscice_evap.py for the given year, and self-submit enough times to
+# process the entire ERA-Interim file for that year (the python script only
+# process 50 12-hour timesteps at once, otherwise memory overflows).
+
 # To get it started for eg 1992, type
 # qsub -v YEAR=1992,COUNT=0 era_evap.job
 

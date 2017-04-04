@@ -3,6 +3,9 @@ from numpy import *
 from matplotlib.pyplot import *
 from calc_z import *
 
+# Plot the difference from the freezing temperature at a specific timestep
+# through an i-slice near 8E in the U3 experiment. There is no time-averaging,
+# spatial averaging, or interpolation. This shows off the spurious supercooling.
 def gadv_freezingpt_slice ():
 
     # Path to ocean history file
@@ -62,6 +65,7 @@ def gadv_freezingpt_slice ():
     xlim([lat_min, lat_max])
     ylim([depth_min, 0])
 
+    # Make sure lat and lon ticks are the way we want them
     lat_ticks = arange(lat_min+0.5, lat_max+0.5, 1)
     xticks(lat_ticks)
     lat_labels = []

@@ -4,11 +4,19 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_2d import *
 
+# Calculate and plot timeseries of area-averaged sea surface salinity and
+# surface salt flux during a ROMS simulation.
+# Input:
+# file_path = path to ROMS averages file
+# log_path = path to log file (if it exists, previously calculated values will
+#            be read from it; regardless, it will be overwritten with all
+#            calculated values following computation)
 def timeseries_sss (file_path, log_path):
 
     time = []
     avg_sss = []
     avg_ssflux = []
+    # Check if the log file exists
     if exists(log_path):
         print 'Reading previously calculated values'
         f = open(log_path, 'r')
@@ -34,10 +42,9 @@ def timeseries_sss (file_path, log_path):
     lon = id.variables['lon_rho'][:-15,1:-1]
     lat = id.variables['lat_rho'][:-15,1:-1]
     zice = id.variables['zice'][:-15,1:-1]
-
+    # Calculate area on the tracer grid
     dx, dy = cartesian_grid_2d(lon, lat)
     dA = ma.masked_where(zice!=0, dx*dy)
-
     # Read time values and convert from seconds to years
     new_time = id.variables['ocean_time'][:]/(365.25*24*60*60)
     # Concatenate with time values from log file
@@ -45,10 +52,13 @@ def timeseries_sss (file_path, log_path):
         time.append(new_time[t])
 
     print 'Reading data'
+    # Read surface salinity and salt flux
+    # Throw away overlapping periodic boundary and northern sponge layer
     sss = id.variables['salt'][:,-1,:-15,1:-1]
     ssflux = id.variables['ssflux'][:,:-15,1:-1]
     id.close()
 
+    # Build timeseries
     for t in range(size(new_time)):
         avg_sss.append(sum(sss[t,:,:]*dA)/sum(dA))
         avg_ssflux.append(sum(ssflux[t,:,:]*dA)/sum(dA))
@@ -82,6 +92,7 @@ def timeseries_sss (file_path, log_path):
     f.close()
 
 
+# Command-line interface
 if __name__ == "__main__":
 
     file_path = raw_input("Path to ocean history/averages file: ")

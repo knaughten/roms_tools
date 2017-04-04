@@ -2,6 +2,16 @@ from netCDF4 import Dataset
 from numpy import *
 from interp_era2roms import *
 
+# Read one year of ERA-Interim evaporation data (12-hourly), interpolate to the
+# ROMS grid, and add to the existing FC forcing file created using
+# romscice_atm_subdaily.nc.
+# Input: year = integer containing the year to process
+#        count = time record in the given year to start with
+
+# This script only processes 50 12-hour timesteps at once to prevent memory 
+# overflow, and is designed to be called by a self-submitting batch script. 
+# See era_evap.job for an example.
+
 def convert_file (year, count):
 
     # Make sure input arguments are integers (sometimes the batch script likes
@@ -37,12 +47,13 @@ def convert_file (year, count):
     # Convert time units
     evap_time = evap_time/24.0 # days since 1900-01-01 00:00:0.0
     evap_time = evap_time - 92*365 - 22 # days since 1992-01-01 00:00:0.0; note that there were 22 leap years between 1900 and 1992
-    evap_time = evap_time - 0.5 # switch from precipitation over the preceding 12 hours to precipitation over the following 12 hours; this is easier for ROMS
+    evap_time = evap_time - 0.5 # switch from evaporation over the preceding 12 hours to evaporation over the following 12 hours; this is easier for ROMS
     # Also read ERA-Interim latitude and longitude
     lon_era = i_fid.variables['longitude'][:]
     lat_era = i_fid.variables['latitude'][:]
     i_fid.close()
 
+    # Define the variable in the output NetCDF file on the first timestep
     if count == 0:
         log = open(logfile, 'a')
         log.write('Adding evaporation to ' + output_evap_file + '\n')
