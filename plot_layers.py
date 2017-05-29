@@ -4,8 +4,18 @@ from matplotlib.pyplot import *
 from calc_z import *
 from interp_lon_roms import *
 
+# Plot the terrain-following vertical levels through a given longitude, in a
+# latitude vs. depth slice. This is a good way to test out different choices
+# for vertical stretching parameters.
+# Input:
+# grid_path = path to ROMS grid file
+# lon0 = longitude to interpolate to (-180 to 180)
+# depth_min = deepest depth to plot (negative, in metres)
+# Vstretching, theta_s, theta_b, hc, N = vertical stretching parameters (see
+#                                        *.in configuration file if unsure)
 def plot_layers (grid_path, lon0, depth_min, Vstretching, theta_s, theta_b, hc, N):
 
+    # Read grid
     id = Dataset(grid_path, 'r')
     lon_2d = id.variables['lon_rho'][:,:]
     lat_2d = id.variables['lat_rho'][:,:]
@@ -14,22 +24,29 @@ def plot_layers (grid_path, lon0, depth_min, Vstretching, theta_s, theta_b, hc, 
     mask = id.variables['mask_rho'][:,:]
     id.close()
 
+    # Calculate a 3D field of depth values
     z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, None, Vstretching)
 
+    # Figure out how to write longitude in the title
     if lon0 < 0:
         lon_string = str(int(round(-lon0))) + r'$^{\circ}$W'
     else:
         lon_string = str(int(round(lon0))) + r'$^{\circ}$E'
 
+    # Get longitude in the range (0,360) as per ROMS convention
     if lon0 < 0:
         lon0 += 360
 
+    # Get a 3D land mask   
     mask_3d = tile(mask, (N,1,1))
 
+    # Interpolate land mask, depth, longitude to the given longitude
     mask_interp, z, lat = interp_lon_roms(mask_3d, z_3d, lat_2d, lon_2d, lon0)
+    # Simple array containing layer numbers, same size as z
     layer = zeros(shape(z))
     for k in range(N):        
         layer[k,:] = k+1
+    # Mask out land
     layer = ma.masked_where(mask_interp==0, layer)
 
     # Choose latitude bounds based on land mask
@@ -58,8 +75,10 @@ def plot_layers (grid_path, lon0, depth_min, Vstretching, theta_s, theta_b, hc, 
     #lat_min = -85
     #lat_max = -75
 
+    # Contour levels
     lev = range(1, N)
 
+    # Plot
     fig = figure(figsize=(18,6)) #(18,12))
     contour(lat, z, layer, lev, colors='k')
     title(lon_string) #(r"ROMS terrain-following levels through the Ross Ice Shelf cavity (180$^{\circ}$E)", fontsize=24)
@@ -72,10 +91,12 @@ def plot_layers (grid_path, lon0, depth_min, Vstretching, theta_s, theta_b, hc, 
     #fig.savefig('ross_levels.png')
     fig.show()
 
+    # Put longitude back to original range in case the user wants to go again
     if lon0 > 180:
         lon0 -= 360
 
 
+# Command-line interface
 if __name__ == "__main__":
 
     grid_path = raw_input("Path to grid file: ")
@@ -88,6 +109,7 @@ if __name__ == "__main__":
     N = int(raw_input("N: "))
     plot_layers (grid_path, lon0, depth_min, Vstretching, theta_s, theta_b, hc, N)
 
+    # Keep repeating until the user wants to exit
     while True:
         repeat = raw_input("Make another plot (y/n)? ")
         if repeat == 'y':

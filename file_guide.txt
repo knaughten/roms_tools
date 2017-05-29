@@ -262,6 +262,52 @@ romscice_gpcp.py: Convert one year of GPCP monthly averages for total
 			  and type "run romscice_gpcp.py". The years 1992-2005
 			  will be processed in a loop.
 
+find_isolated_points.py: Find all of the CICE grid points which are land (or ice
+                         shelf) on 3 sides. Sea ice can grow in these isolated
+			 points but cannot escape due to CICE's coastal boundary
+			 conditions, so it gets crazy thick (like 2 km thick).
+			 Print the indices of these points to the screen. This
+			 script assumes a periodic boundary in the longitude
+			 direction
+			 To run: Edit the variables start_j, end_j for the range
+			         of j-indices you care about (i.e. could
+				 possibly grow sea ice). Then open python or
+				 ipython and type "run find_isolated_points.py".
+				 The script will prompt you for the path to your
+				 CICE land mask (kmt) file. Run cice_grid.py
+				 if this file doesn't exist yet.
+
+fix_isolated_points.py: Based on the results of find_isolated_points.py, fix
+                        all the points which are isolated on 3 sides in the CICE
+			grid, by editing the ROMS grid. Set some of them to ice
+			shelf points (with zice the average of the correct
+			neighbour values), some to land points, remove the ice
+			shelves on others, and make other land points ocean
+			points (with h the average of the correct neighbour
+			values). After running this script, rerun cice_grid.py
+			to update the CICE grid. This script is grid-specific
+			and manually written. If you are editing it for a new
+			grid, make sure you take into account the ghost cells
+			in ROMS and CICE: point (i,j) in CICE is point (i+1,j+1)
+			in ROMS.
+			To run: Decide what you want to do for each point
+			        flagged by find_isolated_points.py, and edit
+				this script accordingly. Make sure the path to
+				the ROMS grid file is correct. Then open python
+				or ipython and type "run fix_isolated_points.py"
+
+romscice_sss_nudging.py: Interpolate the World Ocean Atlas 2013 monthly
+                         climatology of sea surface salinity to the ROMS grid,
+			 for use in surface salinity restoring.
+			 To run: Make sure the paths to the ROMS grid file,
+			         WOA input files, and desired output file
+				 are correct (near the top of the file). Then
+				 make sure that you have scipy version 0.14 or
+				 higher (on raijin, this means switching to
+				 python/2.7.6; instructions at the top of the
+				 file). Then open python or ipython and type
+				 "run romscice_sss_nudging.py".
+
 
 ***POST-PROCESSING DIAGNOSTIC FILES***
 
@@ -286,6 +332,31 @@ common_grid.py: Interpolates ROMS output to a regular quarter-degree grid for
 			script will prompt you for the paths to the ROMS and
 			CICE output files, and the desired output file on the
 			common grid.
+
+calc_rx1.py: Calculate the rx1 field (measure of grid steepness) for the given
+             grid and vertical stretching parameters. Save to a NetCDF file.
+	     To run: Figure out what your vertical stretching parameters are
+	             by looking at your *.in configuration file, or you can
+		     just experiment based on other people's choices. Then
+		     open python or ipython and type "run calc_rx1.py". The
+		     script will prompt you for the paths to your ROMS grid
+		     file and desired output file, as well as the vertical
+		     stretching parameters. Note that this script assumes
+		     Vtransform=2 (as do all scripts which call calc_z.py).
+
+plot_layers.py: Plot the terrain-following vertical levels through a given
+                longitude, in a latitude vs. depth slice. This is a good way
+		to test out different choices for vertical stretching
+		parameters.
+		To run: Figure out what your vertical stretching parameters are
+		        by looking at your *.in configuration file, or you can
+			just experiment based on other people's choices. Then
+			open python or ipython and type "run plot_layers.py".
+			The script will prompt you for the ROMS grid file, the
+			longitude to interpolate to, and your vertical
+			stretching parameters. The plot will be displayed on
+			screen, and the script will repeat as many times as you
+			like.
 
 
 ***DIAGNOSTIC FIGURES***
@@ -384,6 +455,29 @@ timeseries_3D.py: Calculates and plots timeseries of total ocean heat content,
 		          "run timeseries_3D.py". The script will prompt you
 			  for the paths to the ROMS grid file, the ocean history
 			  or averages file, and the log file.
+
+timeseries_sss.py: Calculates and plots timeseries of area-averaged sea surface
+                   salinity, surface salt flux, and surface salt flux due to
+		   salinity restoring during a ROMS simulation. Also writes the
+		   timeseries to a log file so it doesn't have to be recomputed
+		   if the run is extended; at the beginning of this script,
+		   previous values will be read from the same log file if it
+		   exists.
+		   To run: Open python or ipython and type
+		           "run timeseries_sss.py". The script will prompt you
+			   for the path to the ROMS averages file and the log
+			   file.
+
+timeseries_i2osalt.py: Calculates and plots timeseries of area-averaged sea ice
+                       to ocean salt flux during a ROMS simulation. Also writes
+                       the timeseries to a log file so it doesn't have to be
+		       recomputed if the run is extended; at the beginning of
+		       this script, previous values will be read from the same
+		       log file if it exists.
+		       To run: Open python or ipython and type
+		               "run timeseries_i2osalt.py". The script will
+			       prompt you for the path to the CICE history file
+			       and the log file.
 
 aice_animation.py: Create an animation of sea ice concentration for the given
                    simulation, and save as an mp4 file.
@@ -943,27 +1037,18 @@ adv_u3_sss_anom.py: Plot the sea surface salinity anomaly between the U3 and
 			    The figure will be saved under the filename
 			    sss_u3_anom.png.
 
-timeseries_sss.py: Calculates and plots timeseries of area-averaged sea surface
-                   salinity and surface salt flux during a ROMS simulation.
-		   Also writes the timeseries to a log file so it doesn't have
-		   to be recomputed if the run is extended; at the beginning of
-		   this script, previous values will be read from the same log
-		   file if it exists.
-		   To run: Open python or ipython and type
-		           "run timeseries_sss.py". The script will prompt you
-			   for the path to the ROMS averages file and the log
-			   file.
+adv_mld_2.py: Like adv_mld.py, but only showing U3_LIM and C4_LD.
+              To run: Make sure the paths to the simulation directories and 23
+	              August ROMS files are correct. Then open python or ipython
+		      and type "run adv_mld_2.py". The figure will be saved
+		      under the filename adv_mld_2.png.
 
-timeseries_i2osalt.py: Calculates and plots timeseries of area-averaged sea ice
-                       to ocean salt flux during a ROMS simulation. Also writes
-                       the timeseries to a log file so it doesn't have to be
-		       recomputed if the run is extended; at the beginning of
-		       this script, previous values will be read from the same
-		       log file if it exists.
-		       To run: Open python or ipython and type
-		               "run timeseries_i2osalt.py". The script will
-			       prompt you for the path to the CICE history file
-			       and the log file.
+adv_thickness_2.py: Like adv_thickness.py, but only showing U3_LIM and C4_LD.
+                    To run: Make sure the paths to the simulation directories
+		            and 23 August ROMS files are correct. Then open
+			    python or ipython and type "run adv_thickness_2.py".
+			    The figure will be saved under the filename
+			    adv_thickness_2.png.
 
 
 ***FIGURES FOR GARY'S LIMITERS PAPER***

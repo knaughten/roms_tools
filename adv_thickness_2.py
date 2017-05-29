@@ -3,9 +3,8 @@ from numpy import *
 from matplotlib.pyplot import *
 #import colormaps as cmaps
 
-# Create a 3x2 plot of sea ice effective thickness on 23 August (the sea ice
-# area max) for each advection experiment: the absolute values for U3_LIM, and
-# the anomalies from U3_LIM for the other 5 experiments.
+# Create a 2x1 plot of sea ice effective thickness on 23 August (the sea ice
+# area max) for the U3_LIM experiment, and anomalies for the C4_LD experiment.
 def adv_thickness_2 ():
 
     # Paths to simulation directories

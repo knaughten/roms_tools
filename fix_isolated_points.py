@@ -1,10 +1,21 @@
 from netCDF4 import Dataset
 from numpy import *
 
+# Based on the results of find_isolated_points.py, fix all the points which
+# are isolated on 3 sides in the CICE grid, by editing the ROMS grid. Set some
+# of them to ice shelf points (with zice the average of the correct neighbour
+# values), some to land points, remove the ice shelves on others, and make other
+# land points ocean points (with h the average of the correct neighbour values).
+# After running this script, rerun cice_grid.py to update the CICE grid.
+# This script is grid-specific and manually written. If you are editing it
+# for a new grid, make sure you take into account the ghost cells in ROMS
+# and CICE: point (i,j) in CICE is point (i+1,j+1) in ROMS.
 def fix_isolated_pts ():
 
+    # Path to ROMS grid file
     grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_tmp.nc'
 
+    # Read the relevant fields
     id = Dataset(grid_file, 'a')
     mask_rho = id.variables['mask_rho'][:,:]
     h = id.variables['h'][:,:]  # Fill value 50
@@ -165,6 +176,8 @@ def fix_isolated_pts ():
     id.variables['zice'][:,:] = zice
     id.close()
 
+
+# Command-line interface
 if __name__ == "__main__":
     fix_isolated_pts()
 
