@@ -13,13 +13,13 @@ def adv_thickness ():
     # Titles for plotting
     labels = ['a) U3_LIM', 'b) U3 - U3_LIM', 'c) C4_LD - U3_LIM', 'd) C4_HD - U3_LIM', 'e) A4_LD - U3_LIM', 'f) A4_HD - U3_LIM']
     # File name: daily average for 23 August
-    file_tail = 'iceh.1992-08-23.nc'
+    file_tail = 'cice/rundir/history/iceh.1992-08-23.nc'
 
     # Bounds and ticks for colour scales
     max_abs = 2.0
     tick_abs = 0.5
-    max_anom = 2.0
-    tick_anom = 1.0
+    max_anom = 1.5 #2.0
+    tick_anom = 0.5 #1.0
 
     # Degrees to radians conversion factor
     deg2rad = pi/180.

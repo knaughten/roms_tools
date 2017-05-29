@@ -6,12 +6,12 @@ from matplotlib.pyplot import *
 # Create a 3x2 plot of mixed layer depth (calculated by KPP) on 23 August (the
 # sea ice area max) for each advection experiment: the absolute values for
 # U3_LIM, and the anomalies from U3_LIM for the other 5 experiments.
-def adv_mld ():
+def adv_mld_2 ():
 
     # Paths to simulation directories
-    paths = ['/short/m68/kaa561/advection/u3_lim/', '/short/m68/kaa561/advection/u3/', '/short/m68/kaa561/advection/c4_l/', '/short/m68/kaa561/advection/c4_h/', '/short/m68/kaa561/advection/a4_l/', '/short/m68/kaa561/advection/a4_h/']
+    paths = ['/short/m68/kaa561/advection/u3_lim/', '/short/m68/kaa561/advection/c4_l/']
     # Titles for plotting
-    labels = ['a) U3_LIM', 'b) U3 - U3_LIM', 'c) C4_LD - U3_LIM', 'd) C4_HD - U3_LIM', 'e) A4_LD - U3_LIM', 'f) A4_HD - U3_LIM']
+    labels = ['a) U3_LIM', 'b) C4_LD - U3_LIM']
     # File name: daily average for 23 August
     file_tail = 'ocean_avg_0001.nc'
     # If 23 August doesn't have its own file, put the time index here
@@ -72,8 +72,8 @@ def adv_mld ():
     land_circle = ma.masked_where(sqrt((x_reg-x_c)**2 + (y_reg-y_c)**2) > radius, land_circle)
 
     # Set up figure
-    fig = figure(figsize=(9,15))
-    ax = fig.add_subplot(3, 2, 1, aspect='equal')
+    fig = figure(figsize=(20,10))
+    ax = fig.add_subplot(1, 2, 1, aspect='equal')
     # First shade land
     contourf(x, y, land, 1, colors=(('0.6', '0.6', '0.6')))
     # Fill in missing circle
@@ -88,43 +88,38 @@ def adv_mld ():
     # Add title
     title(labels[0], fontsize=20)
     # Add colorbar
-    cbaxes0 = fig.add_axes([0.025, 0.7, 0.02, 0.2])
+    cbaxes0 = fig.add_axes([0.05, 0.15, 0.02, 0.7])
     cbar0 = colorbar(img0, ticks=arange(0, max_abs+tick_abs, tick_abs), cax=cbaxes0, extend='max')
     cbar0.ax.tick_params(labelsize=16)  
 
-    # Loop over the other simulations
-    for sim in range(1, len(paths)):
-        # Read mixed layer depth
-        id = Dataset(paths[sim]+file_tail, 'r')
-        data = id.variables['Hsbl'][tstep-1,:350,1:]
-        id.close()
-        # Mask out the ice shelf cavities and switch sign
-        data = ma.masked_where(zice!=0, -data)
-        # Calculate anomaly from U3_LIM
-        data = data - data0
-        # Add to plot, same as before
-        ax = fig.add_subplot(3, 2, sim+1, aspect='equal')
-        contourf(x, y, land, 1, colors=(('0.6', '0.6', '0.6')))
-        contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
-        img = pcolor(x, y, data, vmin=-max_anom, vmax=max_anom, cmap='RdBu_r')
-        axis('off')
-        title(labels[sim], fontsize=20)
-        if sim == 3:
-            # Only add an anomaly colorbar for one of the simulations
-            cbaxes = fig.add_axes([0.025, 0.4, 0.02, 0.2])
-            cbar = colorbar(img, ticks=arange(-max_anom, max_anom+tick_anom, tick_anom), cax=cbaxes, extend='both')
-            cbar.ax.tick_params(labelsize=16)
+    # Read mixed layer depth
+    id = Dataset(paths[1]+file_tail, 'r')
+    data = id.variables['Hsbl'][tstep-1,:350,1:]
+    id.close()
+    # Mask out the ice shelf cavities and switch sign
+    data = ma.masked_where(zice!=0, -data)
+    # Calculate anomaly from U3_LIM
+    data = data - data0
+    # Add to plot, same as before
+    ax = fig.add_subplot(1, 2, 2, aspect='equal')
+    contourf(x, y, land, 1, colors=(('0.6', '0.6', '0.6')))
+    contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
+    img = pcolor(x, y, data, vmin=-max_anom, vmax=max_anom, cmap='RdBu_r')
+    axis('off')
+    title(labels[1], fontsize=20)
+    cbaxes = fig.add_axes([0.92, 0.15, 0.02, 0.7])
+    cbar = colorbar(img, ticks=arange(-max_anom, max_anom+tick_anom, tick_anom), cax=cbaxes, extend='both')
+    cbar.ax.tick_params(labelsize=16)
 
     # Main title
     suptitle('Mixed layer depth (m) on 23 August', fontsize=28)
-    subplots_adjust(wspace=0.025,hspace=0.15)
 
     #fig.show()
-    fig.savefig('adv_mld.png')
+    fig.savefig('adv_mld_2.png')
 
 
 # Command-line interface
 if __name__ == '__main__':
 
-    adv_mld()
+    adv_mld_2()
     

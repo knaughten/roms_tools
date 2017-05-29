@@ -15,11 +15,12 @@
 from netCDF4 import Dataset
 from numpy import *
 from scipy.interpolate import RegularGridInterpolator
+from scipy.spatial import KDTree
 from calc_z import *
 
 
 # Main routine
-def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_ecco):
+def run (grid_file, theta_file, salt_file, output_file, theta_s, theta_b, hc, N, nbdry_ecco):
 
     # Read ECCO2 data and grid
     print 'Reading ECCO2 data'
@@ -91,9 +92,9 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 
     # Regridding happens here...
     print 'Interpolating temperature'
-    temp = interp_ecco2roms_ini(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, -0.5)
+    temp = interp_ecco2roms_ini(theta, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice)
     print 'Interpolating salinity'
-    salt = interp_ecco2roms_ini(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, 34.5)
+    salt = interp_ecco2roms_ini(salt, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice)
 
     # Set initial velocities and sea surface height to zero
     u = zeros((N, num_lat, num_lon-1))
@@ -133,7 +134,7 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
     out_fid.createVariable('Tcline', 'f8', ('one'))
     out_fid.variables['Tcline'].long_name = 'S-coordinate surface/bottom layer width'
     out_fid.variables['Tcline'].units = 'meter'
-    out_fid.variables['Tcline'][:] = Tcline
+    out_fid.variables['Tcline'][:] = hc
     out_fid.createVariable('hc', 'f8', ('one'))
     out_fid.variables['hc'].long_name = 'S-coordinate parameter, critical depth'
     out_fid.variables['hc'].units = 'meter'
@@ -187,8 +188,8 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
     print 'Finished'
 
 
-# Given an array on the ECCO2 grid, interoplate onto the ROMS grid, extrapolate
-# under ice shelf cavities, and fill the land mask with constant values.
+# Given an array on the ECCO2 grid, fill the land mask with nearest neighbours,
+# interpolate onto the ROMS grid, and extrapolate under ice shelf cavities.
 # Input:
 # A = array of size nxmxo containing values on the ECCO2 grid (dimension
 #     longitude x latitude x depth)
@@ -208,12 +209,10 @@ def run (grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b
 #            land 0)
 # mask_zice = array of size qxr containing ROMS ice shelf mask (ice shelf 1,
 #             ocean/land 0)
-# fill = scalar containing the value with which to fill the ROMS land mask
-#        (doesn't really matter, don't use NaN)
 # Output:
 # B = array of size pxqxr containing values on the ROMS grid (dimension depth x
 #     latitude x longitude)
-def interp_ecco2roms_ini (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice, fill):
+def interp_ecco2roms_ini (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_roms_3d, z_roms_3d, mask_rho, mask_zice):
 
     # Radius of the Earth in m
     r = 6.371e6
@@ -223,26 +222,32 @@ def interp_ecco2roms_ini (A, lon_ecco, lat_ecco, depth_ecco, lon_roms_3d, lat_ro
     # Calculate N based on size of ROMS grid
     N = size(lon_roms_3d, 0)
 
-    # Unmask A and fill with NaNs
-    A_unmask = A.data
-    A_unmask[A.mask]=NaN
+    # Fill in masked values with the nearest neighbours so they don't screw up
+    # the interpolation
+    # Loop over z-levels
+    print 'Filling land mask with nearest neighbours'
+    for k in range(size(A,2)):
+        print '...vertical level ' + str(k+1) + ' of ' + str(size(A,2))
+        tmp = A[:,:,k]
+        j,i = mgrid[0:tmp.shape[0], 0:tmp.shape[1]]
+        jigood = array((j[~tmp.mask], i[~tmp.mask])).T
+        jibad = array((j[tmp.mask], i[tmp.mask])).T
+        tmp[tmp.mask] = tmp[~tmp.mask][KDTree(jigood).query(jibad)[1]]
+        A[:,:,k] = tmp
 
-    # Build a function for linear interpolation of A; set flag to fill
-    # out-of-bounds values with NaN
-    interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), A_unmask, bounds_error=False, fill_value=NaN)
+    # Build a function for linear interpolation of A
+    interp_function = RegularGridInterpolator((lon_ecco, lat_ecco, depth_ecco), A)
     B = zeros(shape(lon_roms_3d))
 
+    print 'Interpolating to ROMS grid'
     # Interpolate each z-level individually - 3D vectorisation uses too
     # much memory!
     for k in range(N):
         print '...vertical level ', str(k+1), ' of ', str(N)
         # Pass positive values for ROMS depth
         tmp = interp_function((lon_roms_3d[k,:,:], lat_roms_3d[k,:,:], -z_roms_3d[k,:,:]))
-        # Fill NaNs with constant value
-        index = isnan(tmp)
-        tmp[index] = fill
         # Fill land mask with constant value
-        tmp[mask_rho==0] = fill
+        tmp[mask_rho==0] = 0.0
         # Save this depth level
         B[k,:,:] = tmp
 
@@ -311,24 +316,23 @@ if __name__ == "__main__":
 
     # File paths to edit here:
     # Path to ROMS grid file
-    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_tmp.nc'
     # Path to ECCO2 files for temperature and salinity in January 1992
-    theta_file = '/short/m68/kaa561/metroms_iceshelf/data/THETA.1440x720x50.199201.nc'
-    salt_file = '/short/m68/kaa561/metroms_iceshelf/data/SALT.1440x720x50.199201.nc'
+    theta_file = '/short/m68/kaa561/metroms_iceshelf/data/originals/ECCO2/THETA.1440x720x50.199201.nc'
+    salt_file = '/short/m68/kaa561/metroms_iceshelf/data/originals/ECCO2/SALT.1440x720x50.199201.nc'
     # Path to desired output file
-    output_file = '/short/m68/kaa561/metroms_iceshelf/data/ecco2_ini.nc'
+    output_file = '/short/m68/kaa561/metroms_iceshelf/data/ecco2_ini_newmask.nc'
 
     # Grid parameters; check grid_file and *.in file to make sure these are correct
-    Tcline = 40
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
 
     # Northernmost index of ECCO2 grid to read (1-based)
     nbdry_ecco = 241
 
-    run(grid_file, theta_file, salt_file, output_file, Tcline, theta_s, theta_b, hc, N, nbdry_ecco)
+    run(grid_file, theta_file, salt_file, output_file, theta_s, theta_b, hc, N, nbdry_ecco)
 
     
 

@@ -8,8 +8,8 @@ from matplotlib.pyplot import *
 def gadv_frazil_thickness ():
 
     # Paths to simulation directories
-    path_up3l = '/short/m68/kaa561/advection_bitreproducible/u3_lim/'
-    path_up3 = '/short/m68/kaa561/advection_bitreproducible/u3/'
+    path_up3l = '/short/m68/kaa561/advection/u3_lim/'
+    path_up3 = '/short/m68/kaa561/advection/u3/'
     # Annually averaged CICE file
     file_tail_avg = 'cice/rundir/history/iceh_avg.nc'
     # Daily averaged CICE file for 23 August

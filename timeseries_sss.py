@@ -4,8 +4,9 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_2d import *
 
-# Calculate and plot timeseries of area-averaged sea surface salinity and
-# surface salt flux during a ROMS simulation.
+# Calculate and plot timeseries of area-averaged sea surface salinity, surface
+# salt flux, and surface salt flux due to salinity restoring during a ROMS
+# simulation.
 # Input:
 # file_path = path to ROMS averages file
 # log_path = path to log file (if it exists, previously calculated values will
@@ -16,6 +17,7 @@ def timeseries_sss (file_path, log_path):
     time = []
     avg_sss = []
     avg_ssflux = []
+    avg_restore = []
     # Check if the log file exists
     if exists(log_path):
         print 'Reading previously calculated values'
@@ -34,7 +36,12 @@ def timeseries_sss (file_path, log_path):
             except(ValueError):
                 break
         for line in f:
-            avg_ssflux.append(float(line))
+            try:
+                avg_ssflux.append(float(line))
+            except(ValueError):
+                break
+        for line in f:
+            avg_restore.append(float(line))
         f.close()
 
     print 'Analysing grid'
@@ -42,7 +49,7 @@ def timeseries_sss (file_path, log_path):
     lon = id.variables['lon_rho'][:-15,1:-1]
     lat = id.variables['lat_rho'][:-15,1:-1]
     zice = id.variables['zice'][:-15,1:-1]
-    # Calculate area on the tracer grid
+    # Calculate area on the tracer grid and mask ice shelves
     dx, dy = cartesian_grid_2d(lon, lat)
     dA = ma.masked_where(zice!=0, dx*dy)
     # Read time values and convert from seconds to years
@@ -52,16 +59,18 @@ def timeseries_sss (file_path, log_path):
         time.append(new_time[t])
 
     print 'Reading data'
-    # Read surface salinity and salt flux
+    # Read surface salinity, salt flux, and restoring flux
     # Throw away overlapping periodic boundary and northern sponge layer
     sss = id.variables['salt'][:,-1,:-15,1:-1]
     ssflux = id.variables['ssflux'][:,:-15,1:-1]
+    ssflux_restoring = id.variables['ssflux_restoring'][:,:-15,1:-1]
     id.close()
 
     # Build timeseries
     for t in range(size(new_time)):
         avg_sss.append(sum(sss[t,:,:]*dA)/sum(dA))
         avg_ssflux.append(sum(ssflux[t,:,:]*dA)/sum(dA))
+        avg_restore.append(sum(ssflux_restoring[t,:,:]*dA)/sum(dA))
 
     print 'Plotting'
     clf()
@@ -78,6 +87,13 @@ def timeseries_sss (file_path, log_path):
     grid(True)
     savefig('avg_ssflux.png')
 
+    clf()
+    plot(time, avg_restore)
+    xlabel('Years')
+    ylabel(r'Average surface salt flux from salinity restoring (kg/m$^2$/s)')
+    grid(True)
+    savefig('avg_restore.png')
+
     print 'Saving results to log file'
     f = open(log_path, 'w')
     f.write('Time (years):\n')
@@ -88,6 +104,9 @@ def timeseries_sss (file_path, log_path):
         f.write(str(elm) + '\n')
     f.write('Average surface salt flux (kg/m^2/s):\n')
     for elm in avg_ssflux:
+        f.write(str(elm) + '\n')
+    f.write('Average surface salt flux from salinity restoring (kg/m^2/s):\n')
+    for elm in avg_restore:
         f.write(str(elm) + '\n')
     f.close()
 

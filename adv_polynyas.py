@@ -12,7 +12,7 @@ def adv_polynyas ():
     # Titles for plotting
     labels = ['a) U3_LIM', 'b) C4_LD']
     # File name: daily average for 23 August
-    file_tail = 'iceh.1992-08-23.nc'
+    file_tail = 'cice/rundir/history/iceh.1992-08-23.nc'
     # Longitude and latitude bounds
     lon_min = 67
     lon_max = 86

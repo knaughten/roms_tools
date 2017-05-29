@@ -486,14 +486,6 @@ zonal_plot.py: Creates a depth vs latitude plot of the given variable. You can
 		       only have to specify which parameters have changed since
 		       the last plot.
 
-overturning_plot.py: Calculate the meridional overturning streamfunction at the
-                     last timestep of the given ROMS history/averages file and
-		     make a contour plot in z-space.
-		     To run: Open python or ipython and type
-		             "run overturning_plot.py". You will be prompted
-			     for the path to the ROMS history/averages file
-			     and the filename with which to save the plot.
-
 uv_vectorplot.py: Make a circumpolar Antarctic plot of speed overlaid with
                   velocity vectors at the given depth (surface, bottom, or
 		  vertically aveaged).

@@ -17,9 +17,9 @@ from interp_lon_roms import *
 def temp_salt_slice (file_path, tstep, lon0, depth_min, save=False, fig_name=None):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
 
     # Month names for titles

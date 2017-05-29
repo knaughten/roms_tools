@@ -9,10 +9,10 @@ from matplotlib.pyplot import *
 def gadv_frazil_bathy ():
 
     # Paths to simulation directories
-    path_up3l = '/short/m68/kaa561/advection_bitreproducible/u3_lim/'
-    path_up3 = '/short/m68/kaa561/advection_bitreproducible/u3/'
+    path_up3l = '/short/m68/kaa561/advection/u3_lim/'
+    path_up3 = '/short/m68/kaa561/advection/u3/'
     # Path to ROMS grid (containing bathymetry data)
-    roms_grid = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    roms_grid = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_old.nc'
     # Filename for annually averaged CICE data
     file_tail = 'cice/rundir/history/iceh_avg.nc'
     # Bounds on lat and lon
@@ -21,8 +21,8 @@ def gadv_frazil_bathy ():
     lat_min = -71
     lat_max = -64
     # Bounds for colour scales
-    max_frazil = 0.4
-    tick_frazil = 0.2
+    max_frazil = 0.5
+    tick_frazil = 0.25
     max_bathy = 5
     tick_bathy = 1
 

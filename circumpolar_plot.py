@@ -28,9 +28,9 @@ from rotate_vector_roms import *
 def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
     deg2rad = pi/180
 
@@ -158,7 +158,7 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
             colour_map = 'jet'
     else:
         # Determine bounds automatically
-        if var_name in ['u', 'v', 'ubar', 'vbar', 'm', 'shflux', 'ssflux', 'sustr', 'svstr', 'bustr', 'bvstr']:
+        if var_name in ['u', 'v', 'ubar', 'vbar', 'm', 'shflux', 'ssflux', 'sustr', 'svstr', 'bustr', 'bvstr', 'ssflux_restoring']:
             # Center levels on 0 for certain variables, with a blue-to-red
             # colourmap
             max_val = amax(abs(data))

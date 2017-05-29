@@ -25,9 +25,9 @@ def sose_roms_seasonal (file_path, var_name, lon0, depth_bdry, save=False, fig_n
     sose_file = '../SOSE_seasonal_climatology.nc'
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
 
     # Season names for titles

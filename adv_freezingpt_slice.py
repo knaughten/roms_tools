@@ -10,19 +10,19 @@ from calc_z import *
 def adv_freezingpt_slice ():
 
     # Path to ocean history file
-    file_path = '/short/m68/kaa561/advection/c4_l/ocean_his_8aug.nc'
+    file_path = '/short/m68/kaa561/advection/c4_l/ocean_his_0001.nc'
     # Timestep to plot
-    tstep = 1 #221
+    tstep = 178
     # i-index to plot (1-based)
     i_val = 1250
     # Deepest depth to plot
-    depth_min = -100
+    depth_min = -200
     # Bounds on colour scale
     scale_max = 0.5
     scale_tick = 0.25
     # Bounds on latitudes to plot
-    lat_min = -71
-    lat_max = -67
+    lat_min = -76
+    lat_max = -73
     save = True
     fig_name = 'adv_freezingpt_slice.png'
 
@@ -31,6 +31,7 @@ def adv_freezingpt_slice ():
     theta_b = 0.9
     hc = 40
     N = 31
+    Vstretching = 2
 
     # Read temperature, salinity, and grid variables
     id = Dataset(file_path, 'r')
@@ -50,7 +51,7 @@ def adv_freezingpt_slice ():
     deltat = temp - tfr
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
+    z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta, Vstretching)
     # Select depth and latitude at the given i-index
     z = z_3d[:,:,i_val-1]
     lat = tile(lat_2d[:,i_val-1], (N,1))
@@ -72,7 +73,7 @@ def adv_freezingpt_slice ():
     for val in lat_ticks:
         lat_labels.append(str(int(round(-val))) + r'$^{\circ}$S')
     ax.set_xticklabels(lat_labels, fontsize=14)
-    depth_ticks = arange(depth_min, 0+25, 25)
+    depth_ticks = arange(depth_min, 0+50, 50)
     yticks(depth_ticks)
     depth_labels = []
     for val in depth_ticks:

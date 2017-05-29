@@ -38,6 +38,7 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
         # Default: find the last instance of this month
         end_t = -1
         for t in range(size(cice_time)-1, -1, -1):
+            check_leapyear(cice_time[t].year, end_day)
             if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
                 end_t = t
                 break
@@ -46,6 +47,7 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
             return
         start_t = -1
         for t in range(end_t, -1, -1):
+            check_leapyear(cice_time[t].year, end_day)
             if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
                 start_t = t
                 break
@@ -56,7 +58,8 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
         # Find the given instance of the month
         count = 0
         start_t = -1
-        for t in range(size(time)):
+        for t in range(size(cice_time)):
+            check_leapyear(cice_time[t].year, end_day)
             if cice_time[t].month-1 == month and cice_time[t].day in range(start_day[month]+1, start_day[month]+6):
                 count += 1
                 if count == instance:
@@ -66,7 +69,8 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
             print 'Error: ' + file_path + ' does not contain ' + str(instance) + ' ' + month_name[month] + 's'
             return
         end_t = -1
-        for t in range(start_t+1, size(time)):
+        for t in range(start_t+1, size(cice_time)):
+            check_leapyear(cice_time[t].year, end_day)
             if cice_time[t].month-1 == next_month and cice_time[t].day in range(start_day[next_month], start_day[next_month]+5):
                 end_t = t
                 break
@@ -82,15 +86,7 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
         # Use the year of the first timestep we care about
         cice_year = cice_time[start_t].year
     # Check for leap years
-    leap_year = False
-    if mod(cice_year, 4) == 0:
-        leap_year = True
-        if mod(cice_year, 100) == 0:
-            leap_year = False
-            if mod(cice_year, 400) == 0:
-                leap_year = True
-    if leap_year:
-        end_day[1] = 29
+    check_leapyear(cice_year, end_day)
 
     num_days = 0
 
@@ -159,3 +155,18 @@ def monthly_avg_cice (file_path, var, shape, month, instance=-1):
     monthly_data /= num_days
 
     return monthly_data
+
+
+def check_leapyear (year, end_day):
+
+    leap_year = False
+    if mod(year, 4) == 0:
+        leap_year = True
+        if mod(year, 100) == 0:
+            leap_year = False
+            if mod(year, 400) == 0:
+                leap_year = True
+    if leap_year:
+        end_day[1] = 29
+    else:
+        end_day[1] = 28

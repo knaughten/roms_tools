@@ -9,19 +9,19 @@ from calc_z import *
 def gadv_freezingpt_slice ():
 
     # Path to ocean history file
-    file_path = '/short/m68/kaa561/advection_bitreproducible/u3/ocean_his_7aug.nc'
+    file_path = '/short/m68/kaa561/advection/u3/ocean_his_0001.nc'
     # Timestep to plot
-    tstep = 1 #220
+    tstep = 177
     # i-index to plot (1-based)
     i_val = 10
     # Deepest depth to plot
     depth_min = -100
     # Bounds on colour scale
-    scale_max = 0.08
-    scale_tick = 0.04
+    scale_max = 0.15
+    scale_tick = 0.05
     # Bounds on latitudes to plot
-    lat_min = -70.3
-    lat_max = -66.5
+    lat_min = -69
+    lat_max = -64
     save = True
     fig_name = 'kn_fig1.png'
 
@@ -49,7 +49,7 @@ def gadv_freezingpt_slice ():
     deltat = temp - tfr
 
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
+    z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta, Vstretching=2)
     # Select depth and latitude at the given i-index
     z = z_3d[:,:,i_val-1]
     lat = tile(lat_2d[:,i_val-1], (N,1))

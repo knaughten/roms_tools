@@ -13,13 +13,13 @@ def adv_frazil ():
     # Titles for plotting
     labels = ['a) U3_LIM', 'b) U3 - U3_LIM', 'c) C4_LD - U3_LIM', 'd) C4_HD - U3_LIM', 'e) A4_LD - U3_LIM', 'f) A4_HD - U3_LIM']
     # File name: annual average
-    file_tail = 'iceh_avg.nc'
+    file_tail = 'cice/rundir/history/iceh_avg.nc'
 
     # Bounds and ticks for colour scales
-    max_abs = 1
-    tick_abs = 0.25
-    max_anom = 2.0
-    tick_anom = 1.0
+    max_abs = 0.25 #1.0
+    tick_abs = 0.05 #0.25
+    max_anom = 0.75 #2.0
+    tick_anom = 0.25 #1.0
 
     # Degrees to radians conversion factor
     deg2rad = pi/180.

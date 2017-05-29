@@ -17,9 +17,9 @@ from rotate_vector_roms import *
 def timeseries_3D (grid_path, file_path, log_path):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
     rho0 = 1000.0    # Reference density (kg/m^3)
     Cp = 3974        # Specific heat of polar seawater (J/K/kg)

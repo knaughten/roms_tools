@@ -13,11 +13,6 @@ from matplotlib.pyplot import *
 # fig_name = filename for figure
 def ini_sst_circumpolar (grid_path, file_path, fig_name):
 
-    # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
-    N = 31
     deg2rad = pi/180
 
     # Read surface temps

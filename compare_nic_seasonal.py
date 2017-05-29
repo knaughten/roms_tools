@@ -35,7 +35,7 @@ def compare_nic_seasonal (cice_file, var_name, colour_bounds=None, save=False, f
     if var_name in ['uvel', 'vvel', 'strairx', 'strairy', 'strocnx', 'strocny']:
         rotate = True
         # Read the angle of grid rotation
-        angle = id.variables['ANGLE'][:-15,:]
+        angle = id.variables['ANGLE'][:,:]
         # Figure out whether this is an x or y component, and what the name of
         # the other component is
         if var_name == 'uvel':
@@ -92,9 +92,15 @@ def compare_nic_seasonal (cice_file, var_name, colour_bounds=None, save=False, f
         other_cmp = seasonal_avg_cice(cice_file, other_name, [num_lat, num_lon])
         # Rotate to lon-lat space
         if cmp_flag == 'x':
-            cice_data_tmp, other_tmp = rotate_vector_cice(this_cmp, other_cmp, angle)
+            cice_data_tmp = ma.empty(shape(this_cmp))
+            for season in range(4):
+                tmp1, tmp2 = rotate_vector_cice(this_cmp[season,:,:], other_cmp[season,:,:], angle)
+                cice_data_tmp[season,:,:] = tmp1
         elif cmp_flag == 'y':
-            other_tmp, cice_data_tmp = rotate_vector_cice(other_cmp, this_cmp, angle)
+            cice_data_tmp = ma.empty(shape(this_cmp))
+            for season in range(4):
+                tmp1, tmp2 = rotate_vector_cice(other_cmp[season,:,:], this_cmp[season,:,:], angle)
+                cice_data_tmp[season,:,:] = tmp2
     else:
         cice_data_tmp = seasonal_avg_cice(cice_file, var_name, [num_lat, num_lon])
 
@@ -104,6 +110,10 @@ def compare_nic_seasonal (cice_file, var_name, colour_bounds=None, save=False, f
     cice_data = ma.empty([size(cice_data_tmp,0), size(cice_data_tmp,1), size(cice_data_tmp,2)+1])
     cice_data[:,:,:-1] = cice_data_tmp
     cice_data[:,:,-1] = cice_data_tmp[:,:,0]
+
+    # Conversions to account for different thermodynamics schemes
+    if var_name in ['frazil', 'snoice']:
+        cice_data /= 3.6
 
     # Read Nic's grid from the January file
     id = Dataset(nic_dir_head + str(output_number) + nic_dir_tail + nic_file_head + str(nic_year_number) + '-01.nc', 'r')

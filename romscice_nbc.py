@@ -27,17 +27,16 @@ def convert_file (year):
     # Paths of ROMS grid file, input ECCO2 files (without the tail yyyymm.nc),
     # and output ROMS-CICE boundary condition file; other users will need to
     # change these
-    grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_good.nc'
-    theta_base = '../metroms_iceshelf/data/ECCO2/raw/THETA.1440x720x50.' + str(year)
-    salt_base = '../metroms_iceshelf/data/ECCO2/raw/SALT.1440x720x50.' + str(year)
-    vvel_base = '../metroms_iceshelf/data/ECCO2/raw/VVEL.1440x720x50.' + str(year)
+    grid_file = '../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    theta_base = '../metroms_iceshelf/data/originals/ECCO2/THETA.1440x720x50.' + str(year)
+    salt_base = '../metroms_iceshelf/data/originals/ECCO2/SALT.1440x720x50.' + str(year)
+    vvel_base = '../metroms_iceshelf/data/originals/ECCO2/VVEL.1440x720x50.' + str(year)
     output_file = '../metroms_iceshelf/data/ECCO2/ecco2_cube92_lbc_' + str(year) + '.nc'
 
     # Grid parameters; check grid_file and *.in to make sure these are correct
-    Tcline = 40
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
     # Northernmost index of ECCO2 grid to read (1-based)
     nbdry_ecco = 241
@@ -159,7 +158,7 @@ def convert_file (year):
     out_fid.createVariable('Tcline', 'f8', ('one'))
     out_fid.variables['Tcline'].long_name = 'S-coordinate surface/bottom layer width'
     out_fid.variables['Tcline'].units = 'meter'
-    out_fid.variables['Tcline'][:] = Tcline
+    out_fid.variables['Tcline'][:] = hc
     out_fid.createVariable('hc', 'f8', ('one'))
     out_fid.variables['hc'].long_name = 'S-coordinate parameter, critical depth'
     out_fid.variables['hc'].units = 'meter'
@@ -332,8 +331,8 @@ def interp_ecco2roms_nbc (A, lon_ecco, lat_ecco, depth_ecco, lon_roms, lat_roms,
 if __name__ == "__main__":
 
     # Start and end years; other users may need to change these
-    first_year = 1992
-    last_year = 2005
+    first_year = 2006
+    last_year = 2016
     for year in range(first_year, last_year+1):
             print 'Processing '+str(year)
             convert_file(year)

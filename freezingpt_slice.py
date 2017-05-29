@@ -20,9 +20,9 @@ from calc_z import *
 def freezingpt_slice (file_path, tstep, i_val, depth_min, colour_bounds=None, save=False, fig_name=None):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
 
     # Read temperature, salinity, and grid variables

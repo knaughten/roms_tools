@@ -29,9 +29,9 @@ from interp_lon_roms import *
 def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min, colour_bounds=None, save=False, fig_name=None, grid_path=None):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
     if var_name in ['w','AKv','AKt','AKs']:
         N = 32

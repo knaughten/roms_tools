@@ -42,6 +42,6 @@ def nbdry_grid_hack (grid_file, num_pts):
 # Command-line interface
 if __name__ == "__main__":
 
-    grid_file='../metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    grid_file='../metroms_iceshelf/apps/common/grid/original.nc'
     num_pts = 15
     nbdry_grid_hack(grid_file, num_pts)

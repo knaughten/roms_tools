@@ -8,14 +8,15 @@ from interp_era2roms import *
 #                           total cloud cover (tcc), and 10-metre winds (u10, 
 #                           v10)
 # FC_yyyy_subdaily_orig.nc: one year of 12-hour measurements for total 
-#                           precipitation (tp) and snowfall (sf) 
+#                           precipitation (tp), snowfall (sf), and evaporation
+#                           (e)
 # to two ROMS-CICE input forcing files with the correct units and naming 
 # conventions, and winds rotated correctly:
 # AN_yyyy_subdaily.nc: one year of 6-hour measurements for surface pressure
 #                   (Pair), temperature (Tair), specific humidity (Qair), 
 #                   cloud fraction (cloud), and winds (Uwind, Vwind)
-# FC_yyyy_subdaily.nc: one year of 12-hour measurements for rainfall (rain) and
-#                   snowfall (snow)
+# FC_yyyy_subdaily.nc: one year of 12-hour measurements for rainfall (rain),
+#                   snowfall (snow), and evaporation 
 # Input: year = integer containing the year to process
 #        count = time record in the given year to start with
 
@@ -32,9 +33,9 @@ def convert_file (year, count):
 
     # Paths of ROMS grid file, input ERA-Interim files, and output ROMS-CICE
     # files; other users will need to change these
-    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree_good.nc'
-    input_atm_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/AN_' + str(year) + '_subdaily_orig.nc'
-    input_ppt_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/FC_' + str(year) + '_subdaily_orig.nc'
+    grid_file = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
+    input_atm_file = '/short/m68/kaa561/metroms_iceshelf/data/originals/ERA_Interim/AN_' + str(year) + '_subdaily_orig.nc'
+    input_ppt_file = '/short/m68/kaa561/metroms_iceshelf/data/originals/ERA_Interim/FC_' + str(year) + '_subdaily_orig.nc'
     output_atm_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/AN_' + str(year) + '_subdaily.nc'
     output_ppt_file = '/short/m68/kaa561/metroms_iceshelf/data/ERA_Interim/FC_' + str(year) + '_subdaily.nc'
     logfile = str(year) + '.log'
@@ -196,6 +197,9 @@ def convert_file (year, count):
         oppt_fid.createVariable('snow', 'f8', ('time', 'eta_rho', 'xi_rho'))
         oppt_fid.variables['snow'].long_name = 'snow fall rate'
         oppt_fid.variables['snow'].units = 'm_per_12hr'
+        oppt_fid.createVariable('evaporation', 'f8', ('time', 'eta_rho', 'xi_rho'))
+        oppt_fid.variables['evaporation'].long_name = 'evaporation rate'
+        oppt_fid.variables['evaporation'].units = 'm_per_12hr'
         oppt_fid.close()
 
     log = open(logfile, 'a')
@@ -215,15 +219,19 @@ def convert_file (year, count):
         ippt_fid = Dataset(input_ppt_file, 'r')
         tp = transpose(ippt_fid.variables['tp'][t,:,:])
         sf = transpose(ippt_fid.variables['sf'][t,:,:])
+        e = -1*transpose(ippt_fid.variables['e'][t,:,:])
         ippt_fid.close()
         # Interpolate to ROMS grid and write to output FC file
         rain = interp_era2roms(tp, lon_era, lat_era, lon_roms, lat_roms)
         snow = interp_era2roms(sf, lon_era, lat_era, lon_roms, lat_roms)
-        # Make sure there are no negative values
+        evap = interp_era2roms(e, lon_era, lat_era, lon_roms, lat_roms)
+        # Make sure there are no negative values for precip
         rain[rain < 0] = 0.0
         oppt_fid.variables['rain'][t,:,:] = rain
         snow[snow < 0] = 0.0
         oppt_fid.variables['snow'][t,:,:] = snow
+        # Negative values are allowed for evaporation (they mean condensation)
+        oppt_fid.variables['evaporation'][t,:,:] = evap
         oppt_fid.close()
 
     log = open(logfile, 'a')

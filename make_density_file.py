@@ -12,9 +12,9 @@ from unesco import *
 def make_density_file (input_file, output_file):
 
     # Grid parameters
-    theta_s = 4.0
-    theta_b = 0.9
-    hc = 40
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
     N = 31
 
     # Read grid variables
