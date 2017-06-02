@@ -308,6 +308,22 @@ romscice_sss_nudging.py: Interpolate the World Ocean Atlas 2013 monthly
 				 file). Then open python or ipython and type
 				 "run romscice_sss_nudging.py".
 
+romscice_flux_correction.py: Build a monthly climatology of the extra surface
+                             salt flux due to surface salinity restoring in a
+			     long ROMS run. Save as a NetCDF file that can be
+			     used as a forcing file for another ROMS run
+			     (option SSFLUX_EXTRA) with surface salinity
+			     restoring off.
+			     To run: First make sure you have concatenated the
+			             ROMS averages files from the long
+				     simulation into a single file, or at least
+				     the ssflux_restoring variable. Then open
+				     python or ipython and type
+				     "run romscice_flux_correction.py". The
+				     script will prompt you for the paths to
+				     the concatenated ROMS averages file and
+				     the desired output forcing file.
+
 
 ***POST-PROCESSING DIAGNOSTIC FILES***
 
