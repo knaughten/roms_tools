@@ -24,7 +24,7 @@ def romscice_flux_correction (in_file, out_file):
     time_id = id.variables['ocean_time']
     time = num2date(time_id[:], units=time_id.units, calendar=time_id.calendar.lower())
     restoring = id.variables['ssflux_restoring'][:,:,:]
-    id.close()
+    id.close()    
 
     print 'Calculating climatology'
     num_lat = size(lat,0)
@@ -122,7 +122,7 @@ def romscice_flux_correction (in_file, out_file):
     id.variables['time'][:] = 365.25/12*(arange(12)+0.5)
     id.createVariable('ssflux_extra', 'f8', ('time', 'eta_rho', 'xi_rho'))
     id.variables['ssflux_extra'].long_name = 'additional surface salt flux'
-    id.variables['ssflux_extra'].units = 'kg/m^2/s'
+    id.variables['ssflux_extra'].units = 'psu m/s'
     id.variables['ssflux_extra'][:,:,:] = climatology
     id.close()
 

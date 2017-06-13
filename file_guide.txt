@@ -1100,6 +1100,22 @@ gadv_frazil_bathy.py: Plot a section of the coastline from 25-45E. On the left,
 			      saved with the filename "kn_fig3.png".
 
 
+***FIGURES FOR FESOM INTERCOMPARISON***
+
+mip_grid_res.py: Make a 2x1 plot showing horizontal grid resolution (square
+                 root of the area of each rectanuglar grid cell or triangular
+		 element) in MetROMS (left) and FESOM (right), zoomed into the
+		 Antarctic continental shelf.
+		 To run: First clone my "fesomtools" GitHub repository and
+		         replace '/short/y99/kaa561/fesomtools' (near the top
+			 of the file) with the path to the cloned repository
+			 on your system. Then open python or ipython and type
+			 "run mip_grid_res.py". The script will prompt you for
+			 the path to the ROMS grid file and FESOM mesh
+			 directory, and whether you want to save the figure (and
+			 if so, what filename) or display it on the screen.
+
+
 ***UTILITY FUNCTIONS***
 
 calc_z.py: Given ROMS grid variables, calculate the s-coordinates, stretching
