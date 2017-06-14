@@ -1115,6 +1115,61 @@ mip_grid_res.py: Make a 2x1 plot showing horizontal grid resolution (square
 			 directory, and whether you want to save the figure (and
 			 if so, what filename) or display it on the screen.
 
+mip_timeseries.py: Plot MetROMS and FESOM timeseries together, for Drake
+                   Passage transport, total Antarctic sea ice area and volume,
+		   and basal mass loss for major ice shelves. Include the range
+		   of observations for Drake Passage transport and ice shelf
+		   mass loss.
+		   To run: First make sure you have run timeseries_dpt.py,
+		           timeseries_seaice.py, and timeseries_massloss.py
+			   and saved the logfiles in a single directory with
+			   the names dpt.log, seaice.log, and massloss.log. Do
+			   the same for FESOM with the equivalent fesomtools
+			   scripts, with the same names. Then open python or
+			   ipython and type "run mip_timeseries.py". The script
+			   will prompt you for the paths to the ROMS and FESOM
+			   logfile directories, and whether you want to plot
+			   the full timeseries or annual averages (in which case
+			   sea ice area and volume will not be plotted). The
+			   script will create a bunch of png files.
+
+mip_massloss_error_map.py: Make a 2x1 circumpolar Antarctic map of percentage
+                           error in mass loss for each ice shelf, outside the
+			   bounds given by Rignot et al. (2013), in MetROMS
+			   (left) and FESOM (right), for the 2003-2008 average.
+			   To run: First make sure you have run
+			           timeseries_massloss.py for ROMS through to
+				   at least the end of 2008, and the equivalent
+				   timeseries_massloss.py in the "fesomtools"
+				   repository for the FESOM simulation. Then
+				   open python or ipython and type
+				   "run mip_massloss_error_map.py". The script
+				   will prompt you for the path to the ROMS
+				   grid file, the ROMS and FESOM massloss
+				   logfiles, and whether you want to save the
+				   figure (and if so, what filename) or display
+				   it on the screen.
+
+mip_massloss_difference_map.py: Make a circumpolar Antarctic figure showing the
+                                percentage change in mass loss for each ice
+				shelf in the FESOM simulation with respect to
+				the MetROMS simulation, for the 2003-2008
+				average.
+				To run: First make sure you have run
+			                timeseries_massloss.py for ROMS through
+					to at least the end of 2008, and the
+					equivalent timeseries_massloss.py in
+					the "fesomtools" repository for the
+					FESOM simulation. Then open python or
+					ipython and type
+					"run mip_massloss_error_map.py".
+					The script will prompt you for the path
+					to the ROMS grid file, the ROMS and
+					FESOM massloss logfiles, and whether
+					you want to save the figure (and if so,
+					what filename) or display it on the
+					screen.
+
 
 ***UTILITY FUNCTIONS***
 

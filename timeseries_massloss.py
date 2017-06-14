@@ -61,6 +61,7 @@ def timeseries_massloss (file_path, log_path):
                     # Reached the header for the next ice shelf
                     break
             index += 1
+        f.close()
 
     # Calculate dA (masked with ice shelf mask) and lon and lat coordinates
     print 'Analysing grid'
