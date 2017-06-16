@@ -2,10 +2,11 @@ from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
 from matplotlib import rcParams
+from matplotlib.colors import LinearSegmentedColormap
 
 # Make a circumpolar Antarctic figure showing the percentage change in mass
 # loss for each ice shelf in the FESOM simulation with respect to the MetROMS
-# simulation, for the 2003-2008 average.
+# simulation, discarding the first 10 years (i.e. 2002-2016 average).
 # Input:
 # roms_grid = path to ROMS grid file
 # roms_logfile = path to ROMS logfile from timeseries_massloss.py
@@ -19,8 +20,8 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     # Year simulations start
     year_start = 1992
     # Years to analyse 
-    obs_start = 2003
-    obs_end = 2008
+    obs_start = 2002
+    obs_end = 2016
     # Number of output steps per year in FESOM
     peryear = 365/5
 
@@ -81,7 +82,10 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     roms_time = array(roms_time) + year_start
     # Average between observation years
     t_start = nonzero(roms_time >= obs_start)[0][0]
-    t_end = nonzero(roms_time >= obs_end+1)[0][0]
+    if obs_end == 2016:
+        t_end = size(roms_time)
+    else:
+        t_end = nonzero(roms_time >= obs_end+1)[0][0]
     roms_massloss = mean(roms_massloss_ts[:,t_start:t_end], axis=1)
 
     # Read FESOM timeseries
@@ -159,8 +163,13 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     x_reg, y_reg = meshgrid(linspace(-nbdry, nbdry, num=1000), linspace(-nbdry, nbdry, num=1000))
     land_circle = zeros(shape(x_reg))
     land_circle = ma.masked_where(sqrt((x_reg-x_c)**2 + (y_reg-y_c)**2) > radius, land_circle)
-    # Set up colour scale
-    lev = linspace(-200, 200, num=50)
+
+    # Set up colour scale, -100 to 175, 0 is white
+    bound = 170.0
+    min_colour = (-100.0+bound)/(2.0*bound)
+    max_colour = 1.0
+    lev = linspace(-100, bound, num=50)
+    new_cmap = truncate_colormap(get_cmap('RdBu_r'), min_colour, max_colour)
 
     # Plot
     fig = figure(figsize=(16,12))
@@ -172,15 +181,15 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     # Fill in the missing cicle
     contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
     # Now shade the percentage change in mass loss
-    contourf(x, y, massloss_change, lev, cmap='RdBu_r', extend='both')
-    cbar = colorbar(ticks=arange(-200, 200+50, 50))
+    contourf(x, y, massloss_change, lev, cmap=new_cmap)
+    cbar = colorbar(ticks=arange(-100, bound, 50))
     cbar.ax.tick_params(labelsize=20)
     # Add a black contour for the ice shelf front
     rcParams['contour.negative_linestyle'] = 'solid'
     contour(x, y, zice, levels=[min_zice], colors=('black'))
     xlim([-nbdry, nbdry])
     ylim([-nbdry, nbdry])
-    title('% Change in Ice Shelf Mass Loss (2003-2008 average)\nFESOM with respect to MetROMS', fontsize=30)
+    title('% Change in Ice Shelf Mass Loss ('+str(obs_start)+'-'+str(obs_end)+' average)\nFESOM with respect to MetROMS', fontsize=30)
     axis('off')
 
     # Finished
@@ -188,6 +197,14 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
         fig.savefig(fig_name)
     else:
         fig.show()
+
+
+# Truncate colourmap function from https://stackoverflow.com/questions/40929467/how-to-use-and-plot-only-a-part-of-a-colorbar-in-matplotlib
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=-1):
+    if n== -1:
+        n = cmap.N
+    new_cmap = LinearSegmentedColormap.from_list('trunc({name},{a:.2f},{b:.2f})'.format(name=cmap.name, a=minval, b=maxval), cmap(linspace(minval, maxval, n)))
+    return new_cmap
 
 
 if __name__ == "__main__":
@@ -202,5 +219,5 @@ if __name__ == "__main__":
     elif action == 'd':
         save = False
         fig_name = None
-    mip_massloss_difference (roms_grid, roms_logfile, fesom_logfile, save, fig_name)
+    mip_massloss_difference_map(roms_grid, roms_logfile, fesom_logfile, save, fig_name)
     
