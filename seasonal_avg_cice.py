@@ -6,7 +6,7 @@ from numpy import *
 # Input:
 # file_path = path to CICE output file containing 5-day averages, including at
 #             least one complete December-November period. If there are multiple
-#             such instances the last one will be plotted.
+#             such instances the last one will be used.
 # var = variable name
 # shape = vector containing the dimensions (excluding time) of the variable
 # Output:

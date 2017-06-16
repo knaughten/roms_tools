@@ -89,7 +89,7 @@ def romscice_flux_correction (in_file, out_file):
                 print 'Month ' + str(month+1)
                 print 'Day ' + str(day)
                 return
-            # Split between previous month and this month appropriately
+            # Split between this month and next month appropriately
             climatology[next_month,:,:] += restoring[t,:,:]*spill_days
             num_days[next_month] += spill_days
             climatology[month,:,:] += restoring[t,:,:]*(5-spill_days)
