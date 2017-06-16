@@ -1189,7 +1189,19 @@ mip_ismr_fields.py: For each major ice shelf, make a 2x1 plot of the melt rate
 			    "run mip_ismr_fields.py". The script will prompt
 			    you for the paths to these two melt rate files and
 			    the FESOM mesh directory. It will output one png
-			    file for each major ice shelf.			    
+			    file for each major ice shelf.
+
+mip_draft_fields.py: For each major ice shelf, make a 2x1 plot of the ice shelf
+                     draft for MetROMS (left) and FESOM (right), zoomed into
+		     that region.
+		     To run: First clone my "fesomtools" GitHub repository and
+		             replace '/short/y99/kaa561/fesomtools' (near the
+			     top of the file) with the path to the cloned
+			     repository on your system. Then open python or
+			     ipython and type "run mip_draft_fields.py". The
+			     script will prompt you for the paths to the ROMS
+			     grid file and the FESOM mesh directory. It will
+			     output one png file for each major ice shelf.
 
 
 ***UTILITY FUNCTIONS***
