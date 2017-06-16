@@ -374,6 +374,21 @@ plot_layers.py: Plot the terrain-following vertical levels through a given
 			screen, and the script will repeat as many times as you
 			like.
 
+seasonal_climatology_roms.py: Calculate the seasonal climatology (DJF, MAM, JJA,
+                              SON) of ocean temperature and salinity during a
+			      ROMS simulation and save to a NetCDF file.
+			      To run: First make sure your output is saved in
+			              numbered ocean_avg_*.nc files containing
+				      5-day averages. Then open python or
+				      ipython and type
+				      "run seasonal_climatology_roms.py". The
+				      script will prompt you for the path to
+				      the directory containing the ROMS output
+				      files, the file indices to process
+				      (eg ocean_avg_0001.nc to ocean_avg_0102.nc
+				      means indices 1 to 102), and the path
+				      to the desired output file.
+
 
 ***DIAGNOSTIC FIGURES***
 
@@ -1170,38 +1185,36 @@ mip_massloss_difference_map.py: Make a circumpolar Antarctic figure showing the
 					what filename) or display it on the
 					screen.
 
-mip_ismr_fields.py: For each major ice shelf, make a 2x1 plot of the melt rate
-                    field for MetROMS (left) and FESOM (right), zoomed into
-		    that region.
-		    To run: First clone my "fesomtools" GitHub repository and
-		            replace '/short/y99/kaa561/fesomtools' (near the
-			    top of the file) with the path to the cloned
-			    repository on your system. Then time-average the
-			    melt rate field in the ROMS and FESOM output over
-			    whatever time period you want (I went for
-			    2002-2016). The ROMS file must also contain the
-			    mask_rho and zice variables. You can do this with
-			    NCO for ROMS:
-			    ncra -v m,mask_rho,zice <input_files> out_file1.nc
-			    and FESOM:
-			    ncra -v wnet <input_files> out_file2.nc
-			    Then open python or ipython and type
-			    "run mip_ismr_fields.py". The script will prompt
-			    you for the paths to these two melt rate files and
-			    the FESOM mesh directory. It will output one png
-			    file for each major ice shelf.
-
-mip_draft_fields.py: For each major ice shelf, make a 2x1 plot of the ice shelf
-                     draft for MetROMS (left) and FESOM (right), zoomed into
-		     that region.
-		     To run: First clone my "fesomtools" GitHub repository and
-		             replace '/short/y99/kaa561/fesomtools' (near the
-			     top of the file) with the path to the cloned
-			     repository on your system. Then open python or
-			     ipython and type "run mip_draft_fields.py". The
-			     script will prompt you for the paths to the ROMS
-			     grid file and the FESOM mesh directory. It will
-			     output one png file for each major ice shelf.
+mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
+                      field for MetROMS (left) and FESOM (right), zoomed into
+		      that region. Current options are ice shelf draft, ice
+		      shelf melt rate, bottom water temperature, bottom water
+		      salinity, or surface velocity.
+		      To run: First clone my "fesomtools" GitHub repository and
+		              replace '/short/y99/kaa561/fesomtools' (near the
+			      top of the file) with the path to the cloned
+			      repository on your system. Next, for all options
+			      except the ice shelf draft, you will need to make
+			      time-averaged files of ROMS and FESOM output, over
+			      whatever time period you like (I chose 2002-2016)
+			      The ROMS file must also contain the mask_rho and
+			      zice fields. You can make these using NCO, using
+			      melt rate as an example: for ROMS,
+			      ncra -v m,mask_rho,zice <input_files> roms_out.nc
+			      and for FESOM,
+			      ncra -v wnet <input_files> fesom_out.nc
+			      For bottom water temperature, replace "m" and
+			      "wnet" with "temp". For bottom water salinity,
+			      replace with "salt". For surface velocity,
+			      replace with "u,v" as both components of velocity
+			      are needed. Once the files are ready, open python
+			      or ipython and type "run mip_cavity_fields.py".
+			      The script will ask you what variable you want to
+			      plot, and then prompt you for the paths to the
+			      ROMS grid file (for ice shelf draft) or ROMS and
+			      FESOM time-averaged files (for everything else),
+			      and the FESOM mesh directory. It will output one
+			      png for each ice shelf.
 
 
 ***UTILITY FUNCTIONS***
