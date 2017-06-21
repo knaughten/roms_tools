@@ -74,13 +74,13 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
         u_tmp = id.variables['u'][0,0,:,:]
         v_tmp = id.variables['v'][0,0,:,:]
         # Interpolate both to the rho-grid
-        w_bdry_u = 0.5*(u[:,0] + u[:,-1])
-        middle_u = 0.5*(u[:,0:-1] + u[:,1:])
+        w_bdry_u = 0.5*(u_tmp[:,0] + u_tmp[:,-1])
+        middle_u = 0.5*(u_tmp[:,0:-1] + u_tmp[:,1:])
         e_bdry_u = w_bdry_u[:]
         u_rho = ma.concatenate((w_bdry_u[:,None], middle_u, e_bdry_u[:,None]), axis=1)
-        s_bdry_v = v[0,:]
-        middle_v = 0.5*(v[0:-1,:] + v[1:,:])
-        n_bdry_v = v[-1,:]
+        s_bdry_v = v_tmp[0,:]
+        middle_v = 0.5*(v_tmp[0:-1,:] + v_tmp[1:,:])
+        n_bdry_v = v_tmp[-1,:]
         v_rho = ma.concatenate((s_bdry_v[None,:], middle_v, n_bdry_v[None,:]), axis=0)
         # Get speed
         roms_data = sqrt(u_rho**2 + v_rho**2)
@@ -278,8 +278,8 @@ if __name__ == "__main__":
         roms_file = raw_input("Path to ROMS grid file: ")
         fesom_file = None
     else:
-        roms_file = raw_input("Path to ROMS time-averaged melt rate file: ")
-        fesom_file = raw_input("Path to FESOM time-averaged melt rate file: ")
+        roms_file = raw_input("Path to ROMS time-averaged file: ")
+        fesom_file = raw_input("Path to FESOM time-averaged file: ")
         if var_key == 2:
             var_name = 'melt'
         elif var_key == 3:

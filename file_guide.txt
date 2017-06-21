@@ -365,6 +365,20 @@ seasonal_climatology_roms.py: Calculate the seasonal climatology (DJF, MAM, JJA,
 				      means indices 1 to 102), and the path
 				      to the desired output file.
 
+seasonal_climatology_cice.py: Calculate the seasonal climatology (DJF, MAM, JJA,
+                              SON) of sea ice concentration and thickness
+			      during a CICE simulation and save to a NetCDF
+			      file.
+			      To run: First make sure your output is saved in
+			              a single directory with the form
+				      iceh.*.nc, each containing one 5-day
+				      average, with no other files of that form
+				      in that directory. Then open python or
+				      ipython and type
+				      "run seasonal_climatology_cice.py". The
+				      script wil prompt you for the path to this
+				      directory and to the desired output file.
+
 
 ***DIAGNOSTIC FIGURES***
 
