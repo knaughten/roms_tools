@@ -77,30 +77,6 @@ romscice_atm_subdaily.py: Convert 100 6-hour timesteps of an ERA-Interim
 				  is designed to be called by a self-submitting
 				  batch job, e.g. convert_era.job.
 
-fill_clouds.py: The ERA-Interim dataset for 6-hour total cloud cover has some
-                missing timesteps. This script interpolates the missing
-		timesteps in a given file based on existing timesteps in that
-		file, at the same time of day and a similar time of year.
-		To run: Open python or ipython, and type "from fill_clouds
-		        import *", then "fix_file('filename')" where filename
-			is the path to the ERA-Interim file that has missing
-			timesteps. You can also easily call it in a loop, e.g.
-			for year in range(1992, 2005+1):
-			    fix_file('../data/ERA_Interim/AN_'+str(year)+'_unlim.nc')
-
-romscice_atm_smooth.py: At the beginning of spinups, when the ocean is
-                        initially motionless, ROMS can blow up easily if
-			immediately forced with sub-daily atmospheric forcing
-			due to the strong but transient storms. To counteract
-			this problem, this script smooths the given forcing
-			files using a simple moving average (currently 5 days,
-			but can be easily changed).
-			To run: Edit the user parameters near the bottom of the
-			        file (paths to forcing files, variable names,
-				interval to smooth over, etc) then open python
-				or ipython and type "run
-				roms_cice_atm_smooth.py".
-
 romscice_atm_monthly.py: Convert ERA-Interim files of monthly averaged
                          atmospheric forcing to ROMS-CICE input forcing files
 			 on the correct grid and with the correct units.
