@@ -2,21 +2,22 @@ from numpy import *
 from matplotlib.pyplot import *
 
 # Plot MetROMS and FESOM timeseries together, for Drake Passage transport, total
-# Antarctic sea ice area and volume, and basal mass loss for major ice shelves.
+# Antarctic sea ice area and volume, Antarctic sea ice extent, and basal mass
+# loss for major ice shelves.
 # Include the range of observations for Drake Passage transport and ice shelf
 # mass loss.
 # Input:
 # roms_dir = path to ROMS directory containing logfiles from timeseries_dpt.py,
-#            timeseries_seaice.py, and timeseries_massloss.py. It is assumed
-#            they are saved with the filenames dpt.log, seaice.log, and
-#            massloss.log.
+#            timeseries_seaice.py, timeserires_seaice_extent.py, and 
+#            timeseries_massloss.py. It is assumed they are saved with the
+#            filenames dpt.log, seaice.log, seaice_extent.log, and massloss.log.
 # fesom_dir = path to FESOM directory containing logfiles from the equivalent
 #             "fesomtools" scripts with the same names. It is assumed they are
-#             also saved with the filenames dpt.log, seaice.log, and
-#             massloss.log.
+#             also saved with the filenames dpt.log, seaice.log,
+#             seaice_extent.log, and massloss.log.
 # annual = optional boolean indicating to calculate annual averages of Drake
 #          Passage transport and ice shelf mass loss, and to not bother with
-#          sea ice area and volume.
+#          sea ice area, volume, and extent.
 def mip_timeseries (roms_dir, fesom_dir, annual=False):
 
     # Averaging period (days)
@@ -181,6 +182,45 @@ def mip_timeseries (roms_dir, fesom_dir, annual=False):
         ax.set_position([box.x0, box.y0, box.width*0.8, box.height])
         ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
         fig.savefig('seaice_volume.png')
+
+    # Sea ice extent
+    if not annual:
+        # Read ROMS timeseries
+        roms_iceextent = []
+        f = open(roms_dir + 'seaice_extent.log', 'r')
+        # Skip the first line (header for time array)
+        f.readline()
+        for line in f:
+            # Skip the time values (already have them from DPT)
+            try:
+                tmp = float(line)
+            except(ValueError):
+                # Reached the header for the next variable
+                break
+        # Sea ice extent
+        for line in f:
+            roms_iceextent.append(float(line))
+        f.close()
+        # Read FESOM timeseries
+        fesom_iceextent = []
+        f = open(fesom_dir + 'seaice_extent.log', 'r')
+        f.readline()
+        for line in f:
+            fesom_iceextent.append(float(line))
+        f.close()
+        # Plot
+        fig, ax = subplots(figsize=(10,6))
+        ax.plot(roms_time, roms_iceextent, label=model_titles[0], color=model_colours[0], linewidth=1)
+        ax.plot(fesom_time, fesom_iceextent, label=model_titles[1], color=model_colours[1], linewidth=1)
+        title('Antarctic Sea Ice Extent', fontsize=18)
+        xlabel('Year', fontsize=14)
+        ylabel(r'million km$^2$', fontsize=14)
+        xlim([year_start, max_time])
+        grid(True)
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width*0.8, box.height])
+        ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
+        fig.savefig('seaice_extent.png')
 
     # Ice shelf mass loss
     # Read ROMS timeseries

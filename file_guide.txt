@@ -972,6 +972,23 @@ temp_salt_slice.py: Create a 2x1 plot showing zonal slices (depth vs latitude)
 			    on the screen. This script repeats as many times
 			    as you want.			    
 
+timeseries_seaice_extent.py: Calculate and plot timeseries of sea ice extent
+                             (area of ice with concentration >= 15%) during a
+			     ROMS-CICE simulation.
+			     To run: Open python or ipython and type
+		                     "run timeseries_seaice_extent.py". The
+				     script will prompt you for the paths to
+				     the CICE history file and the log file.
+
+timeseries_massloss_depth.py: Plot timeseries of total basal mass loss and
+                              area-averaged ice shelf melt rates split up into
+			      3 different depth classes for the ice shelf draft.
+			      To run: Open python or ipython, and type
+			              "run timeseries_massloss_depth.py". The
+				      script will prompt you for the paths to
+				      the ocean history or averages file and
+				      the log file.
+
 
 ***FIGURES FOR ADVECTION PAPER***
 
@@ -1121,22 +1138,24 @@ mip_grid_res.py: Make a 2x1 plot showing horizontal grid resolution (square
 			 if so, what filename) or display it on the screen.
 
 mip_timeseries.py: Plot MetROMS and FESOM timeseries together, for Drake
-                   Passage transport, total Antarctic sea ice area and volume,
-		   and basal mass loss for major ice shelves. Include the range
-		   of observations for Drake Passage transport and ice shelf
-		   mass loss.
+                   Passage transport, total Antarctic sea ice area, volume, and
+		   extent, and basal mass loss for major ice shelves. Include
+		   the range of observations for Drake Passage transport and
+		   ice shelf mass loss.
 		   To run: First make sure you have run timeseries_dpt.py,
-		           timeseries_seaice.py, and timeseries_massloss.py
-			   and saved the logfiles in a single directory with
-			   the names dpt.log, seaice.log, and massloss.log. Do
+		           timeseries_seaice.py, timeseries_seaice_extent.py,
+			   and timeseries_massloss.py and saved the logfiles in
+			   a single directory with the names dpt.log,
+			   seaice.log, seaice_extent.log, and massloss.log. Do
 			   the same for FESOM with the equivalent fesomtools
 			   scripts, with the same names. Then open python or
 			   ipython and type "run mip_timeseries.py". The script
 			   will prompt you for the paths to the ROMS and FESOM
 			   logfile directories, and whether you want to plot
 			   the full timeseries or annual averages (in which case
-			   sea ice area and volume will not be plotted). The
-			   script will create a bunch of png files.
+			   sea ice area, volume, and extent will not be
+			   plotted). The script will create a bunch of png
+			   files.
 
 mip_massloss_error_map.py: Make a 2x1 circumpolar Antarctic map of percentage
                            error in mass loss for each ice shelf, outside the
@@ -1205,6 +1224,65 @@ mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
 			      FESOM time-averaged files (for everything else),
 			      and the FESOM mesh directory. It will output one
 			      png for each ice shelf.
+
+mip_aice_hi_seasonal.py: Make two 4x2 plots, showing seasonal averages of
+                         either sea ice concentration or effective thickness
+			 (concentration*height), comparing MetROMS (top) and
+			 FESOM (bottom).
+			 To run: First clone my "fesomtools" GitHub repository
+			         and replace '/short/y99/kaa561/fesomtools'
+				 (near the top of the file) with the path to
+				 the cloned repository on your system. Next,
+				 make seasonal climatologies of sea ice
+				 concentration and thickness for both MetROMS
+				 and FESOM during the entire simulation, using
+				 seasonal_climatology_cice.py (in roms_tools)
+				 and seasonal_climatology.py (in fesomtools).
+				 Once the files are ready, open python or
+				 ipython and type "run mip_aice_hi_seasonal.py".
+				 The script will prompt you for paths to these
+				 files as well as the FESOM mesh directory.
+				 It will output two png files.
+
+mip_aice_minmax_nsidc.py: Make a 3x2 plot showing February (top) and August
+                          (bottom) sea ice concentration (1992-2015 average) for
+			  NSIDC, MetROMS, and FESOM.
+			  To run: First clone my "fesomtools" GitHub repository
+			          and replace '/short/y99/kaa561/fesomtools'
+				  (near the top of the file) with the path to
+				  the cloned repository on your system. Next,
+				  download the NSIDC Climate Data Record monthly
+				  averages of Southern Hemisphere sea ice
+				  concentration, and make sure the variables
+				  nsidc_* near the top of the file will
+				  reconstruct the right filenames on your
+				  system. Then open python or ipython and type
+				  "run mip_aice_minmax_nsidc.py". The script
+				  will prompt you for paths to the CICE file
+				  containing 5-day averages for the entire
+				  simulation, the FESOM mesh directory, and the
+				  FESOM output directory containing one
+				  ice.mean.nc file (5-day averages) for each
+				  year. It will output a png file.
+
+mip_zonal_cavity_ts.py: Create one 2x2 plot for each major ice shelf: zonal
+                        slices of temperature (top) and salinity (bottom),
+			comparing MetROMS (left) and FESOM (right). Longitudes
+			to slice through, and latitude bounds, are
+			pre-determined.
+			To run: First clone my "fesomtools" GitHub repository
+			        and replace '/short/y99/kaa561/fesomtools'
+			        (near the top of the file) with the path to the
+				cloned repository on your system. Next,
+				for both ROMS and FESOM, make a new NetCDF file
+				containing 3D temperature and salinity averaged
+				over whatever time period you want (I went for
+				2002-2015). Then open python or ipython and
+				type "run mip_zonal_cavity_ts.py". The script
+				will prompt you for the paths to these
+				time-averaged files as well as the ROMS grid
+				file and the FESOM mesh directory. It will
+				output one png for each ice shelf.
 
 
 ***UTILITY FUNCTIONS***
