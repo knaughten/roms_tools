@@ -5,9 +5,11 @@ from matplotlib.pyplot import *
 from matplotlib.cm import *
 from matplotlib.colors import LinearSegmentedColormap
 from rotate_vector_roms import *
+from cartesian_grid_3d import *
 # Import FESOM scripts (have to modify path first)
 import sys
 sys.path.insert(0, '/short/y99/kaa561/fesomtools')
+from fesom_grid import *
 from patches import *
 from unrotate_vector import *
 from unrotate_grid import *
@@ -15,11 +17,12 @@ from unrotate_grid import *
 # For each major ice shelf, make a 2x1 plot of the given field for MetROMS
 # (left) and FESOM (right), zoomed into that region. Current options are
 # ice shelf draft, ice shelf melt rate, bottom water temperature, bottom water
-# salinity, or surface velocity (with vectors overlaid).
+# salinity, surface velocity (with vectors overlaid), or vertically averaged
+# velocity (with vectors overlaid).
 # Input:
-# var_name = 'draft', 'melt', 'temp', 'salt', or 'vel'
-# roms_grid = if var_name='draft' or 'vel', path to the ROMS grid file;
-#             otherwise, None
+# var_name = 'draft', 'melt', 'temp', 'salt', 'vsfc', 'vavg'
+# roms_grid = if var_name='draft', 'vsfc', or 'vavg', path to the ROMS grid
+#             file; otherwise, None
 # roms_file = if var_name='draft', None; otherwise, path to the ROMS file
 #             containing the given field (m, temp, salt, u and v) time-averaged
 #             over the desired period. Must also include the mask_rho and zice
@@ -53,6 +56,11 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
     lat_c = -83
     radius = 10.1
     nbdry = -63+90
+    # ROMS vertical grid parameters
+    theta_s = 7.0
+    theta_b = 2.0
+    hc = 250
+    N = 31
     # Number of bins in each direction for vector overlay
     num_bins = 50
 
@@ -77,16 +85,37 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
     elif var_name == 'salt':
         # Bottom layer
         roms_data = id.variables['salt'][0,0,:,:]
-    elif var_name == 'vel':
-        # Read surface u and v
-        u_tmp = id.variables['u'][0,0,:,:]
-        v_tmp = id.variables['v'][0,0,:,:]
+    elif var_name in ['vsfc', 'vavg']:
         # Get angle from the grid file
         id2 = Dataset(roms_grid, 'r')
         angle = id2.variables['angle'][:,:]
         id2.close()
-        # Interpolate to rho grid and unrotate
-        u_rho, v_rho = rotate_vector_roms(u_tmp, v_tmp, angle)
+        if var_name == 'vsfc':
+            # Read surface u and v
+            u_tmp = id.variables['u'][0,0,:,:]
+            v_tmp = id.variables['v'][0,0,:,:]
+            # Interpolate to rho grid and unrotate
+            u_rho, v_rho = rotate_vector_roms(u_tmp, v_tmp, angle)
+        elif var_name == 'vavg':
+            # Read full 3D u and v
+            u_3d_tmp = id.variables['u'][0,:,:,:]
+            v_3d_tmp = id.variables['v'][0,:,:,:]
+            # Read bathymetry from grid file
+            id2 = Dataset(roms_grid, 'r')
+            roms_h = id2.variables['h'][:,:]
+            id2.close()
+            # Get integrands on 3D grid; we only care about dz
+            dx, dy, dz, z = cartesian_grid_3d(roms_lon, roms_lat, roms_h, roms_zice, theta_s, theta_b, hc, N)
+            # Unrotate each vertical level
+            u_3d = ma.empty(shape(dz))
+            v_3d = ma.empty(shape(dz))
+            for k in range(N):
+                u_k, v_k = rotate_vector_roms(u_3d_tmp[k,:,:], v_3d_tmp[k,:,:], angle)
+                u_3d[k,:,:] = u_k
+                v_3d[k,:,:] = v_k
+            # Vertically average u and v
+            u_rho = sum(u_3d*dz, axis=0)/sum(dz, axis=0)
+            v_rho = sum(v_3d*dz, axis=0)/sum(dz, axis=0)          
         # Get speed
         roms_data = sqrt(u_rho**2 + v_rho**2)
     id.close()
@@ -126,33 +155,10 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
         elif var_name == 'salt':
             # Read full 3D field for now
             node_data = id.variables['salt'][0,:]
-        elif var_name == 'vel':
+        elif var_name in ['vsfc', 'vavg']:
             # The overlaid vectors are based on nodes not elements, so many
             # of the fesom_grid data structures fail to apply and we need to
             # read some of the FESOM grid files again.
-            # First we need rotated lat and lon for each node
-            f = open(fesom_mesh_path + 'nod3d.out', 'r')
-            f.readline()
-            rlon = []
-            rlat = []
-            for line in f:
-                tmp = line.split()
-                lon_tmp = float(tmp[1])
-                lat_tmp = float(tmp[2])
-                if lon_tmp < -180:
-                    lon_tmp += 360
-                elif lon_tmp > 180:
-                    lon_tmp -= 360
-                rlon.append(lon_tmp)
-                rlat.append(lat_tmp)
-            f.close()
-            rlon = array(rlon)
-            rlat = array(rlat)
-            # Unrotate longitude
-            fesom_lon, fesom_lat = unrotate_grid(rlon, rlat)
-            # Calculate polar coordinates of each node
-            fesom_x = -(fesom_lat+90)*cos(fesom_lon*deg2rad+pi/2)
-            fesom_y = (fesom_lat+90)*sin(fesom_lon*deg2rad+pi/2)
             # Read the cavity flag for each 2D surface node
             fesom_cavity = []
             f = open(fesom_mesh_path + 'cavity_flag_nod2d.out', 'r')
@@ -168,10 +174,77 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             f.close()
             # Save the number of 2D nodes
             fesom_n2d = len(fesom_cavity)
+            # Reed rotated lat and lon for each node; also read depth which is
+            # needed for vertically averaged velocity
+            f = open(fesom_mesh_path + 'nod3d.out', 'r')
+            f.readline()
+            rlon = []
+            rlat = []
+            node_depth = []
+            for line in f:
+                tmp = line.split()
+                lon_tmp = float(tmp[1])
+                lat_tmp = float(tmp[2])
+                node_depth_tmp = -1*float(tmp[3])
+                if lon_tmp < -180:
+                    lon_tmp += 360
+                elif lon_tmp > 180:
+                    lon_tmp -= 360
+                rlon.append(lon_tmp)
+                rlat.append(lat_tmp)
+                node_depth.append(node_depth_tmp)
+            f.close()
+            # For lat and lon, only care about the 2D nodes (the first
+            # fesom_n2d indices)
+            rlon = array(rlon[0:fesom_n2d])
+            rlat = array(rlat[0:fesom_n2d])
+            node_depth = array(node_depth)
+            # Unrotate longitude
+            fesom_lon, fesom_lat = unrotate_grid(rlon, rlat)
+            # Calculate polar coordinates of each node
+            fesom_x = -(fesom_lat+90)*cos(fesom_lon*deg2rad+pi/2)
+            fesom_y = (fesom_lat+90)*sin(fesom_lon*deg2rad+pi/2)
+            if var_name == 'vavg':
+                # Read lists of which nodes are directly below which
+                f = open(fesom_mesh_path + 'aux3d.out', 'r')
+                max_num_layers = int(f.readline())
+                node_columns = zeros([fesom_n2d, max_num_layers])
+                for n in range(fesom_n2d):
+                    for k in range(max_num_layers):
+                        node_columns[n,k] = int(f.readline())
+                node_columns = node_columns.astype(int)
+                f.close()
             # Now we can actually read the data
             # Read full 3D field for both u and v
-            node_ur = id.variables['u'][0,:]
-            node_vr = id.variables['v'][0,:]
+            node_ur_3d = id.variables['u'][0,:]
+            node_vr_3d = id.variables['v'][0,:]
+            if var_name == 'vsfc':
+                # Only care about the first fesom_n2d nodes (surface)
+                node_ur = node_ur_3d[0:fesom_n2d]
+                node_vr = node_vr_3d[0:fesom_n2d]
+            elif var_name == 'vavg':
+                # Vertically average
+                node_ur = zeros(fesom_n2d)
+                node_vr = zeros(fesom_n2d)
+                for n in range(fesom_n2d):
+                    # Integrate udz, vdz, and dz over this water column
+                    udz_col = 0
+                    vdz_col = 0
+                    dz_col = 0
+                    for k in range(max_num_layers-1):
+                        if node_columns[n,k+1] == -999:
+                            # Reached the bottom
+                            break
+                        # Trapezoidal rule
+                        top_id = node_columns[n,k]
+                        bot_id = node_columns[n,k+1]
+                        dz_tmp = node_depth[bot_id-1] - node_depth[top_id-1]
+                        udz_col += 0.5*(node_ur_3d[top_id-1]+node_ur_3d[bot_id-1])*dz_tmp
+                        vdz_col += 0.5*(node_vr_3d[top_id-1]+node_vr_3d[bot_id-1])*dz_tmp
+                        dz_col += dz_tmp
+                    # Convert from integrals to averages
+                    node_ur[n] = udz_col/dz_col
+                    node_vr[n] = vdz_col/dz_col
             # Unrotate
             node_u, node_v = unrotate_vector(rlon, rlat, node_ur, node_vr)
             # Calculate speed
@@ -186,8 +259,8 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             if var_name == 'draft':
                 # Ice shelf draft is depth of surface layer
                 fesom_data.append(mean([elm.nodes[0].depth, elm.nodes[1].depth, elm.nodes[2].depth]))
-            elif var_name in ['melt', 'vel']:
-                # Surface nodes
+            elif var_name in ['melt', 'vsfc', 'vavg']:
+                # Surface nodes (or 2D in the case of vavg)
                 fesom_data.append(mean([node_data[elm.nodes[0].id], node_data[elm.nodes[1].id], node_data[elm.nodes[2].id]]))
             elif var_name in ['temp', 'salt']:
                 # Bottom nodes
@@ -263,7 +336,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             colour_map = mf_cmap
         else:
             colour_map = 'jet'
-        if var_name == 'vel':
+        if var_name in ['vsfc', 'vavg']:
             # Make vectors for overlay
             # Set up bins (edges)
             x_bins = linspace(x_min, x_max, num=num_bins+1)
@@ -314,9 +387,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             theta_circ_fesom = theta_fesom - fesom_lon*deg2rad
             u_circ_fesom = node_data*cos(theta_circ_fesom) # node_data is speed
             v_circ_fesom = node_data*sin(theta_circ_fesom)
-            # The surface nodes are listed first in all FESOM output, so we
-            # only care about the first n2d nodes.
-            # Loop over them to fill in the velocity bins as before.
+            # Loop over 2D nodes to fill in the velocity bins as before
             for n in range(fesom_n2d):
                 if fesom_cavity[n]:
                     if fesom_x[n] > x_min and fesom_x[n] < x_max and fesom_y[n] > y_min and fesom_y[n] < y_max:
@@ -341,7 +412,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
         contourf(x_reg_roms, y_reg_roms, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
         # Now shade the data
         pcolor(roms_x, roms_y, roms_data, vmin=var_min, vmax=var_max, cmap=colour_map)
-        if var_name == 'vel':
+        if var_name in ['vsfc', 'vavg']:
             # Overlay vectors
             quiver(x_centres, y_centres, roms_u, roms_v, scale=1.5, color='black')
         xlim([x_min, x_max])
@@ -362,8 +433,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
         overlay = PatchCollection(mask_patches, facecolor=(1,1,1))
         overlay.set_edgecolor('face')
         ax2.add_collection(overlay)
-        if var_name == 'vel':
-            # Overlay vectors
+        if var_name in ['vsfc', 'vavg']:
             quiver(x_centres, y_centres, fesom_u, fesom_v, scale=1.5, color='black')
         xlim([x_min, x_max])
         ylim([y_min, y_max])
@@ -382,8 +452,10 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             title_string = r' bottom water temperature ($^{\circ}$C)'
         elif var_name == 'salt':
             title_string = ' bottom water salinity (psu)'
-        elif var_name == 'vel':
+        elif var_name == 'vsfc':
             title_string = ' surface velocity (m/s)'
+        elif var_name == 'vavg':
+            title_string = ' vertically averaged velocity (m/s)'
         suptitle(shelf_names[index] + title_string, fontsize=30)
         subplots_adjust(wspace=0.05)
         #fig.show()
@@ -393,7 +465,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
 # Command-line interface
 if __name__ == "__main__":
 
-    var_key = int(raw_input("Ice shelf draft (1), melt rate (2), bottom water temperature (3), bottom water salinity (4), or surface velocity (5)? "))
+    var_key = int(raw_input("Ice shelf draft (1), melt rate (2), bottom water temperature (3), bottom water salinity (4), surface velocity (5), or vertically averaged velocity (6)? "))
     if var_key == 1:
         var_name = 'draft'
     elif var_key == 2:
@@ -403,8 +475,10 @@ if __name__ == "__main__":
     elif var_key == 4:
         var_name = 'salt'
     elif var_key == 5:
-        var_name = 'vel'
-    if var_name in ['draft', 'vel']:
+        var_name = 'vsfc'
+    elif var_key == 6:
+        var_name = 'vavg'
+    if var_name in ['draft', 'vsfc', 'vavg']:
         roms_grid = raw_input("Path to ROMS grid file: ")
     else:
         roms_grid = None

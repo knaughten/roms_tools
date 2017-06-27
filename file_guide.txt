@@ -1198,7 +1198,8 @@ mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
                       field for MetROMS (left) and FESOM (right), zoomed into
 		      that region. Current options are ice shelf draft, ice
 		      shelf melt rate, bottom water temperature, bottom water
-		      salinity, or surface velocity (with overlaid vectors).
+		      salinity, surface velocity (with overlaid vectors), or
+		      vertically averaged velocity (with overlaid vectors).
 		      To run: First clone my "fesomtools" GitHub repository and
 		              replace '/short/y99/kaa561/fesomtools' (near the
 			      top of the file) with the path to the cloned
