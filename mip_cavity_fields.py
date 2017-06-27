@@ -9,26 +9,29 @@ from rotate_vector_roms import *
 import sys
 sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from patches import *
+from unrotate_vector import *
+from unrotate_grid import *
 
 # For each major ice shelf, make a 2x1 plot of the given field for MetROMS
 # (left) and FESOM (right), zoomed into that region. Current options are
 # ice shelf draft, ice shelf melt rate, bottom water temperature, bottom water
-# salinity, or surface velocity.
+# salinity, or surface velocity (with vectors overlaid).
 # Input:
 # var_name = 'draft', 'melt', 'temp', 'salt', or 'vel'
-# roms_file = if var_name='draft', path to the ROMS grid file; otherwise, path
-#             to the ROMS file containing the given field (m, temp, salt, u and
-#             v) time-averaged over the desired period. Must also include the
-#             mask_rho and zice fields. You can create this using NCO with (for
-#             the melt rate)
+# roms_grid = if var_name='draft' or 'vel', path to the ROMS grid file;
+#             otherwise, None
+# roms_file = if var_name='draft', None; otherwise, path to the ROMS file
+#             containing the given field (m, temp, salt, u and v) time-averaged
+#             over the desired period. Must also include the mask_rho and zice
+#             fields. You can create this using NCO with (for the melt rate)
 #             ncra -v m,mask_rho,zice <input_file_list> output_file.nc
+# fesom_mesh_path = path to FESOM mesh directory
 # fesom_file = if var_name='draft', None; otherwise, path to the FESOM file
 #              containing the given field (wnet, temp, salt, u and v)
 #              time-averaged over the same period as ROMS. You can create this
 #              using NCO with (for the melt rate)
 #              ncra -v wnet <input_file_list> output_file.nc
-# fesom_mesh_path = path to FESOM mesh directory
-def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
+def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_file):
 
     # Name of each ice shelf
     shelf_names = ['Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
@@ -50,9 +53,14 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
     lat_c = -83
     radius = 10.1
     nbdry = -63+90
+    # Number of bins in each direction for vector overlay
+    num_bins = 50
 
     print 'Reading ROMS fields'
-    id = Dataset(roms_file, 'r')
+    if var_name == 'draft':
+        id = Dataset(roms_grid, 'r')
+    else:
+        id = Dataset(roms_file, 'r')
     roms_lon = id.variables['lon_rho'][:,:]
     roms_lat = id.variables['lat_rho'][:,:]
     roms_mask = id.variables['mask_rho'][:,:]
@@ -73,15 +81,12 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
         # Read surface u and v
         u_tmp = id.variables['u'][0,0,:,:]
         v_tmp = id.variables['v'][0,0,:,:]
-        # Interpolate both to the rho-grid
-        w_bdry_u = 0.5*(u_tmp[:,0] + u_tmp[:,-1])
-        middle_u = 0.5*(u_tmp[:,0:-1] + u_tmp[:,1:])
-        e_bdry_u = w_bdry_u[:]
-        u_rho = ma.concatenate((w_bdry_u[:,None], middle_u, e_bdry_u[:,None]), axis=1)
-        s_bdry_v = v_tmp[0,:]
-        middle_v = 0.5*(v_tmp[0:-1,:] + v_tmp[1:,:])
-        n_bdry_v = v_tmp[-1,:]
-        v_rho = ma.concatenate((s_bdry_v[None,:], middle_v, n_bdry_v[None,:]), axis=0)
+        # Get angle from the grid file
+        id2 = Dataset(roms_grid, 'r')
+        angle = id2.variables['angle'][:,:]
+        id2.close()
+        # Interpolate to rho grid and unrotate
+        u_rho, v_rho = rotate_vector_roms(u_tmp, v_tmp, angle)
         # Get speed
         roms_data = sqrt(u_rho**2 + v_rho**2)
     id.close()
@@ -107,7 +112,6 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
     elements, mask_patches = make_patches(fesom_mesh_path, circumpolar=True, mask_cavities=True)
     # Unmask ice shelves
     patches = iceshelf_mask(elements)
-
     if var_name == 'draft':
         # Nothing more to read
         pass
@@ -123,9 +127,53 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
             # Read full 3D field for now
             node_data = id.variables['salt'][0,:]
         elif var_name == 'vel':
+            # The overlaid vectors are based on nodes not elements, so many
+            # of the fesom_grid data structures fail to apply and we need to
+            # read some of the FESOM grid files again.
+            # First we need rotated lat and lon for each node
+            f = open(fesom_mesh_path + 'nod3d.out', 'r')
+            f.readline()
+            rlon = []
+            rlat = []
+            for line in f:
+                tmp = line.split()
+                lon_tmp = float(tmp[1])
+                lat_tmp = float(tmp[2])
+                if lon_tmp < -180:
+                    lon_tmp += 360
+                elif lon_tmp > 180:
+                    lon_tmp -= 360
+                rlon.append(lon_tmp)
+                rlat.append(lat_tmp)
+            f.close()
+            rlon = array(rlon)
+            rlat = array(rlat)
+            # Unrotate longitude
+            fesom_lon, fesom_lat = unrotate_grid(rlon, rlat)
+            # Calculate polar coordinates of each node
+            fesom_x = -(fesom_lat+90)*cos(fesom_lon*deg2rad+pi/2)
+            fesom_y = (fesom_lat+90)*sin(fesom_lon*deg2rad+pi/2)
+            # Read the cavity flag for each 2D surface node
+            fesom_cavity = []
+            f = open(fesom_mesh_path + 'cavity_flag_nod2d.out', 'r')
+            for line in f:
+                tmp = int(line)
+                if tmp == 1:
+                    fesom_cavity.append(True)
+                elif tmp == 0:
+                    fesom_cavity.append(False)
+                else:
+                    print 'Problem'
+                    #return
+            f.close()
+            # Save the number of 2D nodes
+            fesom_n2d = len(fesom_cavity)
+            # Now we can actually read the data
             # Read full 3D field for both u and v
-            node_u = id.variables['u'][0,:]
-            node_v = id.variables['v'][0,:]
+            node_ur = id.variables['u'][0,:]
+            node_vr = id.variables['v'][0,:]
+            # Unrotate
+            node_u, node_v = unrotate_vector(rlon, rlat, node_ur, node_vr)
             # Calculate speed
             node_data = sqrt(node_u**2 + node_v**2)
         id.close()
@@ -215,6 +263,73 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
             colour_map = mf_cmap
         else:
             colour_map = 'jet'
+        if var_name == 'vel':
+            # Make vectors for overlay
+            # Set up bins (edges)
+            x_bins = linspace(x_min, x_max, num=num_bins+1)
+            y_bins = linspace(y_min, y_max, num=num_bins+1)
+            # Calculate centres of bins (for plotting)
+            x_centres = 0.5*(x_bins[:-1] + x_bins[1:])
+            y_centres = 0.5*(y_bins[:-1] + y_bins[1:])
+            # ROMS
+            # First set up arrays to integrate velocity in each bin
+            # Simple averaging of all the points inside each bin
+            roms_u = zeros([size(y_centres), size(x_centres)])
+            roms_v = zeros([size(y_centres), size(x_centres)])
+            roms_num_pts = zeros([size(y_centres), size(x_centres)])
+            # First convert to polar coordinates, rotate to account for
+            # longitude in circumpolar projection, and convert back to vector
+            # components
+            theta_roms = arctan2(v_rho, u_rho)
+            theta_circ_roms = theta_roms - roms_lon*deg2rad
+            u_circ_roms = roms_data*cos(theta_circ_roms) # roms_data is speed
+            v_circ_roms = roms_data*sin(theta_circ_roms)
+            # Loop over all points (can't find a better way to do this)
+            for j in range(size(roms_data,0)):
+                for i in range(size(roms_data,1)):
+                    # Make sure data isn't masked
+                    if u_circ_roms[j,i] is not ma.masked:
+                        # Check if we're in the region of interest
+                        if roms_x[j,i] > x_min and roms_x[j,i] < x_max and roms_y[j,i] > y_min and roms_y[j,i] < y_max:
+                            # Figure out which bins this falls into
+                            x_index = nonzero(x_bins > roms_x[j,i])[0][0]-1
+                            y_index = nonzero(y_bins > roms_y[j,i])[0][0]-1
+                            # Integrate
+                            roms_u[y_index, x_index] += u_circ_roms[j,i]
+                            roms_v[y_index, x_index] += v_circ_roms[j,i]
+                            roms_num_pts[y_index, x_index] += 1
+            # Convert from sums to averages
+            # First mask out points with no data
+            roms_u = ma.masked_where(roms_num_pts==0, roms_u)
+            roms_v = ma.masked_where(roms_num_pts==0, roms_v)
+            # Divide everything else by the number of points
+            flag = roms_num_pts > 0
+            roms_u[flag] = roms_u[flag]/roms_num_pts[flag]
+            roms_v[flag] = roms_v[flag]/roms_num_pts[flag]
+            # FESOM
+            fesom_u = zeros([size(y_centres), size(x_centres)])
+            fesom_v = zeros([size(y_centres), size(x_centres)])
+            fesom_num_pts = zeros([size(y_centres), size(x_centres)])
+            theta_fesom = arctan2(node_v, node_u)
+            theta_circ_fesom = theta_fesom - fesom_lon*deg2rad
+            u_circ_fesom = node_data*cos(theta_circ_fesom) # node_data is speed
+            v_circ_fesom = node_data*sin(theta_circ_fesom)
+            # The surface nodes are listed first in all FESOM output, so we
+            # only care about the first n2d nodes.
+            # Loop over them to fill in the velocity bins as before.
+            for n in range(fesom_n2d):
+                if fesom_cavity[n]:
+                    if fesom_x[n] > x_min and fesom_x[n] < x_max and fesom_y[n] > y_min and fesom_y[n] < y_max:
+                        x_index = nonzero(x_bins > fesom_x[n])[0][0]-1
+                        y_index = nonzero(y_bins > fesom_y[n])[0][0]-1
+                        fesom_u[y_index, x_index] += u_circ_fesom[n]
+                        fesom_v[y_index, x_index] += v_circ_fesom[n]
+                        fesom_num_pts[y_index, x_index] += 1
+            fesom_u = ma.masked_where(fesom_num_pts==0, fesom_u)
+            fesom_v = ma.masked_where(fesom_num_pts==0, fesom_v)
+            flag = fesom_num_pts > 0
+            fesom_u[flag] = fesom_u[flag]/fesom_num_pts[flag]
+            fesom_v[flag] = fesom_v[flag]/fesom_num_pts[flag]            
         # Plot
         fig = figure(figsize=(30,12))
         fig.patch.set_facecolor('white')
@@ -226,6 +341,9 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
         contourf(x_reg_roms, y_reg_roms, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
         # Now shade the data
         pcolor(roms_x, roms_y, roms_data, vmin=var_min, vmax=var_max, cmap=colour_map)
+        if var_name == 'vel':
+            # Overlay vectors
+            quiver(x_centres, y_centres, roms_u, roms_v, scale=1.5, color='black')
         xlim([x_min, x_max])
         ylim([y_min, y_max])
         axis('off')
@@ -244,6 +362,9 @@ def mip_cavity_fields (var_name, roms_file, fesom_file, fesom_mesh_path):
         overlay = PatchCollection(mask_patches, facecolor=(1,1,1))
         overlay.set_edgecolor('face')
         ax2.add_collection(overlay)
+        if var_name == 'vel':
+            # Overlay vectors
+            quiver(x_centres, y_centres, fesom_u, fesom_v, scale=1.5, color='black')
         xlim([x_min, x_max])
         ylim([y_min, y_max])
         axis('off')
@@ -275,21 +396,26 @@ if __name__ == "__main__":
     var_key = int(raw_input("Ice shelf draft (1), melt rate (2), bottom water temperature (3), bottom water salinity (4), or surface velocity (5)? "))
     if var_key == 1:
         var_name = 'draft'
-        roms_file = raw_input("Path to ROMS grid file: ")
+    elif var_key == 2:
+        var_name = 'melt'
+    elif var_key == 3:
+        var_name = 'temp'
+    elif var_key == 4:
+        var_name = 'salt'
+    elif var_key == 5:
+        var_name = 'vel'
+    if var_name in ['draft', 'vel']:
+        roms_grid = raw_input("Path to ROMS grid file: ")
+    else:
+        roms_grid = None
+    if var_name == 'draft':
+        roms_file = None
         fesom_file = None
     else:
         roms_file = raw_input("Path to ROMS time-averaged file: ")
         fesom_file = raw_input("Path to FESOM time-averaged file: ")
-        if var_key == 2:
-            var_name = 'melt'
-        elif var_key == 3:
-            var_name = 'temp'
-        elif var_key == 4:
-            var_name = 'salt'
-        elif var_key == 5:
-            var_name = 'vel'    
     fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    mip_cavity_fields(var_name, roms_file, fesom_file, fesom_mesh_path)
+    mip_cavity_fields(var_name, roms_grid, roms_file, fesom_mesh_path, fesom_file)
         
             
                 

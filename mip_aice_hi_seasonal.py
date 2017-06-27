@@ -155,9 +155,9 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
 # Command-line interface
 if __name__ == "__main__":
 
-    cice_seasonal_file = raw_input("Path to CICE seasonally averaged file containing aice and hi: ")
+    cice_seasonal_file = raw_input("Path to CICE seasonal climatology file containing aice and hi: ")
     fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_seasonal_file = raw_input("Path to FESOM seasonally averaged file containing area and hice: ")
+    fesom_seasonal_file = raw_input("Path to FESOM seasonal climatology file containing area and hice: ")
     mip_aice_hi_seasonal(cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file)
         
 

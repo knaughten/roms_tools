@@ -1198,7 +1198,7 @@ mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
                       field for MetROMS (left) and FESOM (right), zoomed into
 		      that region. Current options are ice shelf draft, ice
 		      shelf melt rate, bottom water temperature, bottom water
-		      salinity, or surface velocity.
+		      salinity, or surface velocity (with overlaid vectors).
 		      To run: First clone my "fesomtools" GitHub repository and
 		              replace '/short/y99/kaa561/fesomtools' (near the
 			      top of the file) with the path to the cloned
@@ -1283,6 +1283,24 @@ mip_zonal_cavity_ts.py: Create one 2x2 plot for each major ice shelf: zonal
 				time-averaged files as well as the ROMS grid
 				file and the FESOM mesh directory. It will
 				output one png for each ice shelf.
+
+mip_mld_seasonal.py: Make a 4x2 plot showing seasonally averaged mixed layer
+                     depth (defined as in Sallee et al 2013: depth at which
+		     potential density is 0.03 kg/m^3 higher than at the
+		     surface) comparing MetROMS (top) and FESOM (bottom).
+		     To run: First clone my "fesomtools" GitHub repository and
+		             replace '/short/y99/kaa561/fesomtools' (near the
+			     top of the file) with the path to the cloned
+			     repository on your system. Next, make seasonal
+			     climatologies of 3D temperature and salnity for
+			     both MetROMS and FESOM during the entire
+			     simulation, using seasonal_climatology_roms.py (in
+			     roms_tools) and seasonal_climatology.py (in
+			     fesomtools). Once the files are ready, open python
+			     or ipython and type "run mip_mld_seasonal.py". The
+			     script will prompt you for paths to these files as
+			     well as the ROMS grid file and the FESOM mesh
+			     directory. It will output a png file.
 
 
 ***UTILITY FUNCTIONS***
