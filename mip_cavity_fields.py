@@ -170,11 +170,11 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
                     fesom_cavity.append(False)
                 else:
                     print 'Problem'
-                    #return
+                    return
             f.close()
             # Save the number of 2D nodes
             fesom_n2d = len(fesom_cavity)
-            # Reed rotated lat and lon for each node; also read depth which is
+            # Read rotated lat and lon for each node; also read depth which is
             # needed for vertically averaged velocity
             f = open(fesom_mesh_path + 'nod3d.out', 'r')
             f.readline()
@@ -360,7 +360,7 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
             # Loop over all points (can't find a better way to do this)
             for j in range(size(roms_data,0)):
                 for i in range(size(roms_data,1)):
-                    # Make sure data isn't masked
+                    # Make sure data isn't masked (i.e. land or open ocean)
                     if u_circ_roms[j,i] is not ma.masked:
                         # Check if we're in the region of interest
                         if roms_x[j,i] > x_min and roms_x[j,i] < x_max and roms_y[j,i] > y_min and roms_y[j,i] < y_max:
