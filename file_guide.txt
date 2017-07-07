@@ -300,6 +300,14 @@ romscice_flux_correction.py: Build a monthly climatology of the extra surface
 				     the concatenated ROMS averages file and
 				     the desired output forcing file.
 
+get_rms_tide_vel.m: Matlab script (the horror!) which calls the TMD/CATS2008a
+                    tidal model:
+		    https://www.esr.org/polar_tide_models/Model_CATS2008a.html
+		    to get the RMS tidal velocity (sum of 10 constituents) for
+		    each point on the ROMS grid. Outputs to a NetCDF file, which
+		    can be used as a forcing file in MetROMS if you activate
+		    ICESHELF_RMS_TIDES.
+
 
 ***POST-PROCESSING DIAGNOSTIC FILES***
 
@@ -1124,18 +1132,18 @@ gadv_frazil_bathy.py: Plot a section of the coastline from 25-45E. On the left,
 
 ***FIGURES FOR FESOM INTERCOMPARISON***
 
-mip_grid_res.py: Make a 2x1 plot showing horizontal grid resolution (square
+mip_grid_res.py: Make a 3x1 plot showing horizontal grid resolution (square
                  root of the area of each rectanuglar grid cell or triangular
-		 element) in MetROMS (left) and FESOM (right), zoomed into the
-		 Antarctic continental shelf.
+		 element) in MetROMS, FESOM low-res, and FESOM high-res, zoomed
+		 into the Antarctic continental shelf.
 		 To run: First clone my "fesomtools" GitHub repository and
 		         replace '/short/y99/kaa561/fesomtools' (near the top
 			 of the file) with the path to the cloned repository
 			 on your system. Then open python or ipython and type
 			 "run mip_grid_res.py". The script will prompt you for
 			 the path to the ROMS grid file and FESOM mesh
-			 directory, and whether you want to save the figure (and
-			 if so, what filename) or display it on the screen.
+			 directories, and whether you want to save the figure
+			 (and if so, what filename) or display it on the screen.
 
 mip_timeseries.py: Plot MetROMS and FESOM timeseries together, for Drake
                    Passage transport, total Antarctic sea ice area, volume, and
