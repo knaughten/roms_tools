@@ -1234,45 +1234,54 @@ mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
 			      and the FESOM mesh directory. It will output one
 			      png for each ice shelf.
 
-mip_aice_hi_seasonal.py: Make two 4x2 plots, showing seasonal averages of
-                         either sea ice concentration or effective thickness
-			 (concentration*height), comparing MetROMS (top) and
-			 FESOM (bottom).
-			 To run: First clone my "fesomtools" GitHub repository
-			         and replace '/short/y99/kaa561/fesomtools'
-				 (near the top of the file) with the path to
-				 the cloned repository on your system. Next,
-				 make seasonal climatologies of sea ice
-				 concentration and thickness for both MetROMS
-				 and FESOM during the entire simulation, using
-				 seasonal_climatology_cice.py (in roms_tools)
-				 and seasonal_climatology.py (in fesomtools).
-				 Once the files are ready, open python or
-				 ipython and type "run mip_aice_hi_seasonal.py".
-				 The script will prompt you for paths to these
-				 files as well as the FESOM mesh directory.
-				 It will output two png files.
+mip_hi_seasonal.py: Make a 4x2 plot showing seasonal averages of sea ice
+                    effective thickness (concentration*height), comparing
+		    MetROMS (top) and FESOM (bottom).
+		    To run: First clone my "fesomtools" GitHub repository and
+			    replace '/short/y99/kaa561/fesomtools' (near the
+			    top of the file) with the path to the cloned
+			    repository on your system. Next, make seasonal
+			    climatologies of sea ice concentration and
+			    thickness for both MetROMS and FESOM during the
+			    entire simulation, using
+			    seasonal_climatology_cice.py (in roms_tools) and
+			    seasonal_climatology.py (in fesomtools). Once the
+			    files are ready, open python or ipython and type
+			    "run mip_aice_hi_seasonal.py". The script will
+			    prompt you for paths to these files as well as the
+			    FESOM mesh directory. It will output a png file.
 
-mip_aice_minmax_nsidc.py: Make a 3x2 plot showing February (top) and August
+mip_aice_minmax_nsidc.py: Make a 4x2 plot showing February (top) and September
                           (bottom) sea ice concentration (1992-2015 average) for
-			  NSIDC, MetROMS, and FESOM.
+			  NSIDC, MetROMS, and FESOM. The fourth column shows
+			  timeseries of February and September sea ice extent
+			  for NSIDC, MetROMS, and FESOM.
 			  To run: First clone my "fesomtools" GitHub repository
 			          and replace '/short/y99/kaa561/fesomtools'
 				  (near the top of the file) with the path to
-				  the cloned repository on your system. Next,
+				  the cloned repository on your system. Make
+				  sure timeseries_seaice_exent.py, in both
+				  roms_tools and fesomtools, has been run for
+				  the MetROMS and FESOM simulations. Next,
 				  download the NSIDC Climate Data Record monthly
 				  averages of Southern Hemisphere sea ice
-				  concentration, and make sure the variables
-				  nsidc_* near the top of the file will
-				  reconstruct the right filenames on your
-				  system. Then open python or ipython and type
+				  concentration, and the NSIDC Sea Ice Index
+				  csv files with total Antarctic sea ice extent
+				  for each year, in February and September.
+				  Make sure the variables nsidc_* near the top
+				  of the file will reconstruct the right
+				  filenames on your system. Then open python or
+				  ipython and type
 				  "run mip_aice_minmax_nsidc.py". The script
 				  will prompt you for paths to the CICE file
 				  containing 5-day averages for the entire
-				  simulation, the FESOM mesh directory, and the
-				  FESOM output directory containing one
-				  ice.mean.nc file (5-day averages) for each
-				  year. It will output a png file.
+				  simulation, the CICE logfile for
+				  timeseries_seaice_extent.py, the FESOM mesh
+				  directory, the FESOM output directory
+				  containing one ice.mean.nc file (5-day
+				  averages) for each year, and the FESOM
+				  logfile for timeseries_seaice_extent.py in
+				  fesomtools. It will output a png file.
 
 mip_zonal_cavity_ts.py: Create one 2x2 plot for each major ice shelf: zonal
                         slices of temperature (top) and salinity (bottom),

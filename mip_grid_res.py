@@ -70,7 +70,7 @@ def mip_grid_res (roms_grid_file, fesom_mesh_low, fesom_mesh_high, save=False, f
     xlim([-lat_max, lat_max])
     ylim([-lat_max, lat_max])
     axis('off')
-    title('MetROMS', fontsize=28)    
+    title('a) MetROMS', fontsize=28)    
     # FESOM low-res
     ax2 = fig.add_subplot(1,3,2, aspect='equal')
     img_low = PatchCollection(patches_low, cmap='jet')
@@ -81,7 +81,7 @@ def mip_grid_res (roms_grid_file, fesom_mesh_low, fesom_mesh_high, save=False, f
     xlim([-lat_max, lat_max])
     ylim([-lat_max, lat_max])
     axis('off')
-    title('FESOM low-res', fontsize=28)
+    title('b) FESOM low-res', fontsize=28)
     # FESOM high-res
     ax3 = fig.add_subplot(1,3,3, aspect='equal')
     img_high = PatchCollection(patches_high, cmap='jet')
@@ -92,7 +92,7 @@ def mip_grid_res (roms_grid_file, fesom_mesh_low, fesom_mesh_high, save=False, f
     xlim([-lat_max, lat_max])
     ylim([-lat_max, lat_max])
     axis('off')
-    title('FESOM high-res', fontsize=28)
+    title('c) FESOM high-res', fontsize=28)
     cbaxes = fig.add_axes([0.92, 0.2, 0.01, 0.6])
     cbar = colorbar(img_high, cax=cbaxes, extend='max', ticks=arange(limits[0], limits[1]+5, 5))
     cbar.ax.tick_params(labelsize=24)

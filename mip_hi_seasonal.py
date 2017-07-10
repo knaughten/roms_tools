@@ -7,17 +7,16 @@ import sys
 sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from patches import *
 
-# Make two 4x2 plots, showing seasonal averages of either sea ice concentration
-# or effective thickness (concentration*height), comparing MetROMS (top) and
-# FESOM (bottom).
+# Make a 4x2 plot showing seasonal averages of sea ice effective thickness
+# (concentration*height), comparing MetROMS (top) and FESOM (bottom).
 # Input:
 # cice_seasonal_file = path to seasonal climatology of CICE variables 'aice' and
 #                      'hi', pre-computed using seasonal_climatology_cice.py
-# fesom_mesh_path = path to FESOM mesh directory
-# fesom_seasonal_file = path to seasonal climatology of FESOM variables 'area'
-#                       and 'hice', pre-computed using seasonal_climatology.py
-#                       in the "fesomtools" repository
-def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
+# fesom_mesh_path = path to FESOM mesh directories
+# fesom_seasonal_file = path to seasonal climatology of FESOM variable 'hice', 
+#                       pre-computed using seasonal_climatology.py in the
+#                       "fesomtools" repository
+def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
 
     # Northern boundary of plot 50S
     nbdry = -50 + 90
@@ -29,8 +28,7 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
     # Season names for plot titles
     season_names = ['DJF', 'MAM', 'JJA', 'SON']
     # Colour bounds
-    aice_bounds = [0, 1]
-    hi_bounds = [0, 1.5]
+    bounds = [0, 1.5]
     
     print 'Processing MetROMS'
     # Read CICE grid data
@@ -65,7 +63,6 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
     elements, patches = make_patches(fesom_mesh_path, circumpolar, mask_cavities)
     # Read data
     id = Dataset(fesom_seasonal_file, 'r')
-    fesom_aice_nodes = id.variables['area'][:,:]
     fesom_hi_nodes = id.variables['hice'][:,:]
     id.close()
     # Count the number of elements not in ice shelf cavities
@@ -73,59 +70,22 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
     for elm in elements:
         if not elm.cavity:
             num_elm += 1
-    # Set up arrays for element-averages for each season
-    fesom_aice = zeros([4, num_elm])
+    # Set up array for element-averages for each season
     fesom_hi = zeros([4, num_elm])
-    # Loop over elements to fill these in
+    # Loop over elements to fill this in
     i = 0
     for elm in elements:
         if not elm.cavity:
             # Average over 3 component nodes
-            fesom_aice[:,i] = (fesom_aice_nodes[:,elm.nodes[0].id] + fesom_aice_nodes[:,elm.nodes[1].id] + fesom_aice_nodes[:,elm.nodes[2].id])/3
             fesom_hi[:,i] = (fesom_hi_nodes[:,elm.nodes[0].id] + fesom_hi_nodes[:,elm.nodes[1].id] + fesom_hi_nodes[:,elm.nodes[2].id])/3
             i += 1
 
-    print 'Plotting sea ice concentration'
-    fig = figure(figsize=(20,9))
-    # Loop over seasons
+    print 'Plotting'
+    fig = figure(figsize=(19,9))
     for season in range(4):
         # MetROMS
         ax = fig.add_subplot(2, 4, season+1, aspect='equal')
-        pcolor(cice_x, cice_y, cice_aice[season,:,:], vmin=aice_bounds[0], vmax=aice_bounds[1], cmap='jet')
-        if season == 0:
-            text(-43, 0, 'MetROMS', fontsize=24, ha='right')
-        title(season_names[season], fontsize=24)
-        xlim([-nbdry, nbdry])
-        ylim([-nbdry, nbdry])
-        axis('off')
-        # FESOM
-        ax = fig.add_subplot(2, 4, season+5, aspect='equal')
-        img = PatchCollection(patches, cmap='jet')
-        img.set_array(fesom_aice[season,:])
-        img.set_clim(vmin=aice_bounds[0], vmax=aice_bounds[1])
-        img.set_edgecolor('face')
-        ax.add_collection(img)
-        xlim([-nbdry, nbdry])
-        ylim([-nbdry, nbdry])
-        axis('off')
-        if season == 0:
-            text(-43, 0, 'FESOM', fontsize=24, ha='right')
-    # Add a horizontal colorbar at the bottom
-    cbaxes = fig.add_axes([0.25, 0.04, 0.5, 0.02])
-    cbar = colorbar(img, orientation='horizontal', ticks=arange(aice_bounds[0],aice_bounds[1]+0.25,0.25), cax=cbaxes)
-    cbar.ax.tick_params(labelsize=16)
-    # Add the main title
-    suptitle('Sea ice concentration', fontsize=30)
-    # Decrease space between plots
-    subplots_adjust(wspace=0.025,hspace=0.025)
-    fig.savefig('aice_seasonal.png')
-
-    print 'Plotting sea ice thickness'
-    fig = figure(figsize=(20,9))
-    for season in range(4):
-        # MetROMS
-        ax = fig.add_subplot(2, 4, season+1, aspect='equal')
-        pcolor(cice_x, cice_y, cice_hi[season,:,:], vmin=hi_bounds[0], vmax=hi_bounds[1], cmap='jet')
+        pcolor(cice_x, cice_y, cice_hi[season,:,:], vmin=bounds[0], vmax=bounds[1], cmap='jet')
         if season == 0:
             text(-43, 0, 'MetROMS', fontsize=24, ha='right')
         title(season_names[season], fontsize=24)
@@ -136,7 +96,7 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
         ax = fig.add_subplot(2, 4, season+5, aspect='equal')
         img = PatchCollection(patches, cmap='jet')
         img.set_array(fesom_hi[season,:])
-        img.set_clim(vmin=hi_bounds[0], vmax=hi_bounds[1])
+        img.set_clim(vmin=bounds[0], vmax=bounds[1])
         img.set_edgecolor('face')
         ax.add_collection(img)
         xlim([-nbdry, nbdry])
@@ -144,9 +104,10 @@ def mip_aice_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_fi
         axis('off')
         if season == 0:
             text(-43, 0, 'FESOM', fontsize=24, ha='right')
-    cbaxes = fig.add_axes([0.25, 0.04, 0.5, 0.02])
-    cbar = colorbar(img, orientation='horizontal', ticks=arange(hi_bounds[0],hi_bounds[1]+0.5,0.5), cax=cbaxes, extend='max')
-    cbar.ax.tick_params(labelsize=16)
+            text(-43, -10, '(high-res)', fontsize=24,ha='right')
+    cbaxes = fig.add_axes([0.35, 0.04, 0.3, 0.02])
+    cbar = colorbar(img, orientation='horizontal', ticks=arange(bounds[0],bounds[1]+0.5,0.5), cax=cbaxes, extend='max')
+    cbar.ax.tick_params(labelsize=20)
     suptitle('Sea ice effective thickness (m)', fontsize=30)
     subplots_adjust(wspace=0.025,hspace=0.025)
     fig.savefig('hi_seasonal.png')
@@ -157,8 +118,6 @@ if __name__ == "__main__":
 
     cice_seasonal_file = raw_input("Path to CICE seasonal climatology file containing aice and hi: ")
     fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_seasonal_file = raw_input("Path to FESOM seasonal climatology file containing area and hice: ")
-    mip_aice_hi_seasonal(cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file)
-        
-
+    fesom_seasonal_file = raw_input("Path to FESOM seasonal climatology file containing hice: ")
+    mip_hi_seasonal(cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file)
     
