@@ -1320,6 +1320,34 @@ mip_mld_seasonal.py: Make a 4x2 plot showing seasonally averaged mixed layer
 			     well as the ROMS grid file and the FESOM mesh
 			     directory. It will output a png file.
 
+mip_dpt_calc.py: Calculate the mean Drake Passage transport over 2002-2016, as
+                 well as the linear trend, for MetROMS, low-res FESOM, and
+		 high-res FESOM. Print the results to the screen.
+		 To run: First run timeseries_dpt.py for MetROMS, and the
+		         equivalent script timeseries_dpt.py in the fesomtools
+			 repository for both FESOM simulations. Then open
+			 python or ipython and type "run mip_dpt_calc.py". The
+			 script will prompt you for the paths to the 3 log
+			 files.
+
+mip_ts_distribution.py: Make a 2x1 plot of T/S distributions on the continental
+                        shelf (defined by regions south of 60S with bathymetry
+			shallower than 60S, plus all ice shelf cavities) in
+			MetROMS (left) and FESOM (right). Include the surface
+			freezing point and density contours.
+			To run: First clone my "fesomtools" GitHub repository
+			        and replace '/short/y99/kaa561/fesomtools'
+				(near the top of the file) with the path to the
+				cloned repository on your system. Next, make
+				time-averaged files of temperature and salinity
+				for each model over the same period (I used
+				2002-2016). Then open python or ipython and
+				type "run mip_ts_distribution.py". The script
+				will prompt you for the paths to the ROMS grid
+				file, the ROMS time-averaged file, the FESOM
+				mesh directory, and the FESOM time-averaged
+				file. It will output a png.
+
 
 ***UTILITY FUNCTIONS***
 

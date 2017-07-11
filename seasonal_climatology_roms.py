@@ -11,7 +11,8 @@ from numpy import *
 #                          process files ocean_avg_0001.nc through
 #                          ocean_avg_0102.nc.
 # out_file = path to desired output file
-def seasonal_climatology_roms (directory, start_index, end_index, out_file):
+# start_year = optional integer containing the first year to consider
+def seasonal_climatology_roms (directory, start_index, end_index, out_file, start_year=1992):
 
     # Starting and ending months (1-based) for each season
     start_month = [12, 3, 6, 9]
@@ -36,8 +37,6 @@ def seasonal_climatology_roms (directory, start_index, end_index, out_file):
     seasonal_salt[:,:,:,:] = 0.0
     # Also integrate number of days in each season
     ndays = zeros(4)
-    # Total number of days for a final check
-    total_days = 0
 
     # Loop over files
     for index in range(start_index, end_index+1):
@@ -52,108 +51,106 @@ def seasonal_climatology_roms (directory, start_index, end_index, out_file):
         time_id = id.variables['ocean_time']
         time = num2date(time_id[:], units=time_id.units, calendar=time_id.calendar.lower())
         id.close()
-        total_days += size(time)*5
         print 'Integrating climatology'
         # Loop over timesteps
         for t in range(size(time)):
-            print '...time index ' + str(t+1) + ' of ' + str(size(time))
-            # 5-day averages marked with middle day's date
-            year = time[t].year
-            month = time[t].month
-            day = time[t].day
-            # Get the season of this middle day
-            if month in [12, 1, 2]:
-                # DJF
-                season = 0
-            elif month in [3, 4, 5]:
-                # MAM
-                season = 1
-            elif month in [6, 7, 8]:
-                # JJA
-                season = 2
-            elif month in [9, 10, 11]:
-                # SON
-                season = 3
-            # Check for leap years
-            leap_year = False
-            if mod(year, 4) == 0:
-                leap_year = True
-                if mod(year, 100) == 0:
-                    leap_year = False
-                    if mod(year, 400) == 0:
-                        leap_year = True
-            # Update last day in February
-            if leap_year:
-                end_day[0] = 29
-            else:
-                end_day[0] = 28
-            if month == start_month[season]:
-                # We are in the first month of the season
-                if day-2 < start_day[season]:
-                    # Partially spills over into the previous season
-                    prev_season = mod(season-1, 4)
-                    # How many days does it spill over by?
-                    spill_days = start_day[season]-day+2
-                    # Should be either 1 or 2
-                    if spill_days not in [1,2]:
-                        print 'Problem: spill_days is ' + str(spill_days)
-                        print 'Timestep ' + str(t+1)
-                        print 'Year ' + str(year)
-                        print 'Month ' + str(month+1)
-                        print 'Day ' + str(day)
-                        return
-                    # Split between previous season and this season
-                    seasonal_temp[prev_season,:,:,:] += temp[t,:,:,:]*spill_days
-                    seasonal_salt[prev_season,:,:,:] += salt[t,:,:,:]*spill_days
-                    ndays[prev_season] += spill_days
-                    seasonal_temp[season,:,:,:] += temp[t,:,:,:]*(5-spill_days)
-                    seasonal_salt[season,:,:,:] += salt[t,:,:,:]*(5-spill_days)
-                    ndays[season] += 5-spill_days
+            # Make sure we are past start_year
+            if time[t].year >= start_year:
+                print '...time index ' + str(t+1) + ' of ' + str(size(time))
+                # 5-day averages marked with middle day's date
+                year = time[t].year
+                month = time[t].month
+                day = time[t].day
+                # Get the season of this middle day
+                if month in [12, 1, 2]:
+                    # DJF
+                    season = 0
+                elif month in [3, 4, 5]:
+                    # MAM
+                    season = 1
+                elif month in [6, 7, 8]:
+                    # JJA
+                    season = 2
+                elif month in [9, 10, 11]:
+                    # SON
+                    season = 3
+                # Check for leap years
+                leap_year = False
+                if mod(year, 4) == 0:
+                    leap_year = True
+                    if mod(year, 100) == 0:
+                        leap_year = False
+                        if mod(year, 400) == 0:
+                            leap_year = True
+                # Update last day in February
+                if leap_year:
+                    end_day[0] = 29
                 else:
-                    # Entirely within the season
+                    end_day[0] = 28
+                if month == start_month[season]:
+                    # We are in the first month of the season
+                    if day-2 < start_day[season]:
+                        # Partially spills over into the previous season
+                        prev_season = mod(season-1, 4)
+                        # How many days does it spill over by?
+                        spill_days = start_day[season]-day+2
+                        # Should be either 1 or 2
+                        if spill_days not in [1,2]:
+                            print 'Problem: spill_days is ' + str(spill_days)
+                            print 'Timestep ' + str(t+1)
+                            print 'Year ' + str(year)
+                            print 'Month ' + str(month+1)
+                            print 'Day ' + str(day)
+                            return
+                        # Split between previous season and this season
+                        seasonal_temp[prev_season,:,:,:] += temp[t,:,:,:]*spill_days
+                        seasonal_salt[prev_season,:,:,:] += salt[t,:,:,:]*spill_days
+                        ndays[prev_season] += spill_days
+                        seasonal_temp[season,:,:,:] += temp[t,:,:,:]*(5-spill_days)
+                        seasonal_salt[season,:,:,:] += salt[t,:,:,:]*(5-spill_days)
+                        ndays[season] += 5-spill_days
+                    else:
+                        # Entirely within the season
+                        seasonal_temp[season,:,:,:] += temp[t,:,:,:]*5
+                        seasonal_salt[season,:,:,:] += salt[t,:,:,:]*5
+                        ndays[season] += 5
+                elif month == end_month[season]:
+                    # We are in the last month of the season
+                    if day+2 > end_day[season]:
+                        # Partially spills over into the next season
+                        next_season = mod(season+1, 4)
+                        # How many days does it spill over by?
+                        spill_days = day+2-end_day[season]
+                        # Should be either 1 or 2
+                        if spill_days not in [1,2]:
+                            print 'Problem: spill_days is ' + str(spill_days)
+                            print 'Timestep ' + str(t+1)
+                            print 'Year ' + str(year)
+                            print 'Month ' + str(month+1)
+                            print 'Day ' + str(day)
+                            return
+                        # Split between this season and next season
+                        seasonal_temp[next_season,:,:,:] += temp[t,:,:,:]*spill_days
+                        seasonal_salt[next_season,:,:,:] += salt[t,:,:,:]*spill_days
+                        ndays[next_season] += spill_days
+                        seasonal_temp[season,:,:,:] += temp[t,:,:,:]*(5-spill_days)
+                        seasonal_salt[season,:,:,:] += salt[t,:,:,:]*(5-spill_days)
+                        ndays[season] += 5-spill_days
+                    else:
+                        # Entirely within the season
+                        seasonal_temp[season,:,:,:] += temp[t,:,:,:]*5
+                        seasonal_salt[season,:,:,:] += salt[t,:,:,:]*5
+                        ndays[season] += 5
+                else:
+                    # We are in the middle month of the season
+                    # The 5 days in this index are entirely within the season
                     seasonal_temp[season,:,:,:] += temp[t,:,:,:]*5
                     seasonal_salt[season,:,:,:] += salt[t,:,:,:]*5
-                    ndays[season] += 5
-            elif month == end_month[season]:
-                # We are in the last month of the season
-                if day+2 > end_day[season]:
-                    # Partially spills over into the next season
-                    next_season = mod(season+1, 4)
-                    # How many days does it spill over by?
-                    spill_days = day+2-end_day[season]
-                    # Should be either 1 or 2
-                    if spill_days not in [1,2]:
-                        print 'Problem: spill_days is ' + str(spill_days)
-                        print 'Timestep ' + str(t+1)
-                        print 'Year ' + str(year)
-                        print 'Month ' + str(month+1)
-                        print 'Day ' + str(day)
-                        return
-                    # Split between this season and next season
-                    seasonal_temp[next_season,:,:,:] += temp[t,:,:,:]*spill_days
-                    seasonal_salt[next_season,:,:,:] += salt[t,:,:,:]*spill_days
-                    ndays[next_season] += spill_days
-                    seasonal_temp[season,:,:,:] += temp[t,:,:,:]*(5-spill_days)
-                    seasonal_salt[season,:,:,:] += salt[t,:,:,:]*(5-spill_days)
-                    ndays[season] += 5-spill_days
-                else:
-                    # Entirely within the season
-                    seasonal_temp[season,:,:,:] += temp[t,:,:,:]*5
-                    seasonal_salt[season,:,:,:] += salt[t,:,:,:]*5
-                    ndays[season] += 5
-            else:
-                # We are in the middle month of the season
-                # The 5 days in this index are entirely within the season
-                seasonal_temp[season,:,:,:] += temp[t,:,:,:]*5
-                seasonal_salt[season,:,:,:] += salt[t,:,:,:]*5
-                ndays[season] += 5
+                    ndays[season] += 5            
     # Convert from sums to averages
     for season in range(4):
         seasonal_temp[season,:,:,:] = seasonal_temp[season,:,:,:]/ndays[season]
         seasonal_salt[season,:,:,:] = seasonal_salt[season,:,:,:]/ndays[season]
-    if sum(ndays) != total_days:
-        print 'Problem: files have ' + str(total_days) + ' days, but climatology has ' + str(sum(ndays))
-        return
 
     # Write to file
     print 'Writing ' + out_file

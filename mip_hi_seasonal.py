@@ -108,7 +108,7 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
     cbaxes = fig.add_axes([0.35, 0.04, 0.3, 0.02])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(bounds[0],bounds[1]+0.5,0.5), cax=cbaxes, extend='max')
     cbar.ax.tick_params(labelsize=20)
-    suptitle('Sea ice effective thickness (m)', fontsize=30)
+    suptitle('Sea ice effective thickness (m), 1992-2016 average', fontsize=30)
     subplots_adjust(wspace=0.025,hspace=0.025)
     fig.savefig('hi_seasonal.png')
 
