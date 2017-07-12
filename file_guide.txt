@@ -1302,23 +1302,23 @@ mip_zonal_cavity_ts.py: Create one 2x2 plot for each major ice shelf: zonal
 				file and the FESOM mesh directory. It will
 				output one png for each ice shelf.
 
-mip_mld_seasonal.py: Make a 4x2 plot showing seasonally averaged mixed layer
-                     depth (defined as in Sallee et al 2013: depth at which
-		     potential density is 0.03 kg/m^3 higher than at the
-		     surface) comparing MetROMS (top) and FESOM (bottom).
-		     To run: First clone my "fesomtools" GitHub repository and
-		             replace '/short/y99/kaa561/fesomtools' (near the
-			     top of the file) with the path to the cloned
-			     repository on your system. Next, make seasonal
-			     climatologies of 3D temperature and salnity for
-			     both MetROMS and FESOM during the entire
-			     simulation, using seasonal_climatology_roms.py (in
-			     roms_tools) and seasonal_climatology.py (in
-			     fesomtools). Once the files are ready, open python
-			     or ipython and type "run mip_mld_seasonal.py". The
-			     script will prompt you for paths to these files as
-			     well as the ROMS grid file and the FESOM mesh
-			     directory. It will output a png file.
+mip_mld.py: Make a 4x2 plot showing summer (DJF) and winter (JJA) mixed layer
+            depth (defined as in Sallee et al 2013: depth at which potential
+	    density is 0.03 kg/m^3 higher than at the surface) comparing
+	    MetROMS (top) and FESOM (bottom) where each plot is shown zoomed
+	    out to include the whole ACC, and zoomed in to the continental
+	    shelf.
+	    To run: First clone my "fesomtools" GitHub repository and replace
+	            '/short/y99/kaa561/fesomtools' (near the top of the file)
+		    with the path to the cloned repository on your system.
+		    Next, make seasonal climatologies of 3D temperature and
+		    salinity for both MetROMS and FESOM during the entire
+		    simulation, using seasonal_climatology_roms.py (in
+		    roms_tools) and seasonal_climatology.py (in fesomtools).
+		    Once the files are ready, open python or ipython and type
+		    "run mip_mld.py". The script will prompt you for paths to
+		    these files as well as the ROMS grid file and the FESOM
+		    mesh directory. It will output a png file.
 
 mip_dpt_calc.py: Calculate the mean Drake Passage transport over 2002-2016, as
                  well as the linear trend, for MetROMS, low-res FESOM, and
@@ -1330,11 +1330,10 @@ mip_dpt_calc.py: Calculate the mean Drake Passage transport over 2002-2016, as
 			 script will prompt you for the paths to the 3 log
 			 files.
 
-mip_ts_distribution.py: Make a 2x1 plot of T/S distributions on the continental
-                        shelf (defined by regions south of 60S with bathymetry
-			shallower than 60S, plus all ice shelf cavities) in
-			MetROMS (left) and FESOM (right). Include the surface
-			freezing point and density contours.
+mip_ts_distribution.py: Make a 2x1 plot of T/S distributions south of 65S,
+                        colour-coded based on depth, in MetROMS (left) and
+			FESOM (right). Include the surface freezing point and
+			density contours.
 			To run: First clone my "fesomtools" GitHub repository
 			        and replace '/short/y99/kaa561/fesomtools'
 				(near the top of the file) with the path to the
@@ -1347,6 +1346,24 @@ mip_ts_distribution.py: Make a 2x1 plot of T/S distributions on the continental
 				file, the ROMS time-averaged file, the FESOM
 				mesh directory, and the FESOM time-averaged
 				file. It will output a png.
+
+mip_drift_slices.py: Make a 4x2 plot showing zonal slices through 0E of
+                     temperature (left) and salinity (right), in MetROMS (top)
+		     and FESOM (bottom). The top 2x2 plots show the average
+		     over the last year of simulation, while the bottom 2x2
+		     plots show anomalies with respect to the first year.
+		     To run: First clone my "fesomtools" GitHub repository and
+		             replace '/short/y99/kaa561/fesomtools' (near the
+			     top of the file) with the path to the cloned
+			     repository on your system. Next, make
+			     time-averaged files of temperature and salinity
+			     for each model over the first and last year (just
+			     use ncra). Then open python or ipython and type
+			     "run mip_drift_slices.py". The script will prompt
+			     you for the paths to the ROMS grid file, the ROMS
+			     time-averaged files, the FESOM mesh directory, and
+			     the FESOM time-averaged files. It will output a
+			     png.
 
 
 ***UTILITY FUNCTIONS***
