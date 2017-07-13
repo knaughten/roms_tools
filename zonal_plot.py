@@ -79,6 +79,10 @@ def zonal_plot (file_path, var_name, tstep, lon_key, lon0, lon_bounds, depth_min
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     z_3d, sc_r, Cs_r = calc_z(h, zice, theta_s, theta_b, hc, N, zeta)
 
+    # Warning message for zonal averages
+    if lon_key != 0:
+        print 'WARNING: this script assumes regular i-indices for zonal averages. In heavily rotated regions eg inner Weddell Sea it may not be appropriate.'
+
     # Choose what to write on the title about longitude
     if lon_key == 0:
         if lon0 < 0:

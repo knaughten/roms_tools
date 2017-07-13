@@ -208,13 +208,13 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     title('FESOM (high-res)', fontsize=28)
     # Add a colourbar on the right
     cbaxes = fig.add_axes([0.93, 0.2, 0.02, 0.6])
-    cbar = colorbar(img, cax=cbaxes, ticks=[0,100,500,1000,2000,3000,4000])
+    cbar = colorbar(img, cax=cbaxes, ticks=[0,50,100,200,500,1000,2000,4000])
     cbar.ax.tick_params(labelsize=18)
     # Add the main title
     suptitle('Water masses south of 65$^{\circ}$S: depth (m), 2002-2016 average', fontsize=30)
     subplots_adjust(wspace=0.1)
     #fig.show()
-    fig.savefig('ts_distribution.png')
+    fig.savefig('ts_distribution_orig.png')
 
 
 # Command-line interface

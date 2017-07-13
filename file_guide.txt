@@ -1165,15 +1165,16 @@ mip_timeseries.py: Plot MetROMS and FESOM timeseries together, for Drake
 			   plotted). The script will create a bunch of png
 			   files.
 
-mip_massloss_error_map.py: Make a 2x1 circumpolar Antarctic map of percentage
+mip_massloss_error_map.py: Make a 3x1 circumpolar Antarctic map of percentage
                            error in mass loss for each ice shelf, outside the
-			   bounds given by Rignot et al. (2013), in MetROMS
-			   (left) and FESOM (right), for the 2003-2008 average.
+			   bounds given by Rignot et al. (2013), in MetROMS,
+			   FESOM low-res, and FESOM high-res, for the 2003-2008
+			   average. Also print the values to the screen.
 			   To run: First make sure you have run
 			           timeseries_massloss.py for ROMS through to
 				   at least the end of 2008, and the equivalent
 				   timeseries_massloss.py in the "fesomtools"
-				   repository for the FESOM simulation. Then
+				   repository for each FESOM simulation. Then
 				   open python or ipython and type
 				   "run mip_massloss_error_map.py". The script
 				   will prompt you for the path to the ROMS
@@ -1184,23 +1185,22 @@ mip_massloss_error_map.py: Make a 2x1 circumpolar Antarctic map of percentage
 
 mip_massloss_difference_map.py: Make a circumpolar Antarctic figure showing the
                                 percentage change in mass loss for each ice
-				shelf in the FESOM simulation with respect to
-				the MetROMS simulation, for the 2003-2008
-				average.
+				shelf in the high-resolution FESOM simulation
+				with respect to the low-resolution FESOM
+				simulation, discarding the first 10 years (i.e.
+				2002-2016 average). Also print the values to
+				the screen.
 				To run: First make sure you have run
-			                timeseries_massloss.py for ROMS through
-					to at least the end of 2008, and the
-					equivalent timeseries_massloss.py in
-					the "fesomtools" repository for the
-					FESOM simulation. Then open python or
-					ipython and type
+			                timeseries_massloss.py in the
+					"fesomtools" repository for each FESOM
+					simulation. Then open python or ipython
+					and type
 					"run mip_massloss_error_map.py".
 					The script will prompt you for the path
-					to the ROMS grid file, the ROMS and
-					FESOM massloss logfiles, and whether
-					you want to save the figure (and if so,
-					what filename) or display it on the
-					screen.
+					to the ROMS grid file, the FESOM
+					massloss logfiles, and whether you want
+					to save the figure (and if so, what
+					filename) or display it on the screen.
 
 mip_cavity_fields.py: For each major ice shelf, make a 2x1 plot of the given
                       field for MetROMS (left) and FESOM (right), zoomed into
@@ -1347,23 +1347,34 @@ mip_ts_distribution.py: Make a 2x1 plot of T/S distributions south of 65S,
 				mesh directory, and the FESOM time-averaged
 				file. It will output a png.
 
-mip_drift_slices.py: Make a 4x2 plot showing zonal slices through 0E of
-                     temperature (left) and salinity (right), in MetROMS (top)
-		     and FESOM (bottom). The top 2x2 plots show the average
-		     over the last year of simulation, while the bottom 2x2
-		     plots show anomalies with respect to the first year.
+mip_drift_slices.py: Make a 3x2 plot of temperature (left) and salinity (right)
+                     through 0E. The top row is the initial conditions from
+		     ECCO2. The middle and bottom rows are the end of the
+		     simulation (last 5 day average) from MetROMS and FESOM
+		     respectively.
 		     To run: First clone my "fesomtools" GitHub repository and
 		             replace '/short/y99/kaa561/fesomtools' (near the
 			     top of the file) with the path to the cloned
-			     repository on your system. Next, make
-			     time-averaged files of temperature and salinity
-			     for each model over the first and last year (just
-			     use ncra). Then open python or ipython and type
-			     "run mip_drift_slices.py". The script will prompt
-			     you for the paths to the ROMS grid file, the ROMS
-			     time-averaged files, the FESOM mesh directory, and
-			     the FESOM time-averaged files. It will output a
-			     png.
+			     repository on your system. Also make sure the
+			     paths to the original ECCO2 files (ecco_temp_file,
+			     ecco_salt_file) are correct. Then open python or
+			     ipython and type "run mip_drift_slices.py". The
+			     script will prompt you for the paths to the ROMS
+			     grid file, the last ocean_avg file output by ROMS,
+			     the FESOM mesh directory, and the last oce.mean
+			     file output by FESOM. It will output a png.
+
+mip_calc_massloss.py: Calculate the average mass loss for each ice shelf over
+                      2002-2016 for MetROMS, FESOM low-res, and FESOM high-res.
+		      Print to the screen along with Rignot's estimates for
+		      2003-2008.
+		      To run: First make sure you have run
+		              timeseries_massloss.py for the MetROMS simulation,
+			      as well as the equivalent timeseries_massloss.py
+			      in the fesomtools repository for both FESOM
+			      simulations. Then open python or ipython and type
+			      "run mip_calc_massloss.py". The script will
+			      prompt you for the paths to the three logfiles.
 
 
 ***UTILITY FUNCTIONS***

@@ -5,17 +5,19 @@ from matplotlib import rcParams
 from matplotlib.colors import LinearSegmentedColormap
 
 # Make a circumpolar Antarctic figure showing the percentage change in mass
-# loss for each ice shelf in the FESOM simulation with respect to the MetROMS
-# simulation, discarding the first 10 years (i.e. 2002-2016 average).
+# loss for each ice shelf in the high-resolution FESOM simulation with respect
+# to the low-resolution FESOM simulation, discarding the first 10 years
+# (i.e. 2002-2016 average). Also print the values to the screen.
 # Input:
 # roms_grid = path to ROMS grid file
-# roms_logfile = path to ROMS logfile from timeseries_massloss.py
-# fesom_logfile = path to FESOM logfile from timeseries_massloss.py in the
-#                 fesomtools repository
+# fesom_logfile_lr, fesom_logfile_hr = path to FESOM logfiles from 
+#                   timeseries_massloss.py in the fesomtools repository, for
+#                   the low-resolution and high-resolution simulations
+#                   respectively
 # save = optional boolean indicating to save the figure to a file, rather than
 #        display on screen
 # fig_name = if save=True, filename for figure
-def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=False, fig_name=None):
+def mip_massloss_difference_map (roms_grid, fesom_logfile_lr, fesom_logfile_hr, save=False, fig_name=None):
 
     # Year simulations start
     year_start = 1992
@@ -33,6 +35,8 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     lon_max = [-59.33, -60, -66.67, -28.33, -88.83, -99.17, -103.33, -111.5, -114.33, -140, -145, 146.62, 123.33, 102.5, 89.17, 75, 37.67, 33.33, 16.17, 12.88, 7.6, -10.33, -146.67, 181]
     lat_min = [-73.03, -69.35, -74.17, -83.5, -73.28, -75.5, -75.5, -75.33, -74.9, -76.42, -78, -67.83, -67.17, -66.67, -67.83, -73.67, -69.83, -71.67, -70.5, -70.75, -71.83, -76.33, -85, -84.5]
     lat_max = [-69.37, -66.13, -69.5, -74.67, -71.67, -74.17, -74.67, -73.67, -73, -75.17, -76.41, -66.67, -66.5, -64.83, -66.17, -68.33, -68.67, -68.33, -69.33, -69.83, -69.33, -71.5, -77.77, -77]
+    # Name of each ice shelf
+    names = ['Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
     num_shelves = len(lon_min)-1
 
     # Degrees to radians conversion factor
@@ -47,50 +51,10 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     # Minimum zice in ROMS grid
     min_zice = -10
 
-    # Read ROMS logfile
-    roms_time = []
-    f = open(roms_logfile, 'r')
-    # Skip the first line (header for time array)
-    f.readline()
-    for line in f:
-        try:
-            roms_time.append(float(line))
-        except(ValueError):
-            # Reached the header for the next variable
-            break
-    # Skip the values for the entire continent
-    for line in f:
-        try:
-            tmp = float(line)
-        except(ValueError):
-            break
-    # Set up array for mass loss values at each ice shelf
-    roms_massloss_ts = empty([num_shelves, len(roms_time)])
-    index = 0
-    # Loop over ice shelves
-    while index < num_shelves:
-        t = 0
-        for line in f:
-            try:
-                roms_massloss_ts[index, t] = float(line)
-                t += 1
-            except(ValueError):
-                # Reached the header for the next ice shelf
-                break
-        index +=1
-    # Add start year to ROMS time array
-    roms_time = array(roms_time) + year_start
-    # Average between observation years
-    t_start = nonzero(roms_time >= obs_start)[0][0]
-    if obs_end == 2016:
-        t_end = size(roms_time)
-    else:
-        t_end = nonzero(roms_time >= obs_end+1)[0][0]
-    roms_massloss = mean(roms_massloss_ts[:,t_start:t_end], axis=1)
-
     # Read FESOM timeseries
+    # Start with low-res
     tmp = []
-    f = open(fesom_logfile, 'r')
+    f = open(fesom_logfile_lr, 'r')
     # Skip the first line (header)
     f.readline()
     # Count the number of time indices for the first variable (total mass loss
@@ -104,21 +68,44 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
             # Reached the header for the next variable
             break
     # Set up array for mass loss values at each ice shelf
-    fesom_massloss_ts = empty([num_shelves, num_time])
+    fesom_massloss_ts_lr = empty([num_shelves, num_time])
     # Loop over ice shelves
     index = 0
     while index < num_shelves:
         t = 0
         for line in f:
             try:
-                fesom_massloss_ts[index,t] = float(line)
+                fesom_massloss_ts_lr[index,t] = float(line)
                 t += 1
             except(ValueError):
                 # Reached the header for the next ice shelf
                 break
         index += 1
     # Average between observation years
-    fesom_massloss = mean(fesom_massloss_ts[:,peryear*(obs_start-year_start):peryear*(obs_end+1-year_start)], axis=1)
+    fesom_massloss_lr = mean(fesom_massloss_ts_lr[:,peryear*(obs_start-year_start):peryear*(obs_end+1-year_start)], axis=1)
+    # Repeat for high-res
+    tmp = []
+    f = open(fesom_logfile_hr, 'r')
+    f.readline()
+    num_time = 0
+    for line in f:
+        try:
+            tmp = float(line)
+            num_time += 1
+        except(ValueError):
+            break
+    fesom_massloss_ts_hr = empty([num_shelves, num_time])
+    index = 0
+    while index < num_shelves:
+        t = 0
+        for line in f:
+            try:
+                fesom_massloss_ts_hr[index,t] = float(line)
+                t += 1
+            except(ValueError):
+                break
+        index += 1
+    fesom_massloss_hr = mean(fesom_massloss_ts_hr[:,peryear*(obs_start-year_start):peryear*(obs_end+1-year_start)], axis=1)
 
     # Read ROMS grid
     id = Dataset(roms_grid, 'r')
@@ -141,8 +128,9 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     massloss_change[:,:] = ma.masked
     # Loop over ice shelves
     for index in range(num_shelves):
-        # Calculate percentage change in massloss, FESOM wrt MetROMS
-        tmp = (fesom_massloss[index] - roms_massloss[index])/roms_massloss[index]*100
+        # Calculate percentage change in massloss, high-res wrt low-res
+        tmp = (fesom_massloss_hr[index] - fesom_massloss_lr[index])/fesom_massloss_lr[index]*100
+        print names[index] + ': ' + str(tmp)
         # Modify plotting field for this region
         if index == num_shelves-1:
             # Ross region is split into two
@@ -164,11 +152,11 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     land_circle = zeros(shape(x_reg))
     land_circle = ma.masked_where(sqrt((x_reg-x_c)**2 + (y_reg-y_c)**2) > radius, land_circle)
 
-    # Set up colour scale, -100 to 175, 0 is white
-    bound = 170.0
-    min_colour = (-100.0+bound)/(2.0*bound)
-    max_colour = 1.0
-    lev = linspace(-100, bound, num=50)
+    # Set up colour scale, -100 to max value, 0 is white
+    bound = amax(abs(massloss_change))
+    lev = linspace(amin(massloss_change), amax(massloss_change), num=50)
+    min_colour = (amin(massloss_change)+bound)/(2.0*bound)
+    max_colour = 1
     new_cmap = truncate_colormap(get_cmap('RdBu_r'), min_colour, max_colour)
 
     # Plot
@@ -182,14 +170,14 @@ def mip_massloss_difference_map (roms_grid, roms_logfile, fesom_logfile, save=Fa
     contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
     # Now shade the percentage change in mass loss
     contourf(x, y, massloss_change, lev, cmap=new_cmap)
-    cbar = colorbar(ticks=arange(-100, bound, 50))
+    cbar = colorbar(ticks=arange(0, bound+25, 25))
     cbar.ax.tick_params(labelsize=20)
     # Add a black contour for the ice shelf front
     rcParams['contour.negative_linestyle'] = 'solid'
     contour(x, y, zice, levels=[min_zice], colors=('black'))
     xlim([-nbdry, nbdry])
     ylim([-nbdry, nbdry])
-    title('% Change in Ice Shelf Mass Loss ('+str(obs_start)+'-'+str(obs_end)+' average)\nFESOM with respect to MetROMS', fontsize=30)
+    title('% Change in Ice Shelf Mass Loss ('+str(obs_start)+'-'+str(obs_end)+' average)\nfrom increased resolution in FESOM', fontsize=30)
     axis('off')
 
     # Finished
@@ -210,8 +198,8 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=-1):
 if __name__ == "__main__":
 
     roms_grid = raw_input("Path to ROMS grid file: ")
-    roms_logfile = raw_input("Path to ROMS mass loss logfile: ")
-    fesom_logfile = raw_input("Path to FESOM mass loss logfile: ")
+    fesom_logfile_lr = raw_input("Path to FESOM low-res mass loss logfile: ")
+    fesom_logfile_hr = raw_input("Path to FESOM high-res mass loss logfile: ")
     action = raw_input("Save figure (s) or display in window (d)? ")
     if action == 's':
         save = True
@@ -219,5 +207,5 @@ if __name__ == "__main__":
     elif action == 'd':
         save = False
         fig_name = None
-    mip_massloss_difference_map(roms_grid, roms_logfile, fesom_logfile, save, fig_name)
+    mip_massloss_difference_map(roms_grid, fesom_logfile_lr, fesom_logfile_hr, save, fig_name)
     

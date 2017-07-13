@@ -89,7 +89,9 @@ def circumpolar_plot (file_path, var_name, tstep, depth_key, depth, depth_bounds
                 u_data = id.variables[var_name.replace('v','u')][tstep-1,k,:-15,:]
                 u_data_lonlat, v_data_lonlat = rotate_vector_roms(u_data, v_data, angle)
                 data_full[k,:,:] = v_data_lonlat        
- 
+
+    id.close()
+    id = Dataset(grid_path, 'r')
     # Read grid variables
     h = id.variables['h'][:-15,:]
     zice = id.variables['zice'][:-15,:]
@@ -359,7 +361,7 @@ if __name__ == "__main__":
         # Will need the grid file to get the angle
         grid_path = raw_input("Path to ROMS grid file: ")
     else:
-        grid_path = None
+        grid_path = raw_input("Path to ROMS grid file: ") #grid_path = None
 
     # Get index of time axis in ROMS history/averages file
     tstep = int(raw_input("Timestep number (starting at 1): "))
