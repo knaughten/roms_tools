@@ -92,8 +92,8 @@ def mip_cavity_fields (var_name, roms_grid, roms_file, fesom_mesh_path, fesom_fi
         id2.close()
         if var_name == 'vsfc':
             # Read surface u and v
-            u_tmp = id.variables['u'][0,0,:,:]
-            v_tmp = id.variables['v'][0,0,:,:]
+            u_tmp = id.variables['u'][0,-1,:,:]
+            v_tmp = id.variables['v'][0,-1,:,:]
             # Interpolate to rho grid and unrotate
             u_rho, v_rho = rotate_vector_roms(u_tmp, v_tmp, angle)
         elif var_name == 'vavg':

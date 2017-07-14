@@ -1376,6 +1376,24 @@ mip_calc_massloss.py: Calculate the average mass loss for each ice shelf over
 			      "run mip_calc_massloss.py". The script will
 			      prompt you for the paths to the three logfiles.
 
+mip_regions_1var.py: For each of the 8 ice shelf regions analysed in this
+                     intercomparison paper, make one 3x1 figure for 5 different
+		     variables (ice shelf draft, ice shelf melt rate, bottom
+		     water temperature, bottom water salinity, surface velocity)
+		     where each variable is averaged over the years 2002-2016
+		     and zoomed into the region of interest. The 3 parts of
+		     each figure are MetROMS, FESOM low-res, and FESOM high-res.
+		     The surface velocity figures show absolute value (speed)
+		     in colours, and direction with vector arrows.
+		     To run: First clone my "fesomtools" GitHub repository and
+		             replace '/short/y99/kaa561/fesomtools' (near the
+			     top of the file) with the path to the cloned
+			     repository on your system. Also make sure the
+			     paths to the ROMS and FESOM files near the top of
+		             the script are correct. Then open python or ipython
+			     and type "run mip_regions_1var.py". The script
+			     will output a bunch of pngs.
+
 
 ***UTILITY FUNCTIONS***
 
