@@ -19,6 +19,31 @@ from fesom_sidegrid import *
 from unrotate_vector import *
 from unrotate_grid import *
 
+# This is the giant monster script to generate 8 multi-part figures showing
+# ice shelf processes in the 8 regions defined in the intercomparison paper.
+# Each figure is size Nx3 where N=3,4,5 is the number of variables shown
+# (current options are ice shelf melt rate, ice shelf draft, bottom water
+# temperature or salinity, vertically averaged velocity, zonal slices of
+# temperature and salinity) and 3 is the number of models (MetROMS, low-res
+# FESOM, high-res FESOM). All variables are averaged over the period 2002-2016,
+# i.e. the first 10 years of the simulation are discarded as spinup, and
+# seasonal cycles and interannual variability are not considered. 
+
+# In order to avoid unnecessarily repetitive code, this script contains
+# multiple functions which accept location bounds as arguments (eg to calculate
+# min/max over the given region, to plot ice shelf draft over the given region
+# for each model, etc.) but in order to prevent the function argument lists from
+# getting out of control, most of the variables are global and so the majority
+# of this script is not wrapped within a function. Be very careful if you are
+# running this script in an active python session to make sure there are no 
+# conflicting variable names previously defined.
+
+# To modify for your purposes, adjust the file paths (immediately below) as
+# needed, and then scroll down to "USER MODIFIED SECTION" to see examples of
+# how to call the functions to create multi-part figures. You will have to
+# fiddle around with the x and y bounds, GridSpec arguments, colourbar axes,
+# etc. so that the positioning looks okay.
+
 # File paths
 roms_grid = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
 roms_file = '/short/m68/kaa561/metroms_iceshelf/tmproms/run/intercomparison/2002_2016_avg.nc'
@@ -727,6 +752,16 @@ suptitle('Larsen Ice Shelves', fontsize=30)
 fig.savefig('larsen.png')
 
 
+# For the given variable in MetROMS, low-res FESOM, and high-res FESOM, find
+# the max and min values across all 3 models in the given region.
+# Input:
+# roms_data = 2D field of data on the MetROMS grid (lat x lon)
+# fesom_data_lr, fesom_data_hr = data for each 2D element on the FESOM low-res
+#                and high-res meshes respectively
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# Output:
+# var_min, var_max = min and max data values in this region across all 3 models
 def get_min_max (roms_data, fesom_data_lr, fesom_data_hr, x_min, x_max, y_min, y_max):
 
     # Start with ROMS
@@ -757,6 +792,20 @@ def get_min_max (roms_data, fesom_data_lr, fesom_data_hr, x_min, x_max, y_min, y
     return var_min, var_max
 
 
+# Create a 2D vector field for vertically averaged velocity in MetROMS, low-res
+# FESOM, and high-res FESOM for the given region. Average velocity over
+# horizontal bins (in x and y) for easy plotting.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# num_bins = number of bins to use for both x and y dimensions (try 30 or 40)
+# Output:
+# x_centres, y_centres = 1D arrays of length num_bins containing x and y
+#                        coordinates of the bin centres
+# roms_ubin, roms_vbin = 2D arrays of size num_bins x num_bins containing
+#                        vector components for MetROMS at each bin
+# fesom_ubin_lr, fesom_vbin_lr = same for FESOM low-res
+# fesom_ubin_hr, fesom_vbin_hr = same for FESOM high-res
 def make_vectors (x_min, x_max, y_min, y_max, num_bins):
 
     # Set up bins (edges)
@@ -847,6 +896,16 @@ def make_vectors (x_min, x_max, y_min, y_max, num_bins):
     return x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr
 
 
+# Plot ice shelf draft for MetROMS, low-res FESOM, and high-res FESOM for the
+# given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the ice shelf draft title, for
+#          use in a figure showing multiple variables
 def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
 
     # Set up a grey square for FESOM to fill the background with land
@@ -905,6 +964,24 @@ def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
 
+# Plot ice shelf melt rate for MetROMS, low-res FESOM, and high-res FESOM for
+# the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# change_points = list of size 3 containing values where the colourmap should
+#                 transition (1) from yellow to orange, (2) from orange to red,
+#                 (3) from red to magenta. Should not include the minimum value,
+#                 0, or the maximum value. This way the custom colourmap can be 
+#                 adjusted so that all melt rates are visible, particularly
+#                 for ice shelves with strong spatial variations in melt.
+# letter = 'a', 'b', 'c', etc. to add before the ice shelf melt rate title, for
+#          use in a figure showing multiple variables
+# y0 = y-coordinate of model titles for the entire plot, assuming melt rate is
+#      always at the top (i.e. letter='a'). Play around between 1.15 and 1.35.
 def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points, letter, y0):
 
     # Set up a grey square for FESOM to fill the background with land
@@ -987,6 +1064,16 @@ def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points
     text(0.5, y0, 'FESOM (high-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
 
 
+# Plot bottom water temperature for MetROMS, low-res FESOM, and high-res FESOM
+# for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the bottom water temp title, for
+#          use in a figure showing multiple variables
 def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
 
     # Set up a grey square for FESOM to fill the background with land
@@ -1045,6 +1132,16 @@ def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
     
 
+# Plot bottom water salinity for MetROMS, low-res FESOM, and high-res FESOM
+# for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
+#          for use in a figure showing multiple variables
 def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
 
     # Set up a grey square for FESOM to fill the background with land
@@ -1103,6 +1200,22 @@ def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
 
+# Plot vertically averaged velocity for MetROMS, low-res FESOM, and high-res
+# FESOM for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr,
+#            fesom_ubin_hr, fesom_vbin_hr = output variables from the 
+#                           "make_vectors" function for the given region
+# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
+#          for use in a figure showing multiple variables
+# loc_string = optional string containing location title, in the case of
+#              velocity being zoomed into a smaller region to the other
+#              variables (eg "George VI Ice Shelf" for the Bellingshausen plot)
 def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, letter, loc_string=None):
 
     # Set up a grey square for FESOM to fill the background with land
@@ -1169,6 +1282,24 @@ def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, 
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
 
+# Plot zonal slices (latitude vs depth) of temperature and salinity for
+# MetROMS, low-res FESOM, and high-res FESOM through the given longitude, in the
+# given axes.
+# Input:
+# lon0 = longitude to plot (-180 to 180)
+# lat_min, lat_max = bounds on latitude to plot (-90 to 90)
+# depth_min, depth_max = bounds on depth to plot (negative, in metres)
+# gs1, gs2 = GridSpec objects of size 1x3, in which to plot temperature and
+#            salinity respectively
+# cbaxes1, cbaxes2 = Axes objects for locations of temperature and salinity
+#                    colourbars
+# cbar_ticks1, cbar_ticks2 = 1D arrays containing values for ticks on
+#                            temperature and salinity colourbars
+# letter1, letter2 = 'a', 'b', 'c', etc. to add before the temperature and 
+#                    salinity titles
+# loc_string = optional string containing location title, in the case of
+#              plotting slices through a single ice shelf in a large region
+#              (eg "Fimbul Ice Shelf" for the Eastern Weddell plot)
 def plot_zonal_ts (lon0, lat_min, lat_max, depth_min, depth_max, gs1, gs2, cbaxes1, cbaxes2, cbar_ticks1, cbar_ticks2, letter1, letter2, loc_string=None):
 
     # Figure out what to write on the title about longitude

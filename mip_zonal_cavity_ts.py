@@ -11,15 +11,17 @@ sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from fesom_grid import *
 from fesom_sidegrid import *
 
-# Create one 2x2 plot for each major ice shelf: zonal slices of temperature
-# (top) and salinity (bottom), comparing MetROMS (left) and FESOM (right).
-# Longitudes to slice through, and latitude bounds, are pre-determined.
+# Create one 3x2 plot for each major ice shelf: zonal slices of temperature
+# (top) and salinity (bottom), comparing MetROMS, low-res FESOM, and high-res
+# FESOM. Longitudes to slice through, and latitude bounds, are pre-determined.
 # Input:
 # roms_grid = path to ROMS grid file
 # roms_file = path to ROMS time-averaged file containing 3D temp and salt
-# fesom_mesh_path = path to FESOM mesh directory
-# fesom_file = path to FESOM time-averaged file containing 3D temp and salt
-def mip_zonal_cavity_ts (roms_grid, roms_file, fesom_mesh_path, fesom_file):
+# fesom_mesh_path_lr, fesom_mesh_path_hr = paths to FESOM mesh directories for
+#                     the low-res and high-res simulations
+# fesom_file_lr, fesom_file_hr = paths to FESOM time-averaged files containing
+#                     3D temp and salt for the low-res and high-res simulations
+def mip_zonal_cavity_ts (roms_grid, roms_file, fesom_mesh_path_lr, fesom_file_lr, fesom_mesh_path_hr, fesom_file_hr):
 
     # Name of each ice shelf
     shelf_names = ['Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
@@ -53,13 +55,20 @@ def mip_zonal_cavity_ts (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     roms_salt_3d = id.variables['salt'][0,:,:,:]
     id.close()
 
-    print 'Setting up FESOM'
+    print 'Setting up low-res FESOM'
     # Build the regular FESOM grid
-    elm2D = fesom_grid(fesom_mesh_path)
+    elm2D_lr = fesom_grid(fesom_mesh_path_lr)
     # Read temperature and salinity at every node
-    id = Dataset(fesom_file, 'r')
-    fesom_temp_nodes = id.variables['temp'][0,:]
-    fesom_salt_nodes = id.variables['salt'][0,:]
+    id = Dataset(fesom_file_lr, 'r')
+    fesom_temp_nodes_lr = id.variables['temp'][0,:]
+    fesom_salt_nodes_lr = id.variables['salt'][0,:]
+    id.close()
+
+    print 'Setting up high-res FESOM'
+    elm2D_hr = fesom_grid(fesom_mesh_path_hr)
+    id = Dataset(fesom_file_hr, 'r')
+    fesom_temp_nodes_hr = id.variables['temp'][0,:]
+    fesom_salt_nodes_hr = id.variables['salt'][0,:]
     id.close()
 
     # Loop over ice shelves
@@ -85,78 +94,114 @@ def mip_zonal_cavity_ts (roms_grid, roms_file, fesom_mesh_path, fesom_file):
         # Round down to nearest 50 metres
         depth_min = floor(depth_min_tmp/50)*50
 
-        # FESOM
+        # FESOM low-res
         # Build arrays of SideElements making up zonal slices
-        selements_temp = fesom_sidegrid(elm2D, fesom_temp_nodes, lon0[index], lat_max[index])
-        selements_salt = fesom_sidegrid(elm2D, fesom_salt_nodes, lon0[index], lat_max[index])
+        selements_temp_lr = fesom_sidegrid(elm2D_lr, fesom_temp_nodes_lr, lon0[index], lat_max[index])
+        selements_salt_lr = fesom_sidegrid(elm2D_lr, fesom_salt_nodes_lr, lon0[index], lat_max[index])
         # Build array of quadrilateral patches for the plots, and data values
         # corresponding to each SideElement
-        patches = []
-        fesom_temp = []
-        for selm in selements_temp:
+        patches_lr = []
+        fesom_temp_lr = []
+        for selm in selements_temp_lr:
             # Make patch
             coord = transpose(vstack((selm.y, selm.z)))
-            patches.append(Polygon(coord, True, linewidth=0.))
+            patches_lr.append(Polygon(coord, True, linewidth=0.))
             # Save data value
-            fesom_temp.append(selm.var)
-        fesom_temp = array(fesom_temp)
+            fesom_temp_lr.append(selm.var)
+        fesom_temp_lr = array(fesom_temp_lr)
         # Salinity has same patches but different values
-        fesom_salt = []
-        for selm in selements_salt:
-            fesom_salt.append(selm.var)
-        fesom_salt = array(fesom_salt)
+        fesom_salt_lr = []
+        for selm in selements_salt_lr:
+            fesom_salt_lr.append(selm.var)
+        fesom_salt_lr = array(fesom_salt_lr)
+
+        # FESOM high-res
+        selements_temp_hr = fesom_sidegrid(elm2D_hr, fesom_temp_nodes_hr, lon0[index], lat_max[index])
+        selements_salt_hr = fesom_sidegrid(elm2D_hr, fesom_salt_nodes_hr, lon0[index], lat_max[index])
+        patches_hr = []
+        fesom_temp_hr = []
+        for selm in selements_temp_hr:
+            coord = transpose(vstack((selm.y, selm.z)))
+            patches_hr.append(Polygon(coord, True, linewidth=0.))
+            fesom_temp_hr.append(selm.var)
+        fesom_temp_hr = array(fesom_temp_hr)
+        fesom_salt_hr = []
+        for selm in selements_salt_hr:
+            fesom_salt_hr.append(selm.var)
+        fesom_salt_hr = array(fesom_salt_hr)
 
         # Find bounds on each variable
-        temp_min = min(amin(roms_temp[flag]), amin(fesom_temp))
-        temp_max = max(amax(roms_temp[flag]), amax(fesom_temp))
-        salt_min = min(amin(roms_salt[flag]), amin(fesom_salt))
-        salt_max = max(amax(roms_salt[flag]), amax(fesom_salt))
+        temp_min = amin(array([amin(roms_temp[flag]), amin(fesom_temp_lr), amin(fesom_temp_hr)]))
+        temp_max = amax(array([amax(roms_temp[flag]), amax(fesom_temp_lr), amax(fesom_temp_hr)]))
+        salt_min = amin(array([amin(roms_salt[flag]), amin(fesom_salt_lr), amin(fesom_salt_hr)]))
+        salt_max = amax(array([amax(roms_salt[flag]), amax(fesom_salt_lr), amax(fesom_salt_hr)]))
         # Plot
-        fig = figure(figsize=(18,12))
+        fig = figure(figsize=(24,12))
         # MetROMS temperature
-        ax = fig.add_subplot(2, 2, 1)
+        ax = fig.add_subplot(2, 3, 1)
         pcolor(roms_lat, roms_z, roms_temp, vmin=temp_min, vmax=temp_max, cmap='jet')
         title(r'MetROMS temperature ($^{\circ}$C)', fontsize=20)
         ylabel('Depth (m)', fontsize=16)
         xlim([lat_min[index], lat_max[index]])
         ylim([depth_min, 0])
-        # FESOM temperature
-        ax = fig.add_subplot(2, 2, 2)
-        img1 = PatchCollection(patches, cmap='jet')
-        img1.set_array(fesom_temp)
-        img1.set_edgecolor('face')
-        img1.set_clim(vmin=temp_min, vmax=temp_max)
-        ax.add_collection(img1)
-        title(r'FESOM temperature ($^{\circ}$C)', fontsize=20)
+        # FESOM low-res temperature
+        ax = fig.add_subplot(2, 3, 2)
+        img = PatchCollection(patches_lr, cmap='jet')
+        img.set_array(fesom_temp_lr)
+        img.set_edgecolor('face')
+        img.set_clim(vmin=temp_min, vmax=temp_max)
+        ax.add_collection(img)
+        title(r'FESOM (low-res) temperature ($^{\circ}$C)', fontsize=20)
+        xlim([lat_min[index], lat_max[index]])
+        ylim([depth_min, 0])
+        # FESOM high-res temperature
+        ax = fig.add_subplot(2, 3, 3)
+        img = PatchCollection(patches_hr, cmap='jet')
+        img.set_array(fesom_temp_hr)
+        img.set_edgecolor('face')
+        img.set_clim(vmin=temp_min, vmax=temp_max)
+        ax.add_collection(img)
+        title(r'FESOM (high-res) temperature ($^{\circ}$C)', fontsize=20)
         xlim([lat_min[index], lat_max[index]])
         ylim([depth_min, 0])
         # Add colorbar for temperature
-        cbaxes1 = fig.add_axes([0.92, 0.575, 0.01, 0.3])
-        cbar1 = colorbar(img1, cax=cbaxes1)
-        cbar1.ax.tick_params(labelsize=16)
+        cbaxes = fig.add_axes([0.92, 0.575, 0.01, 0.3])
+        cbar = colorbar(img, cax=cbaxes)
+        cbar.ax.tick_params(labelsize=16)
         # MetROMS salinity
-        ax = fig.add_subplot(2, 2, 3)
+        ax = fig.add_subplot(2, 3, 4)
         pcolor(roms_lat, roms_z, roms_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
         title('MetROMS salinity (psu)', fontsize=20)    
         xlabel('Latitude', fontsize=16)
         ylabel('Depth (m)', fontsize=16)
         xlim([lat_min[index], lat_max[index]])
         ylim([depth_min, 0])
-        # FESOM salinity
-        ax = fig.add_subplot(2, 2, 4)
-        img2 = PatchCollection(patches, cmap='jet')
-        img2.set_array(fesom_salt)
-        img2.set_edgecolor('face') 
-        img2.set_clim(vmin=salt_min, vmax=salt_max)
-        ax.add_collection(img2)
-        title(r'FESOM salinity (psu)', fontsize=20)
+        # FESOM low-res salinity
+        ax = fig.add_subplot(2, 3, 5)
+        img = PatchCollection(patches_lr, cmap='jet')
+        img.set_array(fesom_salt_lr)
+        img.set_edgecolor('face') 
+        img.set_clim(vmin=salt_min, vmax=salt_max)
+        ax.add_collection(img)
+        title(r'FESOM (low-res) salinity (psu)', fontsize=20)
+        xlabel('Latitude', fontsize=16)
+        xlim([lat_min[index], lat_max[index]])
+        ylim([depth_min, 0])
+        # FESOM high-res salinity
+        ax = fig.add_subplot(2, 3, 6)
+        img = PatchCollection(patches_hr, cmap='jet')
+        img.set_array(fesom_salt_hr)
+        img.set_edgecolor('face') 
+        img.set_clim(vmin=salt_min, vmax=salt_max)
+        ax.add_collection(img)
+        title(r'FESOM (high-res) salinity (psu)', fontsize=20)
         xlabel('Latitude', fontsize=16)
         xlim([lat_min[index], lat_max[index]])
         ylim([depth_min, 0])
         # Add colorbar for salinity
-        cbaxes2 = fig.add_axes([0.92, 0.125, 0.01, 0.3])
-        cbar2 = colorbar(img2, cax=cbaxes2)
-        cbar2.ax.tick_params(labelsize=16)
+        cbaxes = fig.add_axes([0.92, 0.125, 0.01, 0.3])
+        cbar = colorbar(img, cax=cbaxes)
+        cbar.ax.tick_params(labelsize=16)
         # Main title
         suptitle(shelf_names[index] + lon_string, fontsize=28)
         #fig.show()
@@ -168,6 +213,8 @@ if __name__ == "__main__":
 
     roms_grid = raw_input("Path to ROMS grid file: ")
     roms_file = raw_input("Path to ROMS time-averaged file containing 3D temp and salt: ")
-    fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_file = raw_input("Path to FESOM time-averaged file containing 3D temp and salt: ")
-    mip_zonal_cavity_ts(roms_grid, roms_file, fesom_mesh_path, fesom_file)
+    fesom_mesh_path_lr = raw_input("Path to FESOM low-res mesh directory: ")
+    fesom_file_lr = raw_input("Path to FESOM low-res time-averaged file containing 3D temp and salt: ")
+    fesom_mesh_path_hr = raw_input("Path to FESOM high-res mesh directory: ")
+    fesom_file_hr = raw_input("Path to FESOM high-res time-averaged file containing 3D temp and salt: ")
+    mip_zonal_cavity_ts(roms_grid, roms_file, fesom_mesh_path_lr, fesom_file_lr, fesom_mesh_path_hr, fesom_file_hr)

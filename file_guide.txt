@@ -1379,12 +1379,12 @@ mip_calc_massloss.py: Calculate the average mass loss for each ice shelf over
 mip_regions_1var.py: For each of the 8 ice shelf regions analysed in this
                      intercomparison paper, make one 3x1 figure for 5 different
 		     variables (ice shelf draft, ice shelf melt rate, bottom
-		     water temperature, bottom water salinity, surface velocity)
-		     where each variable is averaged over the years 2002-2016
-		     and zoomed into the region of interest. The 3 parts of
-		     each figure are MetROMS, FESOM low-res, and FESOM high-res.
-		     The surface velocity figures show absolute value (speed)
-		     in colours, and direction with vector arrows.
+		     water temperature, bottom water salinity, vertically
+		     averaged velocity) where each variable is averaged over
+		     the years 2002-2016 and zoomed into the region of interest.
+		     The 3 parts of each figure are MetROMS, FESOM low-res, and
+		     FESOM high-res. The velocity figures show absolute value
+		     (speed) in colours, and direction with vector arrows.
 		     To run: First clone my "fesomtools" GitHub repository and
 		             replace '/short/y99/kaa561/fesomtools' (near the
 			     top of the file) with the path to the cloned
@@ -1393,6 +1393,48 @@ mip_regions_1var.py: For each of the 8 ice shelf regions analysed in this
 		             the script are correct. Then open python or ipython
 			     and type "run mip_regions_1var.py". The script
 			     will output a bunch of pngs.
+
+mip_iceshelf_figures.py: This is the giant monster script to generate 8
+                         multi-part figures showing ice shelf processes in the
+			 8 regions defined in the intercomparison paper. Each
+			 figure is size Nx3 where N=3,4,5 is the number of
+			 variables shown (current options are ice shelf melt
+			 rate, ice shelf draft, bottom water temperature or
+			 salinity, vertically averaged velocity, zonal slices
+			 of temperature and salinity) and 3 is the number of
+			 models (MetROMS, low-res FESOM, high-res FESOM). All
+			 variables are averaged over the period 2002-2016, i.e.
+			 the first 10 years of the simulation are discarded as
+			 spinup, and seasonal cycles and interannual
+			 variability are not considered.
+			 In order to avoid unnecessarily repetitive code, this
+			 script contains multiple functions which accept
+			 location bounds as arguments (eg to calculate min/max
+			 over the given region, to plot ice shelf draft over
+			 the given region for each model, etc.) but in order to
+			 prevent the function argument lists from getting out
+			 of control, most of the variables are global and so
+			 the majority of this script is not wrapped within a
+			 function. Be very careful if you are running this
+			 script in an active python session to make sure there
+			 are no conflicting variable names previously defined.
+			 To run: First clone my "fesomtools" GitHub repository
+			         and replace '/short/y99/kaa561/fesomtools'
+				 (near the top of the file) with the path to
+				 the cloned repository on your system. Also
+				 make sure the paths to the ROMS and FESOM
+				 files near the top of the script are correct.
+				 To use the predetermined regions and variable
+			         combinations, simply open python or ipython
+				 and type "run mip_iceshelf_figures.py". The
+				 script will output a bunch of pngs. To modify
+				 for other regions or variable combinations,
+				 scroll down to "USER MODIFIED SECTION" to see
+				 examples of how to call the functions to
+				 create multi-part figures. You will have to
+				 fiddle around with the x and y bounds,
+				 GridSpec arguments, colourbar axes, etc. so
+				 that the positioning looks okay.
 
 
 ***UTILITY FUNCTIONS***
