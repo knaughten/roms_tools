@@ -13,7 +13,9 @@ from interp_lon_roms import interp_lon_helper
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def timeseries_dpt (grid_path, file_path, log_path):
+# add_years = optional number of years to add to time array (multiple of 14
+#             for repeating 1992-2005 spinup)
+def timeseries_dpt (grid_path, file_path, log_path, add_years=0):
 
     # Radius of the Earth in metres
     r = 6.371e6
@@ -56,7 +58,7 @@ def timeseries_dpt (grid_path, file_path, log_path):
     print 'Reading data'
     id = Dataset(file_path, 'r')
     # Read time values and convert from seconds to years
-    new_time = id.variables['ocean_time'][:]/(60*60*24*365.25)
+    new_time = id.variables['ocean_time'][:]/(60*60*24*365.25) + add_years
     num_time = size(new_time)
     # Concatenate with time values from log file
     for t in range(num_time):

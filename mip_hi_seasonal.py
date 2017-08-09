@@ -18,8 +18,11 @@ from patches import *
 #                       "fesomtools" repository
 def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
 
-    # Northern boundary of plot 50S
-    nbdry = -50 + 90
+    # Boundaries on plot (under polar coordinate transformation)
+    x_min = -36.25
+    x_max = 36.25
+    y_min = -34.5
+    y_max = 38
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
     # FESOM parameters
@@ -89,9 +92,10 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
         if season == 0:
             text(-43, 0, 'MetROMS', fontsize=24, ha='right')
         title(season_names[season], fontsize=24)
-        xlim([-nbdry, nbdry])
-        ylim([-nbdry, nbdry])
-        axis('off')
+        xlim([x_min, x_max])
+        ylim([y_min, y_max])
+        ax.set_xticks([])
+        ax.set_yticks([])
         # FESOM
         ax = fig.add_subplot(2, 4, season+5, aspect='equal')
         img = PatchCollection(patches, cmap='jet')
@@ -99,9 +103,10 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
         img.set_clim(vmin=bounds[0], vmax=bounds[1])
         img.set_edgecolor('face')
         ax.add_collection(img)
-        xlim([-nbdry, nbdry])
-        ylim([-nbdry, nbdry])
-        axis('off')
+        xlim([x_min, x_max])
+        ylim([y_min, y_max])
+        ax.set_xticks([])
+        ax.set_yticks([])
         if season == 0:
             text(-43, 0, 'FESOM', fontsize=24, ha='right')
             text(-43, -10, '(high-res)', fontsize=24,ha='right')

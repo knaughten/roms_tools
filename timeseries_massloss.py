@@ -12,7 +12,9 @@ from cartesian_grid_2d import *
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def timeseries_massloss (file_path, log_path):
+# add_years = optional number of years to add to time array (multiple of 14
+#             for repeating 1992-2005 spinup)
+def timeseries_massloss (file_path, log_path, add_years=0):
 
     # Titles and figure names for each ice shelf
     names = ['All Ice Shelves', 'Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
@@ -69,7 +71,7 @@ def timeseries_massloss (file_path, log_path):
 
     # Read time data and convert from seconds to years
     id = Dataset(file_path, 'r')
-    new_time = id.variables['ocean_time'][:]/(365.25*24*60*60)
+    new_time = id.variables['ocean_time'][:]/(365.25*24*60*60) + add_years
     if exists(log_path):
         # Concatenate with time values from log file
         start_t = len(old_time)

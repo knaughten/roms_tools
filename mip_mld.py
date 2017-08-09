@@ -48,6 +48,11 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     # Maximum for colour scale in each season
     max_bound_summer = 150
     max_bound_winter = 600
+    # Longitude labels for first panel
+    lon_ticks = array([-120, -60, 60, 120])
+    lat_ticks = array([-28, -25, -25, -28])
+    lon_labels = [r'120$^{\circ}$W', r'60$^{\circ}$W', r'60$^{\circ}$E', r'120$^{\circ}$E']
+    lon_rot = [-60, 60, -60, 60]
 
     print 'Processing MetROMS:'
     print 'Reading grid'
@@ -60,6 +65,9 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     # Polar coordinates for plotting
     roms_x = -(roms_lat+90)*cos(roms_lon*deg2rad+pi/2)
     roms_y = (roms_lat+90)*sin(roms_lon*deg2rad+pi/2)
+    # Longitude labels
+    x_ticks = -(lat_ticks+90)*cos(lon_ticks*deg2rad+pi/2)
+    y_ticks = (lat_ticks+90)*sin(lon_ticks*deg2rad+pi/2)
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     roms_z, sc_r, Cs_r = calc_z(roms_h, roms_zice, theta_s, theta_b, hc, N)
     # Make depth positive
@@ -150,28 +158,35 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     title(season_names[0], fontsize=24)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
-    axis('off')
+    # Add longitude labels
+    for i in range(size(x_ticks)):
+        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i], fontsize=14)
+    ax.set_xticks([])
+    ax.set_yticks([])
     # MetROMS, summer, continental shelf
     ax = fig.add_subplot(2, 4, 2, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
     title(season_names[0], fontsize=24)
     xlim([-nbdry2, nbdry2])
     ylim([-nbdry2, nbdry2])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # MetROMS, winter, ACC
     ax = fig.add_subplot(2, 4, 3, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
     title(season_names[2], fontsize=24)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # MetROMS, winter, continental shelf
     ax = fig.add_subplot(2, 4, 4, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
     title(season_names[2], fontsize=24)
     xlim([-nbdry2, nbdry2])
     ylim([-nbdry2, nbdry2])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # FESOM, summer, ACC
     ax = fig.add_subplot(2, 4, 5, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
@@ -181,7 +196,8 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.add_collection(img)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     text(-62, 0, 'FESOM', fontsize=24, ha='right')
     text(-62, -10, '(high-res)', fontsize=24, ha='right')
     # FESOM, summer, continental shelf
@@ -193,7 +209,8 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.add_collection(img)
     xlim([-nbdry2, nbdry2])
     ylim([-nbdry2, nbdry2])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Add a horizontal colorbar for summer
     cbaxes = fig.add_axes([0.2, 0.04, 0.2, 0.02])
     cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
@@ -207,7 +224,8 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.add_collection(img)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # FESOM, winter, continental shelf
     ax = fig.add_subplot(2, 4, 8, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
@@ -217,7 +235,8 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.add_collection(img)
     xlim([-nbdry2, nbdry2])
     ylim([-nbdry2, nbdry2])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Add a horizontal colorbar for winter
     cbaxes = fig.add_axes([0.6, 0.04, 0.2, 0.02])
     cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))

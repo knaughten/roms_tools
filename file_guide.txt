@@ -1436,6 +1436,18 @@ mip_iceshelf_figures.py: This is the giant monster script to generate 8
 				 GridSpec arguments, colourbar axes, etc. so
 				 that the positioning looks okay.
 
+mip_seasonal_cycle.py: Calculate the average amplitude of the seasonal cycle in
+                       total basal mass loss over 2002-2016, in MetROMS, low-res
+		       FESOM, and high-res FESOM. Print results to the screen.
+		       To run: First make sure you have run
+		               timeseries_massloss.py for the entire MetROMS
+			       simulation, and the equivalent fesomtools
+			       script for both FESOM simulations. Then open
+			       python or ipython and type
+		               "run mip_seasonal_cycle.py". The script will
+			       prompt you for the paths to the
+			       timeseries_massloss logfiles for each simulation.
+
 
 ***UTILITY FUNCTIONS***
 

@@ -11,7 +11,9 @@ from cartesian_grid_2d import *
 # log_path = path to log file (if it exists, previously calculated values will
 #            be read from it; regardless, it will be overwritten with all
 #            calculated values following computation)
-def timeseries_seaice (file_path, log_path):
+# add_years = optional number of years to add to time array (multiple of 14
+#             for repeating 1992-2005 spinup)
+def timeseries_seaice (file_path, log_path, add_years=0):
 
     time = []
     total_area = []
@@ -45,7 +47,7 @@ def timeseries_seaice (file_path, log_path):
     dx, dy = cartesian_grid_2d(lon, lat)
     dA = dx*dy
     # Read time values and convert from days to years
-    new_time = id.variables['time'][:]/365.25
+    new_time = id.variables['time'][:]/365.25 + add_years
     # Concatenate with time values from log file
     for t in range(size(new_time)):
         time.append(new_time[t])

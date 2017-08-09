@@ -306,7 +306,8 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     img = pcolor(nsidc_x, nsidc_y, nsidc_feb, vmin=0, vmax=1, cmap='jet')
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     title('NSIDC', fontsize=24)
     text(-39, 0, 'February', fontsize=24, ha='right')
     # MetROMS, February
@@ -314,7 +315,8 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     img = pcolor(cice_x, cice_y, cice_feb, vmin=0, vmax=1, cmap='jet')
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     title('MetROMS', fontsize=24)
     # FESOM, February
     ax = subplot(gs1[0, 2], aspect='equal')
@@ -325,7 +327,8 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.add_collection(img)
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     title('FESOM (high-res)', fontsize=24)
     # Main title
     text(-170, 47, 'a) Sea ice concentration ('+str(start_year)+'-'+str(end_year)+' average)', fontsize=30)
@@ -334,14 +337,16 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     img = pcolor(nsidc_x, nsidc_y, nsidc_sep, vmin=0, vmax=1, cmap='jet')
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     text(-39, 0, 'September', fontsize=24, ha='right')
     # MetROMS, September
     ax = subplot(gs1[1, 1], aspect='equal')
     img = pcolor(cice_x, cice_y, cice_sep, vmin=0, vmax=1, cmap='jet')
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')    
+    ax.set_xticks([])
+    ax.set_yticks([])    
     # FESOM, September
     ax = subplot(gs1[1, 2], aspect='equal')
     img = PatchCollection(patches, cmap='jet')
@@ -351,7 +356,8 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.add_collection(img)
     xlim([bdry1, bdry2])
     ylim([bdry3, bdry4])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Add a colourbar at the bottom
     cbaxes = fig.add_axes([0.26, 0.04, 0.3, 0.04])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)

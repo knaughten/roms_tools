@@ -499,7 +499,7 @@ gs_a = GridSpec(1,3)
 gs_a.update(left=0.05, right=0.9, bottom=0.735, top=0.89, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.755, 0.025, 0.12])
 cbar_ticks = arange(0, 6+3, 3)
-plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [0.5, 3, 4.5], 'a', 1.25, [-60, -40], [-80])
+plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [0.5, 3, 4.5], 'a', 1.25, [-80, -60, -40], [-80])
 # Velocity
 x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr = make_vectors(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, 20, 20)
 gs_b = GridSpec(1,3)
@@ -511,7 +511,7 @@ plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_t
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.05, right=0.9, bottom=0.375, top=0.53, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.395, 0.025, 0.12])
-cbar_ticks = arange(-2.6, -1.8+0.4, 0.4)
+cbar_ticks = arange(-2.6, -1.0+0.8, 0.8)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c')
 # Bottom water salinity
 gs_d = GridSpec(1,3)
@@ -541,7 +541,7 @@ gs_a = GridSpec(1,3)
 gs_a.update(left=0.11, right=0.9, bottom=0.74, top=0.89, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.77, 0.025, 0.1])
 cbar_ticks = arange(0, 4+2, 2)
-plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [1, 2, 3], 'a', 1.35, [0, 30], [-70])
+plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [1, 2, 3], 'a', 1.35, [-10, 20], [-70])
 # Velocity
 x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr = make_vectors(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, 40, 20)
 gs_b = GridSpec(1,3)
@@ -630,13 +630,13 @@ plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_tic
 gs_b = GridSpec(1,3)
 gs_b.update(left=0.05, right=0.9, bottom=0.435, top=0.655, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.475, 0.025, 0.15])
-cbar_ticks = arange(-1.8, -0.8+0.5, 0.5)
+cbar_ticks = arange(-1.5, 0.5+1, 1)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, 'b')
 # Bottom water salinity
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.05, right=0.9, bottom=0.19, top=0.41, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.23, 0.025, 0.15])
-cbar_ticks = arange(34.2, 34.5+0.1, 0.1)
+cbar_ticks = arange(34.2, 34.6+0.2, 0.2)
 plot_bwsalt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c')
 # Velocity for Totten
 x_min_tmp = 20
@@ -665,14 +665,14 @@ gs_a = GridSpec(1,3)
 gs_a.update(left=0.1, right=0.9, bottom=0.735, top=0.89, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.765, 0.025, 0.1])
 cbar_ticks = arange(0, 8+4, 4)
-plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [0.5, 2, 4], 'a', 1.25, [180, -160], [-80])
+plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [0.5, 2, 4], 'a', 1.25, [180, -140], [-80])
 # Velocity
 x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr = make_vectors(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, 20, 15)
 gs_b = GridSpec(1,3)
 gs_b.update(left=0.1, right=0.9, bottom=0.56, top=0.715, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.59, 0.025, 0.1])
 cbar_ticks = arange(0, 0.18+0.09, 0.09)
-plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'b', arrow_scale=0.5, arrow_headwidth=8, arrow_headlength=9)
+plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'b', arrow_scale=0.5, arrow_headwidth=7, arrow_headlength=8)
 # Draft
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.1, right=0.9, bottom=0.385, top=0.54, wspace=0.05)
@@ -696,7 +696,7 @@ gs_e = GridSpec(1,3)
 gs_e.update(left=0.1, right=0.9, bottom=0.05, top=0.18, wspace=0.05)
 cbaxes_tmp2 = fig.add_axes([0.91, 0.065, 0.025, 0.1])
 cbar_ticks2 = arange(34.4, 35+0.3, 0.3)
-plot_zonal_ts(180, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs_d, gs_e, cbaxes_tmp1, cbaxes_tmp2, cbar_ticks1, cbar_ticks2, 'c', 'd')
+plot_zonal_ts(180, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs_d, gs_e, cbaxes_tmp1, cbaxes_tmp2, cbar_ticks1, cbar_ticks2, 'd', 'e')
 suptitle('Ross Sea', fontsize=30)
 fig.show()
 fig.savefig('ross.png')
@@ -718,13 +718,13 @@ plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_tic
 gs_b = GridSpec(1,3)
 gs_b.update(left=0.05, right=0.9, bottom=0.435, top=0.655, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.475, 0.025, 0.15])
-cbar_ticks = arange(-1.6, 0+0.8, 0.8)
+cbar_ticks = arange(-1.6, 0.8+0.8, 0.8)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, 'b')
 # Bottom water salinity
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.05, right=0.9, bottom=0.19, top=0.41, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.23, 0.025, 0.15])
-cbar_ticks = arange(34.1, 34.5+0.2, 0.2)
+cbar_ticks = arange(34.1, 34.7+0.2, 0.2)
 plot_bwsalt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c')
 # Velocity for PIG
 x_min_tmp = -15.6
@@ -758,13 +758,13 @@ plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_tic
 gs_b = GridSpec(1,3)
 gs_b.update(left=0.05, right=0.9, bottom=0.435, top=0.655, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.475, 0.025, 0.15])
-cbar_ticks = arange(-2, 0+1, 1)
+cbar_ticks = arange(-1.5, 0.5+1, 1)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, 'b')
 # Bottom water salinity
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.05, right=0.9, bottom=0.19, top=0.41, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.23, 0.025, 0.15])
-cbar_ticks = arange(33.6, 34.4+0.4, 0.4)
+cbar_ticks = arange(33.8, 34.6+0.4, 0.4)
 plot_bwsalt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c')
 # Velocity for George VI
 x_min_tmp = -18.75
@@ -791,21 +791,21 @@ fig.patch.set_facecolor('white')
 # Melt
 gs_a = GridSpec(1,3)
 gs_a.update(left=0.05, right=0.9, bottom=0.61, top=0.84, wspace=0.05)
-cbaxes_tmp = fig.add_axes([0.91, 0.7, 0.025, 0.15])
+cbaxes_tmp = fig.add_axes([0.91, 0.65, 0.025, 0.15])
 cbar_ticks = arange(0, 8+4, 4)
 plot_melt(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_a, cbaxes_tmp, cbar_ticks, [0.5, 2, 4], 'a', 1.3, [-60], [-70])
 # Velocity
 x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr = make_vectors(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, 18, 18)
 gs_b = GridSpec(1,3)
 gs_b.update(left=0.05, right=0.9, bottom=0.33, top=0.56, wspace=0.05)
-cbaxes_tmp = fig.add_axes([0.91, 0.4, 0.025, 0.15])
+cbaxes_tmp = fig.add_axes([0.91, 0.37, 0.025, 0.15])
 cbar_ticks = arange(0, 0.12+0.06, 0.06)
-plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'b', loc_string='George VI Ice Shelf', arrow_scale=0.7, arrow_headwidth=8, arrow_headlength=9)
+plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_b, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'b', arrow_scale=0.7, arrow_headwidth=8, arrow_headlength=9)
 # Bottom water temperature
 gs_c = GridSpec(1,3)
 gs_c.update(left=0.05, right=0.9, bottom=0.05, top=0.28, wspace=0.05)
-cbaxes_tmp = fig.add_axes([0.91, 0.1, 0.025, 0.15])
-cbar_ticks = arange(-1.8, -1+0.4, 0.4)
+cbaxes_tmp = fig.add_axes([0.91, 0.09, 0.025, 0.15])
+cbar_ticks = arange(-1.8, 0+0.9, 0.9)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c')
 suptitle('Larsen Ice Shelves', fontsize=30)
 fig.show()
@@ -987,7 +987,8 @@ def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     pcolor(roms_x, roms_y, roms_draft, vmin=var_min, vmax=var_max, cmap='jet')
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
 
     # FESOM low-res
     ax = subplot(gs[0,1], aspect='equal')
@@ -1005,7 +1006,8 @@ def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(overlay)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Main title
     title(letter + ') Ice shelf draft (m)', fontsize=20)
 
@@ -1022,7 +1024,8 @@ def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(overlay)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Colourbar on the right
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
@@ -1093,12 +1096,13 @@ def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points
     # Now shade the data
     pcolor(roms_x, roms_y, roms_melt, vmin=var_min, vmax=var_max, cmap=mf_cmap)
     # Overlay longitudes
-    contour(roms_x, roms_y, roms_lon, lon_lines, colors='black', linestyles='dashed')
+    contour(roms_x, roms_y, roms_lon, lon_lines, colors='black', linestyles='dotted')
     # Overlay latitudes
-    contour(roms_x, roms_y, roms_lat, lat_lines, colors='black', linestyles='dashed')
+    contour(roms_x, roms_y, roms_lat, lat_lines, colors='black', linestyles='dotted')
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Melt rate is always at the top, so add model labels
     text(0.5, y0, 'MetROMS', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
 
@@ -1118,7 +1122,8 @@ def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points
     ax.add_collection(overlay)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     title(letter + ') Ice shelf melt rate (m/y)', fontsize=20)
     text(0.5, y0, 'FESOM (low-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
 
@@ -1135,7 +1140,8 @@ def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points
     ax.add_collection(overlay)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Colourbar on the right
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
     text(0.5, y0, 'FESOM (high-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
@@ -1173,7 +1179,8 @@ def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
 
     # FESOM low-res
     ax = subplot(gs[0,1], aspect='equal')
@@ -1194,7 +1201,8 @@ def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(fesom_contours_lr)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Main title
     title(letter + r') Bottom water temperature ($^{\circ}$C)', fontsize=20)
 
@@ -1213,7 +1221,8 @@ def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(fesom_contours_hr)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Colourbar on the right
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
     
@@ -1250,7 +1259,8 @@ def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
 
     # FESOM low-res
     ax = subplot(gs[0,1], aspect='equal')
@@ -1271,7 +1281,8 @@ def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(fesom_contours_lr)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Main title
     title(letter + ') Bottom water salinity (psu)', fontsize=20)
 
@@ -1290,7 +1301,8 @@ def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
     ax.add_collection(fesom_contours_hr)
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Colourbar on the right
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
@@ -1334,7 +1346,8 @@ def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, 
     quiver(x_centres, y_centres, roms_ubin, roms_vbin, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
 
     # FESOM low-res
     ax = subplot(gs[0,1], aspect='equal')
@@ -1354,7 +1367,8 @@ def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, 
     quiver(x_centres, y_centres, fesom_ubin_lr, fesom_vbin_lr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Main title
     if loc_string is None:
         title(letter + ') Vertically averaged ocean velocity (m/s)', fontsize=20)
@@ -1375,7 +1389,8 @@ def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, 
     quiver(x_centres, y_centres, fesom_ubin_hr, fesom_vbin_hr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
     xlim([x_min, x_max])
     ylim([y_min, y_max])
-    axis('off')
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Colourbar on the right
     cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
 
