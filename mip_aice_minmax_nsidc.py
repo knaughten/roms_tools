@@ -359,9 +359,9 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.set_xticks([])
     ax.set_yticks([])
     # Add a colourbar at the bottom
-    cbaxes = fig.add_axes([0.26, 0.04, 0.3, 0.04])
+    cbaxes = fig.add_axes([0.12, 0.04, 0.3, 0.04])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
-    cbar.ax.tick_params(labelsize=16)
+    cbar.ax.tick_params(labelsize=20)
     # Add extent timeseries on rightmost column, with more space for labels
     gs2 = GridSpec(2, 1)
     gs2.update(left=0.73, right=0.95, wspace=0.1, hspace=0.15)
@@ -371,8 +371,10 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.plot(time_axis, cice_feb_extent, color='blue', linewidth=1.5)
     ax.plot(time_axis, fesom_feb_extent, color='green', linewidth=1.5)
     xlim([start_year, end_year])
-    ax.tick_params(axis='x', labelsize=16)
-    ax.tick_params(axis='y', labelsize=16)
+    ax.set_yticks(arange(0,4+0.5,0.5))
+    ax.set_yticklabels(['0', '', '1', '', '2', '', '3', '', '4'])
+    ax.tick_params(axis='x', labelsize=20)
+    ax.tick_params(axis='y', labelsize=20)
     grid(True)
     title('b) Sea ice extent\n'+r'(million km$^2$)', fontsize=26)
     # Extent timeseries, September
@@ -381,11 +383,13 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.plot(time_axis, cice_sep_extent, color='blue', label='MetROMS', linewidth=1.5)
     ax.plot(time_axis, fesom_sep_extent, color='green', label='FESOM (high-res)', linewidth=1.5)
     xlim([start_year, end_year])
-    ax.tick_params(axis='x', labelsize=16)
-    ax.tick_params(axis='y', labelsize=16)
+    ax.set_yticks(arange(16,23+1,1))
+    ax.set_yticklabels(['16', '', '18', '', '20', '', '22', ''])
+    ax.tick_params(axis='x', labelsize=20)
+    ax.tick_params(axis='y', labelsize=20)
     grid(True)
-    ax.legend(bbox_to_anchor=(1.15,-0.1), ncol=3)
-    #fig.show()
+    ax.legend(bbox_to_anchor=(1.04,-0.07), ncol=3, fontsize=20)
+    fig.show()
     fig.savefig('aice_minmax_nsidc.png')
 
 

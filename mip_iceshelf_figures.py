@@ -39,11 +39,776 @@ from unrotate_grid import *
 # running this script in an active python session to make sure there are no 
 # conflicting variable names previously defined.
 
-# To modify for your purposes, adjust the file paths (immediately below) as
-# needed, and then scroll down to "USER MODIFIED SECTION" to see examples of
-# how to call the functions to create multi-part figures. You will have to
-# fiddle around with the x and y bounds, GridSpec arguments, colourbar axes,
-# etc. so that the positioning looks okay.
+# To modify for your purposes, adjust the file paths (immediately below
+# functions) as needed, and then scroll down to "USER MODIFIED SECTION" to see
+# examples of how to call the functions to create multi-part figures. You will
+# have to fiddle around with the x and y bounds, GridSpec arguments, colourbar
+# axes, etc. so that the positioning looks okay.
+
+# For the given variable in MetROMS, low-res FESOM, and high-res FESOM, find
+# the max and min values across all 3 models in the given region.
+# Input:
+# roms_data = 2D field of data on the MetROMS grid (lat x lon)
+# fesom_data_lr, fesom_data_hr = data for each 2D element on the FESOM low-res
+#                and high-res meshes respectively
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# cavity = optional boolean indicating to only consider values in ice shelf
+#          cavities (default True)
+# Output:
+# var_min, var_max = min and max data values in this region across all 3 models
+def get_min_max (roms_data, fesom_data_lr, fesom_data_hr, x_min, x_max, y_min, y_max, cavity=True):
+
+    # Start with ROMS
+    loc = (roms_x >= x_min)*(roms_x <= x_max)*(roms_y >= y_min)*(roms_y <= y_max)
+    var_min = amin(roms_data[loc])
+    var_max = amax(roms_data[loc])
+    # Modify with FESOM
+    # Low-res
+    i = 0
+    for elm in elements_lr:
+        if (not cavity) or (cavity and elm.cavity):
+            if any(elm.x >= x_min) and any(elm.x <= x_max) and any(elm.y >= y_min) and any(elm.y <= y_max):
+                if fesom_data_lr[i] < var_min:
+                    var_min = fesom_data_lr[i]
+                if fesom_data_lr[i] > var_max:
+                    var_max = fesom_data_lr[i]
+            i += 1
+    # High-res
+    i = 0
+    for elm in elements_hr:
+        if (not cavity) or (cavity and elm.cavity):
+            if any(elm.x >= x_min) and any(elm.x <= x_max) and any(elm.y >= y_min) and any(elm.y <= y_max):
+                if fesom_data_hr[i] < var_min:
+                    var_min = fesom_data_hr[i]
+                if fesom_data_hr[i] > var_max:
+                    var_max = fesom_data_hr[i]
+            i += 1
+    return var_min, var_max
+
+
+# Create a 2D vector field for vertically averaged velocity in MetROMS, low-res
+# FESOM, and high-res FESOM for the given region. Average velocity over
+# horizontal bins (in x and y) for easy plotting.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# num_bins_x, num_bins_y = number of bins to use for x and y dimensions
+# Output:
+# x_centres, y_centres = 1D arrays of length num_bins containing x and y
+#                        coordinates of the bin centres
+# roms_ubin, roms_vbin = 2D arrays of size num_bins_y x num_bins_x containing
+#                        vector components for MetROMS at each bin
+# fesom_ubin_lr, fesom_vbin_lr = same for FESOM low-res
+# fesom_ubin_hr, fesom_vbin_hr = same for FESOM high-res
+def make_vectors (x_min, x_max, y_min, y_max, num_bins_x, num_bins_y):
+
+    # Set up bins (edges)
+    x_bins = linspace(x_min, x_max, num=num_bins_x+1)
+    y_bins = linspace(y_min, y_max, num=num_bins_y+1)
+    # Calculate centres of bins (for plotting)
+    x_centres = 0.5*(x_bins[:-1] + x_bins[1:])
+    y_centres = 0.5*(y_bins[:-1] + y_bins[1:])
+    # ROMS
+    # First set up arrays to integrate velocity in each bin
+    # Simple averaging of all the points inside each bin
+    roms_ubin = zeros([size(y_centres), size(x_centres)])
+    roms_vbin = zeros([size(y_centres), size(x_centres)])
+    roms_num_pts = zeros([size(y_centres), size(x_centres)])
+    # First convert to polar coordinates, rotate to account for
+    # longitude in circumpolar projection, and convert back to vector
+    # components
+    theta_roms = arctan2(roms_v, roms_u)
+    theta_circ_roms = theta_roms - roms_lon*deg2rad
+    u_circ_roms = roms_speed*cos(theta_circ_roms)
+    v_circ_roms = roms_speed*sin(theta_circ_roms)
+    # Loop over all points (can't find a better way to do this)
+    for j in range(size(roms_speed,0)):
+        for i in range(size(roms_speed,1)):
+            # Make sure data isn't masked (i.e. land or open ocean)
+            if u_circ_roms[j,i] is not ma.masked:
+                # Check if we're in the region of interest
+                if roms_x[j,i] > x_min and roms_x[j,i] < x_max and roms_y[j,i] > y_min and roms_y[j,i] < y_max:
+                    # Figure out which bins this falls into
+                    x_index = nonzero(x_bins > roms_x[j,i])[0][0]-1
+                    y_index = nonzero(y_bins > roms_y[j,i])[0][0]-1
+                    # Integrate
+                    roms_ubin[y_index, x_index] += u_circ_roms[j,i]
+                    roms_vbin[y_index, x_index] += v_circ_roms[j,i]
+                    roms_num_pts[y_index, x_index] += 1
+    # Convert from sums to averages
+    # First mask out points with no data
+    roms_ubin = ma.masked_where(roms_num_pts==0, roms_ubin)
+    roms_vbin = ma.masked_where(roms_num_pts==0, roms_vbin)
+    # Divide everything else by the number of points
+    flag = roms_num_pts > 0
+    roms_ubin[flag] = roms_ubin[flag]/roms_num_pts[flag]
+    roms_vbin[flag] = roms_vbin[flag]/roms_num_pts[flag]
+    # FESOM low-res
+    fesom_ubin_lr = zeros([size(y_centres), size(x_centres)])
+    fesom_vbin_lr = zeros([size(y_centres), size(x_centres)])
+    fesom_num_pts_lr = zeros([size(y_centres), size(x_centres)])
+    theta_fesom_lr = arctan2(node_v_lr, node_u_lr)
+    theta_circ_fesom_lr = theta_fesom_lr - fesom_lon_lr*deg2rad
+    u_circ_fesom_lr = node_speed_lr*cos(theta_circ_fesom_lr)
+    v_circ_fesom_lr = node_speed_lr*sin(theta_circ_fesom_lr)
+    # Loop over 2D nodes to fill in the velocity bins as before
+    for n in range(fesom_n2d_lr):
+        if fesom_cavity_lr[n]:
+            if fesom_x_lr[n] > x_min and fesom_x_lr[n] < x_max and fesom_y_lr[n] > y_min and fesom_y_lr[n] < y_max:
+                x_index = nonzero(x_bins > fesom_x_lr[n])[0][0]-1
+                y_index = nonzero(y_bins > fesom_y_lr[n])[0][0]-1
+                fesom_ubin_lr[y_index, x_index] += u_circ_fesom_lr[n]
+                fesom_vbin_lr[y_index, x_index] += v_circ_fesom_lr[n]
+                fesom_num_pts_lr[y_index, x_index] += 1
+    fesom_ubin_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_ubin_lr)
+    fesom_vbin_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_vbin_lr)
+    flag = fesom_num_pts_lr > 0
+    fesom_ubin_lr[flag] = fesom_ubin_lr[flag]/fesom_num_pts_lr[flag]
+    fesom_vbin_lr[flag] = fesom_vbin_lr[flag]/fesom_num_pts_lr[flag]
+    # FESOM high-res
+    fesom_ubin_hr = zeros([size(y_centres), size(x_centres)])
+    fesom_vbin_hr = zeros([size(y_centres), size(x_centres)])
+    fesom_num_pts_hr = zeros([size(y_centres), size(x_centres)])
+    theta_fesom_hr = arctan2(node_v_hr, node_u_hr)
+    theta_circ_fesom_hr = theta_fesom_hr - fesom_lon_hr*deg2rad
+    u_circ_fesom_hr = node_speed_hr*cos(theta_circ_fesom_hr)
+    v_circ_fesom_hr = node_speed_hr*sin(theta_circ_fesom_hr)
+    for n in range(fesom_n2d_hr):
+        if fesom_cavity_hr[n]:
+            if fesom_x_hr[n] > x_min and fesom_x_hr[n] < x_max and fesom_y_hr[n] > y_min and fesom_y_hr[n] < y_max:
+                x_index = nonzero(x_bins > fesom_x_hr[n])[0][0]-1
+                y_index = nonzero(y_bins > fesom_y_hr[n])[0][0]-1
+                fesom_ubin_hr[y_index, x_index] += u_circ_fesom_hr[n]
+                fesom_vbin_hr[y_index, x_index] += v_circ_fesom_hr[n]
+                fesom_num_pts_hr[y_index, x_index] += 1
+    fesom_ubin_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_ubin_hr)
+    fesom_vbin_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_vbin_hr)
+    flag = fesom_num_pts_hr > 0
+    fesom_ubin_hr[flag] = fesom_ubin_hr[flag]/fesom_num_pts_hr[flag]
+    fesom_vbin_hr[flag] = fesom_vbin_hr[flag]/fesom_num_pts_hr[flag]
+
+    return x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr
+
+
+# Plot ice shelf draft for MetROMS, low-res FESOM, and high-res FESOM for the
+# given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the ice shelf draft title, for
+#          use in a figure showing multiple variables
+def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
+
+    # Set up a grey square for FESOM to fill the background with land
+    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
+    land_square = zeros(shape(x_reg_fesom))
+    # Find bounds on variable in this region
+    var_min, var_max = get_min_max(roms_draft, fesom_draft_lr, fesom_draft_hr, x_min, x_max, y_min, y_max)
+
+    # MetROMS
+    ax = subplot(gs[0,0], aspect='equal')
+    # First shade land and zice in grey
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
+    # Fill in the missing circle
+    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
+    # Now shade the data
+    pcolor(roms_x, roms_y, roms_draft, vmin=var_min, vmax=var_max, cmap='jet')
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # FESOM low-res
+    ax = subplot(gs[0,1], aspect='equal')
+    # Start with land background
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    # Add ice shelf elements
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(array(fesom_draft_lr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    # Mask out the open ocean in white
+    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Main title
+    title(letter + ') Ice shelf draft (m)', fontsize=20)
+
+    # FESOM high-res
+    ax = subplot(gs[0,2], aspect='equal')
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(array(fesom_draft_hr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Colourbar on the right
+    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
+
+
+# Plot ice shelf melt rate for MetROMS, low-res FESOM, and high-res FESOM for
+# the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# change_points = list of size 3 containing values where the colourmap should
+#                 transition (1) from yellow to orange, (2) from orange to red,
+#                 (3) from red to magenta. Should not include the minimum value,
+#                 0, or the maximum value. This way the custom colourmap can be 
+#                 adjusted so that all melt rates are visible, particularly
+#                 for ice shelves with strong spatial variations in melt.
+# letter = 'a', 'b', 'c', etc. to add before the ice shelf melt rate title, for
+#          use in a figure showing multiple variables
+# y0 = y-coordinate of model titles for the entire plot, assuming melt rate is
+#      always at the top (i.e. letter='a'). Play around between 1.15 and 1.35.
+# lon_lines = list of longitudes to overlay as dotted lines on the first panel
+#             (-180 to 180)
+# lat_lines = list of latitudes to overlay (-90 to 90)
+def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points, letter, y0, lon_lines, lat_lines):
+
+    # Set up a grey square for FESOM to fill the background with land
+    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
+    land_square = zeros(shape(x_reg_fesom))
+    # Find bounds on variable in this region
+    var_min, var_max = get_min_max(roms_melt, fesom_melt_lr, fesom_melt_hr, x_min, x_max, y_min, y_max)
+    # Special colour map
+    if var_min < 0:
+        # There is refreezing here; include blue for elements < 0
+        cmap_vals = array([var_min, 0, change_points[0], change_points[1], change_points[2], var_max])
+        cmap_colors = [(0.26, 0.45, 0.86), (1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
+        cmap_vals_norm = (cmap_vals - var_min)/(var_max - var_min)
+        cmap_vals_norm[-1] = 1
+        cmap_list = []
+        for i in range(size(cmap_vals)):
+            cmap_list.append((cmap_vals_norm[i], cmap_colors[i]))
+        mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
+    else:
+        # No refreezing
+        cmap_vals = array([0, change_points[0], change_points[1], change_points[2], var_max])
+        cmap_colors = [(1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
+        cmap_vals_norm = cmap_vals/var_max
+        cmap_vals_norm[-1] = 1
+        cmap_list = []
+        for i in range(size(cmap_vals)):
+            cmap_list.append((cmap_vals_norm[i], cmap_colors[i]))
+        mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
+
+    # Make sure longitudes to overlay are between 0 and 360, to suit ROMS
+    # convention
+    for i in range(len(lon_lines)):
+        if lon_lines[i] < 0:
+            lon_lines[i] += 360
+
+    # Plot MetROMS
+    ax = subplot(gs[0,0], aspect='equal')
+    # First shade land and zice in grey
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
+    # Fill in the missing circle
+    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
+    # Now shade the data
+    pcolor(roms_x, roms_y, roms_melt, vmin=var_min, vmax=var_max, cmap=mf_cmap)
+    # Overlay longitudes
+    contour(roms_x, roms_y, roms_lon, lon_lines, colors='black', linestyles='dotted')
+    # Overlay latitudes
+    contour(roms_x, roms_y, roms_lat, lat_lines, colors='black', linestyles='dotted')
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Melt rate is always at the top, so add model labels
+    text(0.5, y0, 'MetROMS', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
+
+    # FESOM low-res
+    ax = subplot(gs[0,1], aspect='equal')
+    # Start with land background
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    # Add ice shelf elements
+    img = PatchCollection(patches_lr, cmap=mf_cmap)
+    img.set_array(array(fesom_melt_lr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    # Mask out the open ocean in white
+    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title(letter + ') Ice shelf melt rate (m/y)', fontsize=20)
+    text(0.5, y0, 'FESOM (low-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
+
+    # FESOM high-res
+    ax = subplot(gs[0,2], aspect='equal')
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    img = PatchCollection(patches_hr, cmap=mf_cmap)
+    img.set_array(array(fesom_melt_hr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Colourbar on the right
+    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
+    text(0.5, y0, 'FESOM (high-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
+
+
+# Plot bottom water temperature for MetROMS, low-res FESOM, and high-res FESOM
+# for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the bottom water temp title, for
+#          use in a figure showing multiple variables
+def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
+
+    # Set up a grey square for FESOM to fill the background with land
+    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
+    land_square = zeros(shape(x_reg_fesom))
+    # Find bounds on variable in this region
+    var_min, var_max = get_min_max(roms_bwtemp, fesom_bwtemp_lr, fesom_bwtemp_hr, x_min, x_max, y_min, y_max, cavity=False)
+
+    # Plot MetROMS
+    ax = subplot(gs[0,0], aspect='equal')
+    # First shade land and zice in grey
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
+    # Fill in the missing circle
+    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
+    # Now shade the data
+    pcolor(roms_x, roms_y, roms_bwtemp, vmin=var_min, vmax=var_max, cmap='jet')
+    # Add a black contour for the ice shelf front
+    rcParams['contour.negative_linestyle'] = 'solid'
+    contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # FESOM low-res
+    ax = subplot(gs[0,1], aspect='equal')
+    # Start with land background
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    # Add ice shelf elements
+    img = PatchCollection(patches_all_lr, cmap='jet')
+    img.set_array(array(fesom_bwtemp_lr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    # Add ice shelf front contour lines
+    fesom_contours_lr = LineCollection(contour_lines_lr, edgecolor='black', linewidth=1)
+    ax.add_collection(fesom_contours_lr)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Main title
+    title(letter + r') Bottom water temperature ($^{\circ}$C)', fontsize=20)
+
+    # FESOM high-res
+    ax = subplot(gs[0,2], aspect='equal')
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    img = PatchCollection(patches_all_hr, cmap='jet')
+    img.set_array(array(fesom_bwtemp_hr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    #overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
+    #overlay.set_edgecolor('face')
+    #ax.add_collection(overlay)
+    fesom_contours_hr = LineCollection(contour_lines_hr, edgecolor='black', linewidth=1)
+    ax.add_collection(fesom_contours_hr)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Colourbar on the right
+    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
+    
+
+# Plot bottom water salinity for MetROMS, low-res FESOM, and high-res FESOM
+# for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
+#          for use in a figure showing multiple variables
+def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
+
+    # Set up a grey square for FESOM to fill the background with land
+    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
+    land_square = zeros(shape(x_reg_fesom))
+    # Find bounds on variable in this region
+    var_min, var_max = get_min_max(roms_bwsalt, fesom_bwsalt_lr, fesom_bwsalt_hr, x_min, x_max, y_min, y_max, cavity=False)
+
+    # Plot MetROMS
+    ax = subplot(gs[0,0], aspect='equal')
+    # First shade land and zice in grey
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
+    # Fill in the missing circle
+    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
+    # Now shade the data
+    pcolor(roms_x, roms_y, roms_bwsalt, vmin=var_min, vmax=var_max, cmap='jet')
+    # Add a black contour for the ice shelf front
+    rcParams['contour.negative_linestyle'] = 'solid'
+    contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # FESOM low-res
+    ax = subplot(gs[0,1], aspect='equal')
+    # Start with land background
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    # Add ice shelf elements
+    img = PatchCollection(patches_all_lr, cmap='jet')
+    img.set_array(array(fesom_bwsalt_lr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    # Mask out the open ocean in white
+    #overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
+    #overlay.set_edgecolor('face')
+    #ax.add_collection(overlay)
+    # Add ice shelf front contour lines
+    fesom_contours_lr = LineCollection(contour_lines_lr, edgecolor='black', linewidth=1)
+    ax.add_collection(fesom_contours_lr)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Main title
+    title(letter + ') Bottom water salinity (psu)', fontsize=20)
+
+    # FESOM high-res
+    ax = subplot(gs[0,2], aspect='equal')
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    img = PatchCollection(patches_all_hr, cmap='jet')
+    img.set_array(array(fesom_bwsalt_hr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    #overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
+    #overlay.set_edgecolor('face')
+    #ax.add_collection(overlay)
+    fesom_contours_hr = LineCollection(contour_lines_hr, edgecolor='black', linewidth=1)
+    ax.add_collection(fesom_contours_hr)
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Colourbar on the right
+    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
+
+
+# Plot vertically averaged velocity for MetROMS, low-res FESOM, and high-res
+# FESOM for the given region, in the given axes.
+# Input:
+# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
+#               transformation from above) for the desired region
+# gs = GridSpec object of size 1x3 to plot in
+# cbaxes = Axes object for location of colourbar
+# cbar_ticks = 1D array containing values for ticks on colourbar
+# x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr,
+#            fesom_ubin_hr, fesom_vbin_hr = output variables from the 
+#                           "make_vectors" function for the given region
+# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
+#          for use in a figure showing multiple variables
+# loc_string = optional string containing location title, in the case of
+#              velocity being zoomed into a smaller region to the other
+#              variables (eg "George VI Ice Shelf" for the Bellingshausen plot)
+# arrow_scale, arrow_headwidth, arrow_headlength = optional parameters for
+#              arrows on vector overlay
+def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, letter, loc_string=None, arrow_scale=0.9, arrow_headwidth=8, arrow_headlength=9):
+
+    # Set up a grey square for FESOM to fill the background with land
+    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
+    land_square = zeros(shape(x_reg_fesom))
+    # Find bounds on variable in this region
+    var_min, var_max = get_min_max(roms_speed, fesom_speed_lr, fesom_speed_hr, x_min, x_max, y_min, y_max)
+
+    # Plot MetROMS
+    ax = subplot(gs[0,0], aspect='equal')
+    # First shade land and zice in grey
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
+    # Fill in the missing circle
+    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
+    # Now shade the data
+    pcolor(roms_x, roms_y, roms_speed, vmin=var_min, vmax=var_max, cmap='cool')
+    # Overlay vectors
+    quiver(x_centres, y_centres, roms_ubin, roms_vbin, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # FESOM low-res
+    ax = subplot(gs[0,1], aspect='equal')
+    # Start with land background
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    # Add ice shelf elements
+    img = PatchCollection(patches_lr, cmap='cool')
+    img.set_array(array(fesom_speed_lr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    # Mask out the open ocean in white
+    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    # Overlay vectors
+    quiver(x_centres, y_centres, fesom_ubin_lr, fesom_vbin_lr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Main title
+    if loc_string is None:
+        title(letter + ') Vertically averaged ocean velocity (m/s)', fontsize=20)
+    else:
+        title(letter + ') Vertically averaged ocean velocity (m/s): '+loc_string, fontsize=15)
+
+    # FESOM high-res
+    ax = subplot(gs[0,2], aspect='equal')
+    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
+    img = PatchCollection(patches_hr, cmap='cool')
+    img.set_array(array(fesom_speed_hr))
+    img.set_edgecolor('face')
+    img.set_clim(vmin=var_min, vmax=var_max)
+    ax.add_collection(img)
+    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
+    overlay.set_edgecolor('face')
+    ax.add_collection(overlay)
+    quiver(x_centres, y_centres, fesom_ubin_hr, fesom_vbin_hr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
+    xlim([x_min, x_max])
+    ylim([y_min, y_max])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Colourbar on the right
+    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
+
+
+# Plot zonal slices (latitude vs depth) of temperature and salinity for
+# MetROMS, low-res FESOM, and high-res FESOM through the given longitude, in the
+# given axes.
+# Input:
+# lon0 = longitude to plot (-180 to 180)
+# lat_min, lat_max = bounds on latitude to plot (-90 to 90)
+# lat_ticks = array of floats containing latitude values to tick
+# lat_labels = array of strings containing label for each tick
+# depth_min, depth_max = bounds on depth to plot (negative, in metres)
+# depth_ticks, depth_labels = tick locations and labels as for latitude
+# gs1, gs2 = GridSpec objects of size 1x3, in which to plot temperature and
+#            salinity respectively
+# cbaxes1, cbaxes2 = Axes objects for locations of temperature and salinity
+#                    colourbars
+# cbar_ticks1, cbar_ticks2 = 1D arrays containing values for ticks on
+#                            temperature and salinity colourbars
+# letter1, letter2 = 'a', 'b', 'c', etc. to add before the temperature and 
+#                    salinity titles
+# loc_string = optional string containing location title, in the case of
+#              plotting slices through a single ice shelf in a large region
+#              (eg "Fimbul Ice Shelf" for the Eastern Weddell plot)
+def plot_zonal_ts (lon0, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs1, gs2, cbaxes1, cbaxes2, cbar_ticks1, cbar_ticks2, letter1, letter2, loc_string=None):
+
+    # Figure out what to write on the title about longitude
+    if lon0 < 0:
+        lon_string = str(-lon0)+r'$^{\circ}$W'
+    else:
+        lon_string = str(lon0)+r'$^{\circ}$E'
+
+    # ROMS
+    # Read temperature and salinity
+    id = Dataset(roms_file, 'r')
+    roms_temp_3d = id.variables['temp'][0,:,:,:]
+    roms_salt_3d = id.variables['salt'][0,:,:,:]
+    id.close()
+    # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
+    roms_z_3d, sc_r, Cs_r = calc_z(roms_h, roms_zice, theta_s, theta_b, hc, N)
+    # Make sure we are in the range 0-360
+    if lon0 < 0:
+        lon0 += 360
+    # Interpolate to lon0
+    roms_temp, roms_z_1d, roms_lat_1d = interp_lon_roms(roms_temp_3d, roms_z_3d, roms_lat, roms_lon, lon0)
+    roms_salt, roms_z_1d, roms_lat_1d = interp_lon_roms(roms_salt_3d, roms_z_3d, roms_lat, roms_lon, lon0)
+    # Switch back to range -180-180
+    if lon0 > 180:
+        lon0 -= 360
+
+    # FESOM low-res
+    # Read temperature and salinity
+    id = Dataset(fesom_file_lr_o, 'r')
+    fesom_temp_nodes_lr = id.variables['temp'][0,:]
+    fesom_salt_nodes_lr = id.variables['salt'][0,:]
+    id.close()
+    # Build arrays of SideElements making up zonal slices
+    selements_temp_lr = fesom_sidegrid(elm2D_lr, fesom_temp_nodes_lr, lon0, lat_max)
+    selements_salt_lr = fesom_sidegrid(elm2D_lr, fesom_salt_nodes_lr, lon0, lat_max)
+    # Build array of quadrilateral patches for the plots, and data values
+    # corresponding to each SideElement
+    spatches_lr = []
+    fesom_temp_lr = []
+    for selm in selements_temp_lr:
+        # Make patch
+        coord = transpose(vstack((selm.y, selm.z)))
+        spatches_lr.append(Polygon(coord, True, linewidth=0.))
+        # Save data value
+        fesom_temp_lr.append(selm.var)
+    fesom_temp_lr = array(fesom_temp_lr)
+    # Salinity has same patches but different values
+    fesom_salt_lr = []
+    for selm in selements_salt_lr:
+        fesom_salt_lr.append(selm.var)
+    fesom_salt_lr = array(fesom_salt_lr)
+
+    # FESOM high-res
+    id = Dataset(fesom_file_hr_o, 'r')
+    fesom_temp_nodes_hr = id.variables['temp'][0,:]
+    fesom_salt_nodes_hr = id.variables['salt'][0,:]
+    id.close()
+    selements_temp_hr = fesom_sidegrid(elm2D_hr, fesom_temp_nodes_hr, lon0, lat_max)
+    selements_salt_hr = fesom_sidegrid(elm2D_hr, fesom_salt_nodes_hr, lon0, lat_max)
+    spatches_hr = []
+    fesom_temp_hr = []
+    for selm in selements_temp_hr:
+        coord = transpose(vstack((selm.y, selm.z)))
+        spatches_hr.append(Polygon(coord, True, linewidth=0.))
+        fesom_temp_hr.append(selm.var)
+    fesom_temp_hr = array(fesom_temp_hr)
+    fesom_salt_hr = []
+    for selm in selements_salt_hr:
+        fesom_salt_hr.append(selm.var)
+    fesom_salt_hr = array(fesom_salt_hr)
+
+    # Find bounds on each variable
+    flag = (roms_lat_1d >= lat_min)*(roms_lat_1d <= lat_max)
+    temp_min = amin(array([amin(roms_temp[flag]), amin(fesom_temp_lr), amin(fesom_temp_hr)]))
+    temp_max = amax(array([amax(roms_temp[flag]), amax(fesom_temp_lr), amax(fesom_temp_hr)]))
+    salt_min = amin(array([amin(roms_salt[flag]), amin(fesom_salt_lr), amin(fesom_salt_hr)]))
+    salt_max = amax(array([amax(roms_salt[flag]), amax(fesom_salt_lr), amax(fesom_salt_hr)]))
+
+    # Plot temperature
+    # MetROMS
+    ax = subplot(gs1[0,0])
+    pcolor(roms_lat_1d, roms_z_1d, roms_temp, vmin=temp_min, vmax=temp_max, cmap='jet')
+    ylabel('Depth (m)', fontsize=12)
+    xlabel('Latitude', fontsize=12)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticks(lat_ticks)
+    ax.set_xticklabels(lat_labels)
+    ax.set_yticks(depth_ticks)
+    ax.set_yticklabels(depth_labels)
+
+    # FESOM low-res
+    ax = subplot(gs1[0,1])
+    img = PatchCollection(spatches_lr, cmap='jet')
+    img.set_array(fesom_temp_lr)
+    img.set_edgecolor('face')
+    img.set_clim(vmin=temp_min, vmax=temp_max)
+    ax.add_collection(img)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    if loc_string is None:
+        title(letter1 + r') Temperature ($^{\circ}$C) through ' + lon_string, fontsize=20)
+    else:
+        title(letter1 + r') Temperature ($^{\circ}$C) through ' + lon_string + ': ' + loc_string, fontsize=20)
+
+    # FESOM high-res
+    ax = subplot(gs1[0,2])
+    img = PatchCollection(spatches_hr, cmap='jet')
+    img.set_array(fesom_temp_hr)
+    img.set_edgecolor('face')
+    img.set_clim(vmin=temp_min, vmax=temp_max)
+    ax.add_collection(img)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    # Add a colorbar
+    cbar = colorbar(img, cax=cbaxes1, ticks=cbar_ticks1)
+
+    # Plot salinity
+    # MetROMS
+    ax = subplot(gs2[0,0])
+    pcolor(roms_lat_1d, roms_z_1d, roms_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
+    ylabel('Depth (m)', fontsize=12)
+    xlabel('Latitude', fontsize=12)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticks(lat_ticks)
+    ax.set_xticklabels(lat_labels)
+    ax.set_yticks(depth_ticks)
+    ax.set_yticklabels(depth_labels)
+    # FESOM low-res
+    ax = subplot(gs2[0,1])
+    img = PatchCollection(spatches_lr, cmap='jet')
+    img.set_array(fesom_salt_lr)
+    img.set_edgecolor('face')
+    img.set_clim(vmin=salt_min, vmax=salt_max)
+    ax.add_collection(img)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    if loc_string is None:
+        title(letter2 + ') Salinity (psu) through ' + lon_string, fontsize=20)
+    else:
+        title(letter2 + ') Salinity (psu) through ' + lon_string + ': ' + loc_string, fontsize=20)
+    # FESOM high-res
+    ax = subplot(gs2[0,2])
+    img = PatchCollection(spatches_hr, cmap='jet')
+    img.set_array(fesom_salt_hr)
+    img.set_edgecolor('face')
+    img.set_clim(vmin=salt_min, vmax=salt_max)
+    ax.add_collection(img)
+    xlim([lat_min, lat_max])
+    ylim([depth_min, depth_max])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    # Add a colorbar
+    cbar = colorbar(img, cax=cbaxes2, ticks=cbar_ticks2)
+    
+
+#***********MAIN PROCESSING***********
 
 # File paths
 roms_grid = '/short/m68/kaa561/metroms_iceshelf/apps/common/grid/circ30S_quarterdegree.nc'
@@ -212,8 +977,6 @@ id = Dataset(roms_file, 'r')
 # Read bottom layer
 roms_bwtemp = id.variables['temp'][0,0,:,:]
 id.close()
-# Mask open ocean and land
-#roms_bwtemp = ma.masked_where(roms_zice==0, roms_bwtemp)
 
 # FESOM low-res
 # Read full 3D field to start
@@ -223,7 +986,6 @@ id.close()
 # Calculate average over 3 corners of each bottom element
 fesom_bwtemp_lr = []
 for elm in elements_lr:
-    #if elm.cavity:
     fesom_bwtemp_lr.append(mean([node_bwtemp_lr[elm.nodes[0].find_bottom().id], node_bwtemp_lr[elm.nodes[1].find_bottom().id], node_bwtemp_lr[elm.nodes[2].find_bottom().id]]))
 
 # FESOM high-res
@@ -232,7 +994,6 @@ node_bwtemp_hr = id.variables['temp'][0,:]
 id.close()
 fesom_bwtemp_hr = []
 for elm in elements_hr:
-    #if elm.cavity:
     fesom_bwtemp_hr.append(mean([node_bwtemp_hr[elm.nodes[0].find_bottom().id], node_bwtemp_hr[elm.nodes[1].find_bottom().id], node_bwtemp_hr[elm.nodes[2].find_bottom().id]]))    
 
 print 'Calculating bottom water salinity'
@@ -242,8 +1003,6 @@ id = Dataset(roms_file, 'r')
 # Read bottom layer
 roms_bwsalt = id.variables['salt'][0,0,:,:]
 id.close()
-# Mask open ocean and land
-#roms_bwsalt = ma.masked_where(roms_zice==0, roms_bwsalt)
 
 # FESOM low-res
 # Read full 3D field to start
@@ -253,7 +1012,6 @@ id.close()
 # Calculate average over 3 corners of each bottom element
 fesom_bwsalt_lr = []
 for elm in elements_lr:
-    #if elm.cavity:
     fesom_bwsalt_lr.append(mean([node_bwsalt_lr[elm.nodes[0].find_bottom().id], node_bwsalt_lr[elm.nodes[1].find_bottom().id], node_bwsalt_lr[elm.nodes[2].find_bottom().id]]))
 
 # FESOM high-res
@@ -262,7 +1020,6 @@ node_bwsalt_hr = id.variables['salt'][0,:]
 fesom_bwsalt_hr = []
 id.close()
 for elm in elements_hr:
-    #if elm.cavity:
     fesom_bwsalt_hr.append(mean([node_bwsalt_hr[elm.nodes[0].find_bottom().id], node_bwsalt_hr[elm.nodes[1].find_bottom().id], node_bwsalt_hr[elm.nodes[2].find_bottom().id]]))    
 
 print 'Calculating vertically averaged velocity'
@@ -649,7 +1406,7 @@ gs_d.update(left=0.05, right=0.9, bottom=0.025, top=0.165, wspace=0.05)
 cbaxes_tmp = fig.add_axes([0.91, 0.05, 0.025, 0.08])
 cbar_ticks = arange(0.02, 0.08+0.03, 0.03)
 plot_velavg(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_d, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'd', loc_string='Totten Ice Shelf', arrow_scale=0.7, arrow_headwidth=8, arrow_headlength=9)
-suptitle('Australian sector', fontsize=30)
+suptitle('Australian Sector', fontsize=30)
 fig.show()
 fig.savefig('australian.png')
 
@@ -812,772 +1569,6 @@ fig.show()
 fig.savefig('larsen.png')
 
 
-# For the given variable in MetROMS, low-res FESOM, and high-res FESOM, find
-# the max and min values across all 3 models in the given region.
-# Input:
-# roms_data = 2D field of data on the MetROMS grid (lat x lon)
-# fesom_data_lr, fesom_data_hr = data for each 2D element on the FESOM low-res
-#                and high-res meshes respectively
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# cavity = optional boolean indicating to only consider values in ice shelf
-#          cavities (default True)
-# Output:
-# var_min, var_max = min and max data values in this region across all 3 models
-def get_min_max (roms_data, fesom_data_lr, fesom_data_hr, x_min, x_max, y_min, y_max, cavity=True):
-
-    # Start with ROMS
-    loc = (roms_x >= x_min)*(roms_x <= x_max)*(roms_y >= y_min)*(roms_y <= y_max)
-    var_min = amin(roms_data[loc])
-    var_max = amax(roms_data[loc])
-    # Modify with FESOM
-    # Low-res
-    i = 0
-    for elm in elements_lr:
-        if (not cavity) or (cavity and elm.cavity):
-            if any(elm.x >= x_min) and any(elm.x <= x_max) and any(elm.y >= y_min) and any(elm.y <= y_max):
-                if fesom_data_lr[i] < var_min:
-                    var_min = fesom_data_lr[i]
-                if fesom_data_lr[i] > var_max:
-                    var_max = fesom_data_lr[i]
-            i += 1
-    # High-res
-    i = 0
-    for elm in elements_hr:
-        if (not cavity) or (cavity and elm.cavity):
-            if any(elm.x >= x_min) and any(elm.x <= x_max) and any(elm.y >= y_min) and any(elm.y <= y_max):
-                if fesom_data_hr[i] < var_min:
-                    var_min = fesom_data_hr[i]
-                if fesom_data_hr[i] > var_max:
-                    var_max = fesom_data_hr[i]
-            i += 1
-    return var_min, var_max
-
-
-# Create a 2D vector field for vertically averaged velocity in MetROMS, low-res
-# FESOM, and high-res FESOM for the given region. Average velocity over
-# horizontal bins (in x and y) for easy plotting.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# num_bins_x, num_bins_y = number of bins to use for x and y dimensions
-# Output:
-# x_centres, y_centres = 1D arrays of length num_bins containing x and y
-#                        coordinates of the bin centres
-# roms_ubin, roms_vbin = 2D arrays of size num_bins x num_bins containing
-#                        vector components for MetROMS at each bin
-# fesom_ubin_lr, fesom_vbin_lr = same for FESOM low-res
-# fesom_ubin_hr, fesom_vbin_hr = same for FESOM high-res
-def make_vectors (x_min, x_max, y_min, y_max, num_bins_x, num_bins_y):
-
-    # Set up bins (edges)
-    x_bins = linspace(x_min, x_max, num=num_bins_x+1)
-    y_bins = linspace(y_min, y_max, num=num_bins_y+1)
-    # Calculate centres of bins (for plotting)
-    x_centres = 0.5*(x_bins[:-1] + x_bins[1:])
-    y_centres = 0.5*(y_bins[:-1] + y_bins[1:])
-    # ROMS
-    # First set up arrays to integrate velocity in each bin
-    # Simple averaging of all the points inside each bin
-    roms_ubin = zeros([size(y_centres), size(x_centres)])
-    roms_vbin = zeros([size(y_centres), size(x_centres)])
-    roms_num_pts = zeros([size(y_centres), size(x_centres)])
-    # First convert to polar coordinates, rotate to account for
-    # longitude in circumpolar projection, and convert back to vector
-    # components
-    theta_roms = arctan2(roms_v, roms_u)
-    theta_circ_roms = theta_roms - roms_lon*deg2rad
-    u_circ_roms = roms_speed*cos(theta_circ_roms)
-    v_circ_roms = roms_speed*sin(theta_circ_roms)
-    # Loop over all points (can't find a better way to do this)
-    for j in range(size(roms_speed,0)):
-        for i in range(size(roms_speed,1)):
-            # Make sure data isn't masked (i.e. land or open ocean)
-            if u_circ_roms[j,i] is not ma.masked:
-                # Check if we're in the region of interest
-                if roms_x[j,i] > x_min and roms_x[j,i] < x_max and roms_y[j,i] > y_min and roms_y[j,i] < y_max:
-                    # Figure out which bins this falls into
-                    x_index = nonzero(x_bins > roms_x[j,i])[0][0]-1
-                    y_index = nonzero(y_bins > roms_y[j,i])[0][0]-1
-                    # Integrate
-                    roms_ubin[y_index, x_index] += u_circ_roms[j,i]
-                    roms_vbin[y_index, x_index] += v_circ_roms[j,i]
-                    roms_num_pts[y_index, x_index] += 1
-    # Convert from sums to averages
-    # First mask out points with no data
-    roms_ubin = ma.masked_where(roms_num_pts==0, roms_ubin)
-    roms_vbin = ma.masked_where(roms_num_pts==0, roms_vbin)
-    # Divide everything else by the number of points
-    flag = roms_num_pts > 0
-    roms_ubin[flag] = roms_ubin[flag]/roms_num_pts[flag]
-    roms_vbin[flag] = roms_vbin[flag]/roms_num_pts[flag]
-    # FESOM low-res
-    fesom_ubin_lr = zeros([size(y_centres), size(x_centres)])
-    fesom_vbin_lr = zeros([size(y_centres), size(x_centres)])
-    fesom_num_pts_lr = zeros([size(y_centres), size(x_centres)])
-    theta_fesom_lr = arctan2(node_v_lr, node_u_lr)
-    theta_circ_fesom_lr = theta_fesom_lr - fesom_lon_lr*deg2rad
-    u_circ_fesom_lr = node_speed_lr*cos(theta_circ_fesom_lr)
-    v_circ_fesom_lr = node_speed_lr*sin(theta_circ_fesom_lr)
-    # Loop over 2D nodes to fill in the velocity bins as before
-    for n in range(fesom_n2d_lr):
-        if fesom_cavity_lr[n]:
-            if fesom_x_lr[n] > x_min and fesom_x_lr[n] < x_max and fesom_y_lr[n] > y_min and fesom_y_lr[n] < y_max:
-                x_index = nonzero(x_bins > fesom_x_lr[n])[0][0]-1
-                y_index = nonzero(y_bins > fesom_y_lr[n])[0][0]-1
-                fesom_ubin_lr[y_index, x_index] += u_circ_fesom_lr[n]
-                fesom_vbin_lr[y_index, x_index] += v_circ_fesom_lr[n]
-                fesom_num_pts_lr[y_index, x_index] += 1
-    fesom_ubin_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_ubin_lr)
-    fesom_vbin_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_vbin_lr)
-    flag = fesom_num_pts_lr > 0
-    fesom_ubin_lr[flag] = fesom_ubin_lr[flag]/fesom_num_pts_lr[flag]
-    fesom_vbin_lr[flag] = fesom_vbin_lr[flag]/fesom_num_pts_lr[flag]
-    # FESOM high-res
-    fesom_ubin_hr = zeros([size(y_centres), size(x_centres)])
-    fesom_vbin_hr = zeros([size(y_centres), size(x_centres)])
-    fesom_num_pts_hr = zeros([size(y_centres), size(x_centres)])
-    theta_fesom_hr = arctan2(node_v_hr, node_u_hr)
-    theta_circ_fesom_hr = theta_fesom_hr - fesom_lon_hr*deg2rad
-    u_circ_fesom_hr = node_speed_hr*cos(theta_circ_fesom_hr)
-    v_circ_fesom_hr = node_speed_hr*sin(theta_circ_fesom_hr)
-    for n in range(fesom_n2d_hr):
-        if fesom_cavity_hr[n]:
-            if fesom_x_hr[n] > x_min and fesom_x_hr[n] < x_max and fesom_y_hr[n] > y_min and fesom_y_hr[n] < y_max:
-                x_index = nonzero(x_bins > fesom_x_hr[n])[0][0]-1
-                y_index = nonzero(y_bins > fesom_y_hr[n])[0][0]-1
-                fesom_ubin_hr[y_index, x_index] += u_circ_fesom_hr[n]
-                fesom_vbin_hr[y_index, x_index] += v_circ_fesom_hr[n]
-                fesom_num_pts_hr[y_index, x_index] += 1
-    fesom_ubin_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_ubin_hr)
-    fesom_vbin_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_vbin_hr)
-    flag = fesom_num_pts_hr > 0
-    fesom_ubin_hr[flag] = fesom_ubin_hr[flag]/fesom_num_pts_hr[flag]
-    fesom_vbin_hr[flag] = fesom_vbin_hr[flag]/fesom_num_pts_hr[flag]
-
-    return x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr
-
-
-# Plot ice shelf draft for MetROMS, low-res FESOM, and high-res FESOM for the
-# given region, in the given axes.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# gs = GridSpec object of size 1x3 to plot in
-# cbaxes = Axes object for location of colourbar
-# cbar_ticks = 1D array containing values for ticks on colourbar
-# letter = 'a', 'b', 'c', etc. to add before the ice shelf draft title, for
-#          use in a figure showing multiple variables
-def plot_draft (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
-
-    # Set up a grey square for FESOM to fill the background with land
-    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
-    land_square = zeros(shape(x_reg_fesom))
-    # Find bounds on variable in this region
-    var_min, var_max = get_min_max(roms_draft, fesom_draft_lr, fesom_draft_hr, x_min, x_max, y_min, y_max)
-
-    # MetROMS
-    ax = subplot(gs[0,0], aspect='equal')
-    # First shade land and zice in grey
-    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
-    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
-    # Fill in the missing circle
-    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
-    # Now shade the data
-    pcolor(roms_x, roms_y, roms_draft, vmin=var_min, vmax=var_max, cmap='jet')
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    # FESOM low-res
-    ax = subplot(gs[0,1], aspect='equal')
-    # Start with land background
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    # Add ice shelf elements
-    img = PatchCollection(patches_lr, cmap='jet')
-    img.set_array(array(fesom_draft_lr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    # Mask out the open ocean in white
-    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Main title
-    title(letter + ') Ice shelf draft (m)', fontsize=20)
-
-    # FESOM high-res
-    ax = subplot(gs[0,2], aspect='equal')
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    img = PatchCollection(patches_hr, cmap='jet')
-    img.set_array(array(fesom_draft_hr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Colourbar on the right
-    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
-
-
-# Plot ice shelf melt rate for MetROMS, low-res FESOM, and high-res FESOM for
-# the given region, in the given axes.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# gs = GridSpec object of size 1x3 to plot in
-# cbaxes = Axes object for location of colourbar
-# cbar_ticks = 1D array containing values for ticks on colourbar
-# change_points = list of size 3 containing values where the colourmap should
-#                 transition (1) from yellow to orange, (2) from orange to red,
-#                 (3) from red to magenta. Should not include the minimum value,
-#                 0, or the maximum value. This way the custom colourmap can be 
-#                 adjusted so that all melt rates are visible, particularly
-#                 for ice shelves with strong spatial variations in melt.
-# letter = 'a', 'b', 'c', etc. to add before the ice shelf melt rate title, for
-#          use in a figure showing multiple variables
-# y0 = y-coordinate of model titles for the entire plot, assuming melt rate is
-#      always at the top (i.e. letter='a'). Play around between 1.15 and 1.35.
-# lon_lines = list of longitudes to overlay as dotted lines on the first panel
-#             (-180 to 180)
-# lat_lines = list of latitudes to overlay (-90 to 90)
-def plot_melt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, change_points, letter, y0, lon_lines, lat_lines):
-
-    # Set up a grey square for FESOM to fill the background with land
-    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
-    land_square = zeros(shape(x_reg_fesom))
-    # Find bounds on variable in this region
-    var_min, var_max = get_min_max(roms_melt, fesom_melt_lr, fesom_melt_hr, x_min, x_max, y_min, y_max)
-    # Special colour map
-    if var_min < 0:
-        # There is refreezing here; include blue for elements < 0
-        cmap_vals = array([var_min, 0, change_points[0], change_points[1], change_points[2], var_max])
-        cmap_colors = [(0.26, 0.45, 0.86), (1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
-        cmap_vals_norm = (cmap_vals - var_min)/(var_max - var_min)
-        cmap_vals_norm[-1] = 1
-        cmap_list = []
-        for i in range(size(cmap_vals)):
-            cmap_list.append((cmap_vals_norm[i], cmap_colors[i]))
-        mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
-    else:
-        # No refreezing
-        cmap_vals = array([0, change_points[0], change_points[1], change_points[2], var_max])
-        cmap_colors = [(1, 1, 1), (1, 0.9, 0.4), (0.99, 0.59, 0.18), (0.5, 0.0, 0.08), (0.96, 0.17, 0.89)]
-        cmap_vals_norm = cmap_vals/var_max
-        cmap_vals_norm[-1] = 1
-        cmap_list = []
-        for i in range(size(cmap_vals)):
-            cmap_list.append((cmap_vals_norm[i], cmap_colors[i]))
-        mf_cmap = LinearSegmentedColormap.from_list('melt_freeze', cmap_list)
-
-    # Make sure longitudes to overlay are between 0 and 360, to suit ROMS
-    # convention
-    for i in range(len(lon_lines)):
-        if lon_lines[i] < 0:
-            lon_lines[i] += 360
-
-    # Plot MetROMS
-    ax = subplot(gs[0,0], aspect='equal')
-    # First shade land and zice in grey
-    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
-    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
-    # Fill in the missing circle
-    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
-    # Now shade the data
-    pcolor(roms_x, roms_y, roms_melt, vmin=var_min, vmax=var_max, cmap=mf_cmap)
-    # Overlay longitudes
-    contour(roms_x, roms_y, roms_lon, lon_lines, colors='black', linestyles='dotted')
-    # Overlay latitudes
-    contour(roms_x, roms_y, roms_lat, lat_lines, colors='black', linestyles='dotted')
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Melt rate is always at the top, so add model labels
-    text(0.5, y0, 'MetROMS', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
-
-    # FESOM low-res
-    ax = subplot(gs[0,1], aspect='equal')
-    # Start with land background
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    # Add ice shelf elements
-    img = PatchCollection(patches_lr, cmap=mf_cmap)
-    img.set_array(array(fesom_melt_lr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    # Mask out the open ocean in white
-    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    title(letter + ') Ice shelf melt rate (m/y)', fontsize=20)
-    text(0.5, y0, 'FESOM (low-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
-
-    # FESOM high-res
-    ax = subplot(gs[0,2], aspect='equal')
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    img = PatchCollection(patches_hr, cmap=mf_cmap)
-    img.set_array(array(fesom_melt_hr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Colourbar on the right
-    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
-    text(0.5, y0, 'FESOM (high-res)', fontsize=18, horizontalalignment='center', transform=ax.transAxes) 
-
-
-# Plot bottom water temperature for MetROMS, low-res FESOM, and high-res FESOM
-# for the given region, in the given axes.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# gs = GridSpec object of size 1x3 to plot in
-# cbaxes = Axes object for location of colourbar
-# cbar_ticks = 1D array containing values for ticks on colourbar
-# letter = 'a', 'b', 'c', etc. to add before the bottom water temp title, for
-#          use in a figure showing multiple variables
-def plot_bwtemp (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
-
-    # Set up a grey square for FESOM to fill the background with land
-    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
-    land_square = zeros(shape(x_reg_fesom))
-    # Find bounds on variable in this region
-    var_min, var_max = get_min_max(roms_bwtemp, fesom_bwtemp_lr, fesom_bwtemp_hr, x_min, x_max, y_min, y_max, cavity=False)
-
-    # Plot MetROMS
-    ax = subplot(gs[0,0], aspect='equal')
-    # First shade land and zice in grey
-    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
-    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
-    # Fill in the missing circle
-    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
-    # Now shade the data
-    pcolor(roms_x, roms_y, roms_bwtemp, vmin=var_min, vmax=var_max, cmap='jet')
-    # Add a black contour for the ice shelf front
-    rcParams['contour.negative_linestyle'] = 'solid'
-    contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    # FESOM low-res
-    ax = subplot(gs[0,1], aspect='equal')
-    # Start with land background
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    # Add ice shelf elements
-    img = PatchCollection(patches_all_lr, cmap='jet')
-    img.set_array(array(fesom_bwtemp_lr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    # Mask out the open ocean in white
-    #overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-    #overlay.set_edgecolor('face')
-    #ax.add_collection(overlay)
-    # Add ice shelf front contour lines
-    fesom_contours_lr = LineCollection(contour_lines_lr, edgecolor='black', linewidth=1)
-    ax.add_collection(fesom_contours_lr)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Main title
-    title(letter + r') Bottom water temperature ($^{\circ}$C)', fontsize=20)
-
-    # FESOM high-res
-    ax = subplot(gs[0,2], aspect='equal')
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    img = PatchCollection(patches_all_hr, cmap='jet')
-    img.set_array(array(fesom_bwtemp_hr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    #overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-    #overlay.set_edgecolor('face')
-    #ax.add_collection(overlay)
-    fesom_contours_hr = LineCollection(contour_lines_hr, edgecolor='black', linewidth=1)
-    ax.add_collection(fesom_contours_hr)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Colourbar on the right
-    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
-    
-
-# Plot bottom water salinity for MetROMS, low-res FESOM, and high-res FESOM
-# for the given region, in the given axes.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# gs = GridSpec object of size 1x3 to plot in
-# cbaxes = Axes object for location of colourbar
-# cbar_ticks = 1D array containing values for ticks on colourbar
-# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
-#          for use in a figure showing multiple variables
-def plot_bwsalt (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, letter):
-
-    # Set up a grey square for FESOM to fill the background with land
-    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
-    land_square = zeros(shape(x_reg_fesom))
-    # Find bounds on variable in this region
-    var_min, var_max = get_min_max(roms_bwsalt, fesom_bwsalt_lr, fesom_bwsalt_hr, x_min, x_max, y_min, y_max, cavity=False)
-
-    # Plot MetROMS
-    ax = subplot(gs[0,0], aspect='equal')
-    # First shade land and zice in grey
-    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
-    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
-    # Fill in the missing circle
-    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
-    # Now shade the data
-    pcolor(roms_x, roms_y, roms_bwsalt, vmin=var_min, vmax=var_max, cmap='jet')
-    # Add a black contour for the ice shelf front
-    rcParams['contour.negative_linestyle'] = 'solid'
-    contour(roms_x, roms_y, zice_contour, levels=[min_zice], colors=('black'))
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    # FESOM low-res
-    ax = subplot(gs[0,1], aspect='equal')
-    # Start with land background
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    # Add ice shelf elements
-    img = PatchCollection(patches_all_lr, cmap='jet')
-    img.set_array(array(fesom_bwsalt_lr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    # Mask out the open ocean in white
-    #overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-    #overlay.set_edgecolor('face')
-    #ax.add_collection(overlay)
-    # Add ice shelf front contour lines
-    fesom_contours_lr = LineCollection(contour_lines_lr, edgecolor='black', linewidth=1)
-    ax.add_collection(fesom_contours_lr)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Main title
-    title(letter + ') Bottom water salinity (psu)', fontsize=20)
-
-    # FESOM high-res
-    ax = subplot(gs[0,2], aspect='equal')
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    img = PatchCollection(patches_all_hr, cmap='jet')
-    img.set_array(array(fesom_bwsalt_hr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    #overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-    #overlay.set_edgecolor('face')
-    #ax.add_collection(overlay)
-    fesom_contours_hr = LineCollection(contour_lines_hr, edgecolor='black', linewidth=1)
-    ax.add_collection(fesom_contours_hr)
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Colourbar on the right
-    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
-
-
-# Plot vertically averaged velocity for MetROMS, low-res FESOM, and high-res
-# FESOM for the given region, in the given axes.
-# Input:
-# x_min, x_max, y_min, y_max = bounds on x and y (using polar coordinate
-#               transformation from above) for the desired region
-# gs = GridSpec object of size 1x3 to plot in
-# cbaxes = Axes object for location of colourbar
-# cbar_ticks = 1D array containing values for ticks on colourbar
-# x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr,
-#            fesom_ubin_hr, fesom_vbin_hr = output variables from the 
-#                           "make_vectors" function for the given region
-# letter = 'a', 'b', 'c', etc. to add before the bottom water salinity title,
-#          for use in a figure showing multiple variables
-# loc_string = optional string containing location title, in the case of
-#              velocity being zoomed into a smaller region to the other
-#              variables (eg "George VI Ice Shelf" for the Bellingshausen plot)
-# arrow_scale, arrow_headwidth, arrow_headlength = optional parameters for
-#              arrows on vector overlay
-def plot_velavg (x_min, x_max, y_min, y_max, gs, cbaxes, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, letter, loc_string=None, arrow_scale=0.9, arrow_headwidth=8, arrow_headlength=9):
-
-    # Set up a grey square for FESOM to fill the background with land
-    x_reg_fesom, y_reg_fesom = meshgrid(linspace(x_min, x_max, num=100), linspace(y_min, y_max, num=100))
-    land_square = zeros(shape(x_reg_fesom))
-    # Find bounds on variable in this region
-    var_min, var_max = get_min_max(roms_speed, fesom_speed_lr, fesom_speed_hr, x_min, x_max, y_min, y_max)
-
-    # Plot MetROMS
-    ax = subplot(gs[0,0], aspect='equal')
-    # First shade land and zice in grey
-    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
-    pcolor(roms_x, roms_y, land_zice, cmap=grey_cmap)
-    # Fill in the missing circle
-    pcolor(x_reg_roms, y_reg_roms, land_circle, cmap=grey_cmap)
-    # Now shade the data
-    pcolor(roms_x, roms_y, roms_speed, vmin=var_min, vmax=var_max, cmap='cool')
-    # Overlay vectors
-    quiver(x_centres, y_centres, roms_ubin, roms_vbin, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-
-    # FESOM low-res
-    ax = subplot(gs[0,1], aspect='equal')
-    # Start with land background
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    # Add ice shelf elements
-    img = PatchCollection(patches_lr, cmap='cool')
-    img.set_array(array(fesom_speed_lr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    # Mask out the open ocean in white
-    overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    # Overlay vectors
-    quiver(x_centres, y_centres, fesom_ubin_lr, fesom_vbin_lr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Main title
-    if loc_string is None:
-        title(letter + ') Vertically averaged ocean velocity (m/s)', fontsize=20)
-    else:
-        title(letter + ') Vertically averaged ocean velocity (m/s): '+loc_string, fontsize=15)
-
-    # FESOM high-res
-    ax = subplot(gs[0,2], aspect='equal')
-    contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-    img = PatchCollection(patches_hr, cmap='cool')
-    img.set_array(array(fesom_speed_hr))
-    img.set_edgecolor('face')
-    img.set_clim(vmin=var_min, vmax=var_max)
-    ax.add_collection(img)
-    overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-    overlay.set_edgecolor('face')
-    ax.add_collection(overlay)
-    quiver(x_centres, y_centres, fesom_ubin_hr, fesom_vbin_hr, scale=arrow_scale, headwidth=arrow_headwidth, headlength=arrow_headlength, color='black')
-    xlim([x_min, x_max])
-    ylim([y_min, y_max])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Colourbar on the right
-    cbar = colorbar(img, cax=cbaxes, ticks=cbar_ticks)
-
-
-# Plot zonal slices (latitude vs depth) of temperature and salinity for
-# MetROMS, low-res FESOM, and high-res FESOM through the given longitude, in the
-# given axes.
-# Input:
-# lon0 = longitude to plot (-180 to 180)
-# lat_min, lat_max = bounds on latitude to plot (-90 to 90)
-# lat_ticks = array of floats containing latitude values to tick
-# lat_labels = array of strings containing label for each tick
-# depth_min, depth_max = bounds on depth to plot (negative, in metres)
-# depth_ticks, depth_labels = tick locations and labels as for latitude
-# gs1, gs2 = GridSpec objects of size 1x3, in which to plot temperature and
-#            salinity respectively
-# cbaxes1, cbaxes2 = Axes objects for locations of temperature and salinity
-#                    colourbars
-# cbar_ticks1, cbar_ticks2 = 1D arrays containing values for ticks on
-#                            temperature and salinity colourbars
-# letter1, letter2 = 'a', 'b', 'c', etc. to add before the temperature and 
-#                    salinity titles
-# loc_string = optional string containing location title, in the case of
-#              plotting slices through a single ice shelf in a large region
-#              (eg "Fimbul Ice Shelf" for the Eastern Weddell plot)
-def plot_zonal_ts (lon0, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs1, gs2, cbaxes1, cbaxes2, cbar_ticks1, cbar_ticks2, letter1, letter2, loc_string=None):
-
-    # Figure out what to write on the title about longitude
-    if lon0 < 0:
-        lon_string = str(-lon0)+r'$^{\circ}$W'
-    else:
-        lon_string = str(lon0)+r'$^{\circ}$E'
-
-    # ROMS
-    # Read temperature and salinity
-    id = Dataset(roms_file, 'r')
-    roms_temp_3d = id.variables['temp'][0,:,:,:]
-    roms_salt_3d = id.variables['salt'][0,:,:,:]
-    id.close()
-    # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
-    roms_z_3d, sc_r, Cs_r = calc_z(roms_h, roms_zice, theta_s, theta_b, hc, N)
-    # Make sure we are in the range 0-360
-    if lon0 < 0:
-        lon0 += 360
-    # Interpolate to lon0
-    roms_temp, roms_z_1d, roms_lat_1d = interp_lon_roms(roms_temp_3d, roms_z_3d, roms_lat, roms_lon, lon0)
-    roms_salt, roms_z_1d, roms_lat_1d = interp_lon_roms(roms_salt_3d, roms_z_3d, roms_lat, roms_lon, lon0)
-    # Switch back to range -180-180
-    if lon0 > 180:
-        lon0 -= 360
-
-    # FESOM low-res
-    # Read temperature and salinity
-    id = Dataset(fesom_file_lr_o, 'r')
-    fesom_temp_nodes_lr = id.variables['temp'][0,:]
-    fesom_salt_nodes_lr = id.variables['salt'][0,:]
-    id.close()
-    # Build arrays of SideElements making up zonal slices
-    selements_temp_lr = fesom_sidegrid(elm2D_lr, fesom_temp_nodes_lr, lon0, lat_max)
-    selements_salt_lr = fesom_sidegrid(elm2D_lr, fesom_salt_nodes_lr, lon0, lat_max)
-    # Build array of quadrilateral patches for the plots, and data values
-    # corresponding to each SideElement
-    spatches_lr = []
-    fesom_temp_lr = []
-    for selm in selements_temp_lr:
-        # Make patch
-        coord = transpose(vstack((selm.y, selm.z)))
-        spatches_lr.append(Polygon(coord, True, linewidth=0.))
-        # Save data value
-        fesom_temp_lr.append(selm.var)
-    fesom_temp_lr = array(fesom_temp_lr)
-    # Salinity has same patches but different values
-    fesom_salt_lr = []
-    for selm in selements_salt_lr:
-        fesom_salt_lr.append(selm.var)
-    fesom_salt_lr = array(fesom_salt_lr)
-
-    # FESOM high-res
-    id = Dataset(fesom_file_hr_o, 'r')
-    fesom_temp_nodes_hr = id.variables['temp'][0,:]
-    fesom_salt_nodes_hr = id.variables['salt'][0,:]
-    id.close()
-    selements_temp_hr = fesom_sidegrid(elm2D_hr, fesom_temp_nodes_hr, lon0, lat_max)
-    selements_salt_hr = fesom_sidegrid(elm2D_hr, fesom_salt_nodes_hr, lon0, lat_max)
-    spatches_hr = []
-    fesom_temp_hr = []
-    for selm in selements_temp_hr:
-        coord = transpose(vstack((selm.y, selm.z)))
-        spatches_hr.append(Polygon(coord, True, linewidth=0.))
-        fesom_temp_hr.append(selm.var)
-    fesom_temp_hr = array(fesom_temp_hr)
-    fesom_salt_hr = []
-    for selm in selements_salt_hr:
-        fesom_salt_hr.append(selm.var)
-    fesom_salt_hr = array(fesom_salt_hr)
-
-    # Find bounds on each variable
-    flag = (roms_lat_1d >= lat_min)*(roms_lat_1d <= lat_max)
-    temp_min = amin(array([amin(roms_temp[flag]), amin(fesom_temp_lr), amin(fesom_temp_hr)]))
-    temp_max = amax(array([amax(roms_temp[flag]), amax(fesom_temp_lr), amax(fesom_temp_hr)]))
-    salt_min = amin(array([amin(roms_salt[flag]), amin(fesom_salt_lr), amin(fesom_salt_hr)]))
-    salt_max = amax(array([amax(roms_salt[flag]), amax(fesom_salt_lr), amax(fesom_salt_hr)]))
-
-    # Plot temperature
-    # MetROMS
-    ax = subplot(gs1[0,0])
-    pcolor(roms_lat_1d, roms_z_1d, roms_temp, vmin=temp_min, vmax=temp_max, cmap='jet')
-    ylabel('Depth (m)', fontsize=12)
-    xlabel('Latitude', fontsize=12)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticks(lat_ticks)
-    ax.set_xticklabels(lat_labels)
-    ax.set_yticks(depth_ticks)
-    ax.set_yticklabels(depth_labels)
-
-    # FESOM low-res
-    ax = subplot(gs1[0,1])
-    img = PatchCollection(spatches_lr, cmap='jet')
-    img.set_array(fesom_temp_lr)
-    img.set_edgecolor('face')
-    img.set_clim(vmin=temp_min, vmax=temp_max)
-    ax.add_collection(img)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    if loc_string is None:
-        title(letter1 + r') Temperature ($^{\circ}$C) through ' + lon_string, fontsize=20)
-    else:
-        title(letter1 + r') Temperature ($^{\circ}$C) through ' + lon_string + ': ' + loc_string, fontsize=20)
-
-    # FESOM high-res
-    ax = subplot(gs1[0,2])
-    img = PatchCollection(spatches_hr, cmap='jet')
-    img.set_array(fesom_temp_hr)
-    img.set_edgecolor('face')
-    img.set_clim(vmin=temp_min, vmax=temp_max)
-    ax.add_collection(img)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    # Add a colorbar
-    cbar = colorbar(img, cax=cbaxes1, ticks=cbar_ticks1)
-
-    # Plot salinity
-    # MetROMS
-    ax = subplot(gs2[0,0])
-    pcolor(roms_lat_1d, roms_z_1d, roms_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
-    ylabel('Depth (m)', fontsize=12)
-    xlabel('Latitude', fontsize=12)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticks(lat_ticks)
-    ax.set_xticklabels(lat_labels)
-    ax.set_yticks(depth_ticks)
-    ax.set_yticklabels(depth_labels)
-    # FESOM low-res
-    ax = subplot(gs2[0,1])
-    img = PatchCollection(spatches_lr, cmap='jet')
-    img.set_array(fesom_salt_lr)
-    img.set_edgecolor('face')
-    img.set_clim(vmin=salt_min, vmax=salt_max)
-    ax.add_collection(img)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    if loc_string is None:
-        title(letter2 + ') Salinity (psu) through ' + lon_string, fontsize=20)
-    else:
-        title(letter2 + ') Salinity (psu) through ' + lon_string + ': ' + loc_string, fontsize=20)
-    # FESOM high-res
-    ax = subplot(gs2[0,2])
-    img = PatchCollection(spatches_hr, cmap='jet')
-    img.set_array(fesom_salt_hr)
-    img.set_edgecolor('face')
-    img.set_clim(vmin=salt_min, vmax=salt_max)
-    ax.add_collection(img)
-    xlim([lat_min, lat_max])
-    ylim([depth_min, depth_max])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    # Add a colorbar
-    cbar = colorbar(img, cax=cbaxes2, ticks=cbar_ticks2)
-    
     
     
     

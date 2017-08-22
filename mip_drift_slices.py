@@ -3,6 +3,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
+from matplotlib.mlab import griddata
 from calc_z import *
 from interp_lon_roms import *
 # Import FESOM scripts (have to modify path first)
@@ -17,9 +18,11 @@ from fesom_sidegrid import *
 # respectively.
 # Input:
 # roms_grid = path to ROMS grid file
-# roms_file = path to last ocean_avg file output by ROMS (assume 5-day averages)
-# fesom_mesh_path = path to last oce.mean file output by FESOM (assume 5-day
-#                   averages)
+# roms_file = path to file containing Jan 2016 monthly average of temperature
+#             and salinity in ROMS
+# fesom_mesh_path = path to FESOM mesh directory
+# fesom_file = path to file containing Jan 2016 monthly average of temperature
+#              and salinity in FESOM
 def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
 
     # Paths to ECCO2 files with initial conditions for temp and salt
@@ -76,8 +79,8 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     id.close()
     # Read temperature and salinity
     id = Dataset(roms_file, 'r')
-    roms_temp_3d = id.variables['temp'][-1,:,:,:]
-    roms_salt_3d = id.variables['salt'][-1,:,:,:]
+    roms_temp_3d = id.variables['temp'][0,:,:,:]
+    roms_salt_3d = id.variables['salt'][0,:,:,:]
     id.close()
     # Get a 3D array of z-coordinates; sc_r and Cs_r are unused in this script
     roms_z_3d, sc_r, Cs_r = calc_z(roms_h, roms_zice, theta_s, theta_b, hc, N)
@@ -96,8 +99,8 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     elements = fesom_grid(fesom_mesh_path)
     # Read temperature and salinity
     id = Dataset(fesom_file, 'r')
-    fesom_temp_nodes = id.variables['temp'][-1,:]
-    fesom_salt_nodes = id.variables['salt'][-1,:]
+    fesom_temp_nodes = id.variables['temp'][0,:]
+    fesom_salt_nodes = id.variables['salt'][0,:]
     id.close()
     # Make SideElements
     selements_temp = fesom_sidegrid(elements, fesom_temp_nodes, lon0, lat_max)
@@ -115,7 +118,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Repeat for the other variables
     fesom_salt = []
     for selm in selements_salt:
-        fesom_salt.append(selm.var)
+        fesom_salt.append(selm.var)    
 
     # Set up axis labels the way we want them
     lat_ticks = arange(lat_min+3, lat_max+10, 10)
@@ -143,7 +146,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     ax.set_xticklabels(lat_labels, fontsize=16)
     ax.set_yticks(depth_ticks)
     ax.set_yticklabels(depth_labels, fontsize=16)
-    text(-54, 1000, 'a) ECCO2 initial conditions at ' + lon_string, fontsize=28)
+    text(-64, 1000, 'a) ECCO2 initial conditions at ' + lon_string + ', January 1992', fontsize=28)
     # Salinity
     ax = subplot(gs1[0,1])
     pcolor(ecco_lat, ecco_depth, ecco_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
@@ -167,7 +170,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     ax.set_xticklabels(lat_labels, fontsize=16)
     ax.set_yticks(depth_ticks)
     ax.set_yticklabels(depth_labels, fontsize=16)
-    text(-55, 300, 'b) MetROMS, last 5 days of simulation', fontsize=28)
+    text(-49, 300, 'b) MetROMS, January 2016', fontsize=28)
     # Salinity
     ax = subplot(gs2[0,1])
     pcolor(roms_lat, roms_z, roms_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
@@ -194,7 +197,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     ax.set_xticklabels(lat_labels, fontsize=16)
     ax.set_yticks(depth_ticks)
     ax.set_yticklabels(depth_labels, fontsize=16)
-    text(-59, 300, 'c) FESOM (high-res), last 5 days of simulation', fontsize=28)
+    text(-53, 300, 'c) FESOM (high-res), January 2016', fontsize=28)
     # Add a colorbar for temperature
     cbaxes = fig.add_axes([0.17, 0.02, 0.3, 0.02])
     cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='both', ticks=arange(temp_min, temp_max+2, 2))
@@ -216,7 +219,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     cbaxes = fig.add_axes([0.6, 0.02, 0.3, 0.02])
     cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='both', ticks=arange(salt_min+0.1, salt_max+0.1, 0.2))
     cbar.ax.tick_params(labelsize=16)
-    #fig.show()
+    fig.show()
     fig.savefig('ts_drift.png')
 
 
