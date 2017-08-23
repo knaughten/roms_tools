@@ -11,11 +11,12 @@ import sys
 sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from fesom_grid import *
 from fesom_sidegrid import *
+from triangle_area import *
 
 # Make a 3x2 plot of temperature (left) and salinity (right) through 0E.
 # The top row is the initial conditions from ECCO2. The middle and bottom rows
-# are the end of the simulation (last 5 day average) from MetROMS and FESOM
-# respectively.
+# are the last January of the simulation (monthly average) from MetROMS and
+# FESOM respectively.
 # Input:
 # roms_grid = path to ROMS grid file
 # roms_file = path to file containing Jan 2016 monthly average of temperature
@@ -45,6 +46,14 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     temp_max = 6
     salt_min = 33.9
     salt_max = 34.9
+    # Contours to overlay
+    temp_contour = 0.75
+    salt_contour = 34.5
+    # Parameters for FESOM regular grid interpolation (needed for contours)
+    num_lat = 1000
+    num_depth = 500
+    r = 6.371e6
+    deg2rad = pi/180.0
 
     # Get longitude for the title
     if lon0 < 0:
@@ -67,7 +76,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
         id.close()
     else:
         print 'lon0 is only coded for 0E at this time'
-        return
+        #return
 
     print 'Processing ROMS'
     # Read grid variables we need
@@ -118,7 +127,75 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Repeat for the other variables
     fesom_salt = []
     for selm in selements_salt:
-        fesom_salt.append(selm.var)    
+        fesom_salt.append(selm.var)
+    # Interpolate to regular grid so we can overlay contours
+    lat_reg = linspace(lat_min, lat_max, num_lat)
+    depth_reg = linspace(-depth_max, -depth_min, num_depth)
+    temp_reg = zeros([num_depth, num_lat])
+    salt_reg = zeros([num_depth, num_lat])
+    temp_reg[:,:] = NaN
+    salt_reg[:,:] = NaN
+    # For each element, check if a point on the regular grid lies
+    # within. If so, do barycentric interpolation to that point, at each
+    # depth on the regular grid.
+    for elm in elements:
+        # Check if this element crosses lon0
+        if amin(elm.lon) < lon0 and amax(elm.lon) > lon0:
+            # Check if we are within the latitude bounds
+            if amax(elm.lat) > lat_min and amin(elm.lat) < lat_max:
+                # Find largest regular latitude value south of Element
+                tmp = nonzero(lat_reg > amin(elm.lat))[0]
+                if len(tmp) == 0:
+                    # Element crosses the southern boundary
+                    jS = 0
+                else:
+                    jS = tmp[0] - 1
+                # Find smallest regular latitude north of Element
+                tmp = nonzero(lat_reg > amax(elm.lat))[0]
+                if len(tmp) == 0:
+                    # Element crosses the northern boundary
+                    jN = num_lat
+                else:
+                    jN = tmp[0]
+                for j in range(jS+1,jN):
+                    # There is a chance that the regular gridpoint at j
+                    # lies within this element
+                    lat0 = lat_reg[j]
+                    if in_triangle(elm, lon0, lat0):
+                        # Yes it does
+                        # Get area of entire triangle
+                        area = triangle_area(elm.lon, elm.lat)
+                        # Get area of each sub-triangle formed by (lon0, lat0)
+                        area0 = triangle_area([lon0, elm.lon[1], elm.lon[2]], [lat0, elm.lat[1], elm.lat[2]])
+                        area1 = triangle_area([lon0, elm.lon[0], elm.lon[2]], [lat0, elm.lat[0], elm.lat[2]])
+                        area2 = triangle_area([lon0, elm.lon[0], elm.lon[1]], [lat0, elm.lat[0], elm.lat[1]])
+                        # Find fractional area of each
+                        cff = [area0/area, area1/area, area2/area]
+                        # Interpolate each depth value
+                        for k in range(num_depth):
+                            # Linear interpolation in the vertical for the
+                            # value at each corner of the triangle
+                            node_vals_temp = []
+                            node_vals_salt = []
+                            for n in range(3):
+                                id1, id2, coeff1, coeff2 = elm.nodes[n].find_depth(depth_reg[k])
+                                if any(isnan(array([id1, id2, coeff1, coeff2]))):
+                                    # No ocean data here (seafloor or ice shelf)
+                                    node_vals_temp.append(NaN)
+                                    node_vals_salt.append(NaN)
+                                else:
+                                    node_vals_temp.append(coeff1*fesom_temp_nodes[id1] + coeff2*fesom_temp_nodes[id2])
+                                    node_vals_salt.append(coeff1*fesom_salt_nodes[id1] + coeff2*fesom_salt_nodes[id2])
+                            if any(isnan(node_vals_temp)):
+                                pass
+                            else:
+                                # Barycentric interpolation for the value at
+                                # lon0, lat0
+                                temp_reg[k,j] = sum(array(cff)*array(node_vals_temp))
+                                salt_reg[k,j] = sum(array(cff)*array(node_vals_salt))
+    temp_reg = ma.masked_where(isnan(temp_reg), temp_reg)
+    salt_reg = ma.masked_where(isnan(salt_reg), salt_reg)
+    depth_reg = -1*depth_reg
 
     # Set up axis labels the way we want them
     lat_ticks = arange(lat_min+3, lat_max+10, 10)
@@ -138,6 +215,8 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Temperature
     ax = subplot(gs1[0,0])
     pcolor(ecco_lat, ecco_depth, ecco_temp, vmin=temp_min, vmax=temp_max, cmap='jet')
+    # Overlay contour
+    contour(ecco_lat, ecco_depth, ecco_temp, levels=[temp_contour], color='black')
     title(r'Temperature ($^{\circ}$C)', fontsize=24)
     ylabel('Depth (m)', fontsize=18)
     xlim([lat_min, lat_max])
@@ -150,6 +229,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Salinity
     ax = subplot(gs1[0,1])
     pcolor(ecco_lat, ecco_depth, ecco_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
+    contour(ecco_lat, ecco_depth, ecco_salt, levels=[salt_contour], color='black')
     title('Salinity (psu)', fontsize=24)
     xlim([lat_min, lat_max])
     ylim([depth_min, depth_max])
@@ -163,6 +243,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Temperature
     ax = subplot(gs2[0,0])
     pcolor(roms_lat, roms_z, roms_temp, vmin=temp_min, vmax=temp_max, cmap='jet')
+    contour(roms_lat, roms_z, roms_temp, levels=[temp_contour], color='black')
     ylabel('Depth (m)', fontsize=18)
     xlim([lat_min, lat_max])
     ylim([depth_min, depth_max])
@@ -174,6 +255,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Salinity
     ax = subplot(gs2[0,1])
     pcolor(roms_lat, roms_z, roms_salt, vmin=salt_min, vmax=salt_max, cmap='jet')
+    contour(roms_lat, roms_z, roms_salt, levels=[salt_contour], color='black')
     xlim([lat_min, lat_max])
     ylim([depth_min, depth_max])
     ax.set_xticks(lat_ticks)
@@ -190,6 +272,8 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     img.set_edgecolor('face')
     img.set_clim(vmin=temp_min, vmax=temp_max)
     ax.add_collection(img)
+    # Overlay contour on regular grid
+    contour(lat_reg, depth_reg, temp_reg, levels=[temp_contour], color='black')
     ylabel('Depth (m)', fontsize=18)
     xlim([lat_min, lat_max])
     ylim([depth_min, depth_max])
@@ -209,6 +293,7 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     img.set_edgecolor('face')
     img.set_clim(vmin=salt_min, vmax=salt_max)
     ax.add_collection(img)
+    contour(lat_reg, depth_reg, salt_reg, levels=[salt_contour], color='black')
     xlim([lat_min, lat_max])
     ylim([depth_min, depth_max])
     ax.set_xticks(lat_ticks)
@@ -223,13 +308,22 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     fig.savefig('ts_drift.png')
 
 
+def in_triangle (elm, lon0, lat0):
+
+   alpha = ((elm.lat[1] - elm.lat[2])*(lon0 - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
+   beta = ((elm.lat[2] - elm.lat[0])*(lon0 - elm.lon[2]) + (elm.lon[0] - elm.lon[2])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
+   gamma = 1 - alpha - beta
+
+   return alpha >= 0 and beta >= 0 and gamma >= 0
+
+
 # Command-line interface
 if __name__ == "__main__":
 
     roms_grid = raw_input("Path to ROMS grid file: ")
-    roms_file = raw_input("Path to last ocean_avg file output by ROMS: ")
+    roms_file = raw_input("Path to ROMS file containing monthly averaged temperature and salinity for January 2016: ")
     fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_file = raw_input("Path to last oce.mean file output by FESOM: ")
+    fesom_file = raw_input("Path to FESOM file containing monthly averaged temperature and salinity for January 2016: ")
     mip_drift_slices(roms_grid, roms_file, fesom_mesh_path, fesom_file)
     
     
