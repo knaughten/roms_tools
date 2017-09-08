@@ -71,11 +71,11 @@ def mip_dpt_calc (roms_log, fesom_log_low, fesom_log_high):
     fesom_dpt_low = fesom_dpt_low[t_start_fesom:t_end_fesom]
     fesom_dpt_high = fesom_dpt_high[t_start_fesom:t_end_fesom]
 
-    # Calculate and print averages
+    # Calculate and print averages and standard deviations
     print 'Average Drake Passage Transport'
-    print 'MetROMS: ' + str(mean(roms_dpt))
-    print 'FESOM low-res: ' + str(mean(fesom_dpt_low))
-    print 'FESOM high-res: ' + str(mean(fesom_dpt_high))
+    print 'MetROMS: ' + str(mean(roms_dpt)) + ' +/- ' + str(std(roms_dpt))
+    print 'FESOM low-res: ' + str(mean(fesom_dpt_low)) + ' +/- ' + str(std(fesom_dpt_low))
+    print 'FESOM high-res: ' + str(mean(fesom_dpt_high)) + ' +/- ' + str(std(fesom_dpt_high))
 
     # Calculate and print trends
     # Also print p-values so we can see if it's statistically significant

@@ -150,45 +150,23 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
         fesom_mld[season,:] = array(mld_season)
 
     print 'Plotting'
-    fig = figure(figsize=(19,9))
-    # MetROMS, summer, ACC
-    ax = fig.add_subplot(2, 4, 1, aspect='equal')
+    # ACC
+    fig1 = figure(figsize=(9.5,9))
+    # Summer
+    # MetROMS
+    ax = fig1.add_subplot(2, 2, 1, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
-    text(-62, 0, 'MetROMS', fontsize=24, ha='right')
-    title(season_names[0], fontsize=24)
+    text(-65, 0, season_names[0], fontsize=24, ha='right')
+    title('MetROMS', fontsize=24)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
     # Add longitude labels
     for i in range(size(x_ticks)):
-        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i], fontsize=14)
+        text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i], fontsize=12)
     ax.set_xticks([])
     ax.set_yticks([])
-    # MetROMS, summer, continental shelf
-    ax = fig.add_subplot(2, 4, 2, aspect='equal')
-    pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
-    title(season_names[0], fontsize=24)
-    xlim([-nbdry2, nbdry2])
-    ylim([-nbdry2, nbdry2])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # MetROMS, winter, ACC
-    ax = fig.add_subplot(2, 4, 3, aspect='equal')
-    pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
-    title(season_names[2], fontsize=24)
-    xlim([-nbdry1, nbdry1])
-    ylim([-nbdry1, nbdry1])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # MetROMS, winter, continental shelf
-    ax = fig.add_subplot(2, 4, 4, aspect='equal')
-    pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
-    title(season_names[2], fontsize=24)
-    xlim([-nbdry2, nbdry2])
-    ylim([-nbdry2, nbdry2])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # FESOM, summer, ACC
-    ax = fig.add_subplot(2, 4, 5, aspect='equal')
+    # FESOM
+    ax = fig1.add_subplot(2, 2, 2, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
     img.set_array(fesom_mld[0,:])
     img.set_clim(vmin=0, vmax=max_bound_summer)
@@ -198,25 +176,22 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ylim([-nbdry1, nbdry1])
     ax.set_xticks([])
     ax.set_yticks([])
-    text(-62, 0, 'FESOM', fontsize=24, ha='right')
-    text(-62, -10, '(high-res)', fontsize=24, ha='right')
-    # FESOM, summer, continental shelf
-    ax = fig.add_subplot(2, 4, 6, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[0,:])
-    img.set_clim(vmin=0, vmax=max_bound_summer)
-    img.set_edgecolor('face')
-    ax.add_collection(img)
-    xlim([-nbdry2, nbdry2])
-    ylim([-nbdry2, nbdry2])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Add a horizontal colorbar for summer
-    cbaxes = fig.add_axes([0.2, 0.04, 0.2, 0.02])
-    cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
+    title('FESOM (high-res)', fontsize=24)
+    # Add a colorbar for summer
+    cbaxes = fig1.add_axes([0.91, 0.55, 0.02, 0.3])
+    cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
     cbar.ax.tick_params(labelsize=20)
-    # FESOM, winter, ACC
-    ax = fig.add_subplot(2, 4, 7, aspect='equal')
+    # Winter
+    # MetROMS
+    ax = fig1.add_subplot(2, 2, 3, aspect='equal')
+    pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
+    text(-65, 0, season_names[2], fontsize=24, ha='right')
+    xlim([-nbdry1, nbdry1])
+    ylim([-nbdry1, nbdry1])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM
+    ax = fig1.add_subplot(2, 2, 4, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
     img.set_array(fesom_mld[2,:])
     img.set_clim(vmin=0, vmax=max_bound_winter)
@@ -226,27 +201,75 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ylim([-nbdry1, nbdry1])
     ax.set_xticks([])
     ax.set_yticks([])
-    # FESOM, winter, continental shelf
-    ax = fig.add_subplot(2, 4, 8, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[2,:])
-    img.set_clim(vmin=0, vmax=max_bound_winter)
-    img.set_edgecolor('face')
-    ax.add_collection(img)
-    xlim([-nbdry2, nbdry2])
-    ylim([-nbdry2, nbdry2])
-    ax.set_xticks([])
-    ax.set_yticks([])
-    # Add a horizontal colorbar for winter
-    cbaxes = fig.add_axes([0.6, 0.04, 0.2, 0.02])
-    cbar = colorbar(img, orientation='horizontal', cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))
+    # Add a colorbar for winter
+    cbaxes = fig1.add_axes([0.91, 0.15, 0.02, 0.3])
+    cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))
     cbar.ax.tick_params(labelsize=20)
     # Add the main title
     suptitle('Mixed layer depth (m), 2002-2016 average', fontsize=30)
     # Decrease space between plots
     subplots_adjust(wspace=0.025,hspace=0.025)
-    #fig.show()
-    fig.savefig('mld.png')
+    fig1.show()
+    fig1.savefig('mld_acc.png')
+
+    # Continental shelf
+    fig2 = figure(figsize=(9.5,9))
+    # Summer
+    # MetROMS
+    ax = fig2.add_subplot(2, 2, 1, aspect='equal')
+    pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
+    text(-28, 0, season_names[0], fontsize=24, ha='right')
+    title('MetROMS', fontsize=24)
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM
+    ax = fig2.add_subplot(2, 2, 2, aspect='equal')
+    img = PatchCollection(patches, cmap='jet')
+    img.set_array(fesom_mld[0,:])
+    img.set_clim(vmin=0, vmax=max_bound_summer)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title('FESOM (high-res)', fontsize=24)
+    # Add a colorbar for summer
+    cbaxes = fig2.add_axes([0.91, 0.55, 0.02, 0.3])
+    cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
+    cbar.ax.tick_params(labelsize=20)
+    # Winter
+    # MetROMS
+    ax = fig2.add_subplot(2, 2, 3, aspect='equal')
+    pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
+    text(-28, 0, season_names[2], fontsize=24, ha='right')
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM
+    ax = fig2.add_subplot(2, 2, 4, aspect='equal')
+    img = PatchCollection(patches, cmap='jet')
+    img.set_array(fesom_mld[2,:])
+    img.set_clim(vmin=0, vmax=max_bound_winter)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # Add a colorbar for winter
+    cbaxes = fig2.add_axes([0.91, 0.15, 0.02, 0.3])
+    cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))
+    cbar.ax.tick_params(labelsize=20)
+    # Add the main title
+    suptitle('Mixed layer depth (m), 2002-2016 average', fontsize=30)
+    # Decrease space between plots
+    subplots_adjust(wspace=0.025,hspace=0.025)
+    fig2.show()
+    fig2.savefig('mld_shelf.png')
                         
 
 # Command-line interface

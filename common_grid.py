@@ -284,12 +284,12 @@ def common_grid (roms_file, cice_file, out_file):
         # First calculate the two derivatives
         dsvstr_dx = ma.empty(shape(svstr_common))
         # Forward difference approximation
-        dsvstr_dx[:,:-1] = (svstr_common[:,1:] - svstr_common[:,:-1])/(2*dx[:,:-1])
+        dsvstr_dx[:,:-1] = (svstr_common[:,1:] - svstr_common[:,:-1])/dx[:,:-1]
         # Backward difference for the last row
-        dsvstr_dx[:,-1] = (svstr_common[:,-1] - svstr_common[:,-2])/(2*dx[:,-1])
+        dsvstr_dx[:,-1] = (svstr_common[:,-1] - svstr_common[:,-2])/dx[:,-1]
         dsustr_dy = ma.empty(shape(sustr_common))
-        dsustr_dy[:-1,:] = (sustr_common[1:,:] - sustr_common[:-1,:])/(2*dy[:-1,:])
-        dsustr_dy[-1,:] = (sustr_common[-1,:] - sustr_common[-2,:])/(2*dy[-1,:])
+        dsustr_dy[:-1,:] = (sustr_common[1:,:] - sustr_common[:-1,:])/dy[:-1,:]
+        dsustr_dy[-1,:] = (sustr_common[-1,:] - sustr_common[-2,:])/dy[-1,:]
         curl_str = dsvstr_dx - dsustr_dy
         curl_str = ma.masked_where(mask_common==0, curl_str)
         # Write to file

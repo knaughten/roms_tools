@@ -360,14 +360,14 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.set_yticks([])
     # Add a colourbar at the bottom
     cbaxes = fig.add_axes([0.12, 0.04, 0.3, 0.04])
-    cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
+    cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes, extend='min')
     cbar.ax.tick_params(labelsize=20)
     # Add extent timeseries on rightmost column, with more space for labels
     gs2 = GridSpec(2, 1)
     gs2.update(left=0.73, right=0.95, wspace=0.1, hspace=0.15)
     # February
     ax = subplot(gs2[0, 0])
-    ax.plot(time_axis, nsidc_feb_extent, color='red', linewidth=1.5)
+    ax.plot(time_axis, nsidc_feb_extent, color='black', linewidth=2, linestyle='dashed')
     ax.plot(time_axis, cice_feb_extent, color='blue', linewidth=1.5)
     ax.plot(time_axis, fesom_feb_extent, color='green', linewidth=1.5)
     xlim([start_year, end_year])
@@ -379,7 +379,7 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     title('b) Sea ice extent\n'+r'(million km$^2$)', fontsize=26)
     # Extent timeseries, September
     ax = subplot(gs2[1, 0])
-    ax.plot(time_axis, nsidc_sep_extent, color='red', label='NSIDC', linewidth=1.5)
+    ax.plot(time_axis, nsidc_sep_extent, color='black', label='NSIDC', linewidth=2, linestyle='dashed')
     ax.plot(time_axis, cice_sep_extent, color='blue', label='MetROMS', linewidth=1.5)
     ax.plot(time_axis, fesom_sep_extent, color='green', label='FESOM (high-res)', linewidth=1.5)
     xlim([start_year, end_year])

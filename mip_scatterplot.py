@@ -11,7 +11,7 @@ def mip_scatterplot (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
     # Number of output steps per year in FESOM
     peryear = 365/5
     # Name of each ice shelf
-    names = ['Larsen D', 'Larsen C', 'Wilkins & George VI & Stange', 'Filchner-Ronne', 'Abbot', 'Pine Island Glacier', 'Thwaites', 'Dotson', 'Getz', 'Nickerson', 'Sulzberger', 'Mertz', 'Totten & Moscow University', 'Shackleton', 'West', 'Amery', 'Prince Harald', 'Baudouin & Borchgrevink', 'Lazarev', 'Nivl', 'Fimbul & Jelbart & Ekstrom', 'Brunt & Riiser-Larsen', 'Ross']
+    names = ['Larsen D', 'Larsen C', 'Wilkins & George VI & Stange', 'Filchner-Ronne', 'Abbot', 'Pine Island', 'Thwaites', 'Dotson', 'Getz', 'Nickerson', 'Sulzberger', 'Mertz', 'Totten & Moscow University', 'Shackleton', 'West', 'Amery', 'Prince Harald', 'Baudouin & Borchgrevink', 'Lazarev', 'Nivl', 'Fimbul & Jelbart & Ekstrom', 'Brunt & Riiser-Larsen', 'Ross']
     # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
     obs_massloss = [1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
     obs_massloss_error = [14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
@@ -177,6 +177,7 @@ def mip_scatterplot (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
     legend(numpoints=1,loc='lower left')
     setp(gca().get_legend().get_texts(), fontsize='13')
     fig.show()
+    fig.savefig('scatterplot.png')
 
 
 # Command-line interface
