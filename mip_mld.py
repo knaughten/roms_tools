@@ -11,11 +11,6 @@ from patches import *
 # luckily it's identical
 from unesco import *
 
-# Make a 4x2 plot showing summer (DJF) and winter (JJA) mixed layer depth
-# (defined as in Sallee et al 2013: depth at which potential density is 0.03
-# kg/m^3 higher than at the surface) comparing MetROMS (top) and FESOM (bottom)
-# where each plot is shown zoomed out to include the whole ACC, and zoomed in
-# to the continental shelf.
 # Input:
 # roms_grid = path to ROMS grid file
 # roms_seasonal_file = path to seasonal climatology of ROMS 3D temperature and
@@ -26,12 +21,16 @@ from unesco import *
 #                       the "fesomtools" repository
 def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
 
+    # Path to Sallee's observations
+    obs_file = '/short/m68/kaa561/Climatology_MLD003_v2017.nc'
+    # Days per month
+    days_per_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     # Definition of mixed layer depth: where potential density exceeds
     # surface density by this amount (kg/m^3) as in Sallee et al 2013
     density_anom = 0.03
     # Northern boundary for ACC plot: 30S
     nbdry1 = -30 + 90
-    # Northern boundary for continental shelf plot: 63S
+    # Northern boundary for continental shelf plot: 64S
     nbdry2 = -64 + 90
     # Degrees to radians conversion factor
     deg2rad = pi/180.0
@@ -149,12 +148,47 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
             mld_season.append(mean(array(mld_nodes)))
         fesom_mld[season,:] = array(mld_season)
 
+    print 'Processing obs'
+    # Read grid and monthly climatology
+    id = Dataset(obs_file, 'r')
+    obs_lon = id.variables['lon'][:]
+    obs_lat = id.variables['lat'][:]
+    obs_mld_monthly = id.variables['ML_Press'][:,:,:]
+    id.close()
+    # Polar coordinates for plotting
+    obs_lon_2d, obs_lat_2d = meshgrid(obs_lon, obs_lat)
+    obs_x = -(obs_lat_2d+90)*cos(obs_lon_2d*deg2rad+pi/2)
+    obs_y = (obs_lat_2d+90)*sin(obs_lon_2d*deg2rad+pi/2)
+    # Integrate seasonal averages
+    obs_mld = zeros([4, size(obs_lat), size(obs_lon)])
+    ndays = zeros(4)
+    for month in range(12):
+        if month+1 in [12, 1, 2]:
+            # DJF
+            season = 0
+        elif month+1 in [3, 4, 5]:
+            # MAM
+            season = 1
+        elif month+1 in [6, 7, 8]:
+            # JJA
+            season = 2
+        elif month+1 in [9, 10, 11]:
+            # SON
+            season = 3
+        obs_mld[season,:,:] += obs_mld_monthly[month,:,:]*days_per_month[month]
+        ndays[season] += days_per_month[month]
+    # Convert from integrals to averages
+    for season in range(4):
+        obs_mld[season,:,:] = obs_mld[season,:,:]/ndays[season]
+    # Apply land mask
+    obs_mld = ma.masked_where(isnan(obs_mld), obs_mld)    
+
     print 'Plotting'
     # ACC
-    fig1 = figure(figsize=(9.5,9))
+    fig1 = figure(figsize=(13,9))
     # Summer
     # MetROMS
-    ax = fig1.add_subplot(2, 2, 1, aspect='equal')
+    ax = fig1.add_subplot(2, 3, 1, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
     text(-65, 0, season_names[0], fontsize=24, ha='right')
     title('MetROMS', fontsize=24)
@@ -166,7 +200,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_xticks([])
     ax.set_yticks([])
     # FESOM
-    ax = fig1.add_subplot(2, 2, 2, aspect='equal')
+    ax = fig1.add_subplot(2, 3, 2, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
     img.set_array(fesom_mld[0,:])
     img.set_clim(vmin=0, vmax=max_bound_summer)
@@ -177,13 +211,21 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_xticks([])
     ax.set_yticks([])
     title('FESOM (high-res)', fontsize=24)
+    # Obs
+    ax = fig1.add_subplot(2, 3, 3, aspect='equal')
+    img = pcolor(obs_x, obs_y, obs_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')    
+    xlim([-nbdry1, nbdry1])
+    ylim([-nbdry1, nbdry1])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title('Observations', fontsize=24)
     # Add a colorbar for summer
-    cbaxes = fig1.add_axes([0.91, 0.55, 0.02, 0.3])
+    cbaxes = fig1.add_axes([0.93, 0.55, 0.02, 0.3])
     cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
     cbar.ax.tick_params(labelsize=20)
     # Winter
     # MetROMS
-    ax = fig1.add_subplot(2, 2, 3, aspect='equal')
+    ax = fig1.add_subplot(2, 3, 4, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
     text(-65, 0, season_names[2], fontsize=24, ha='right')
     xlim([-nbdry1, nbdry1])
@@ -191,7 +233,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_xticks([])
     ax.set_yticks([])
     # FESOM
-    ax = fig1.add_subplot(2, 2, 4, aspect='equal')
+    ax = fig1.add_subplot(2, 3, 5, aspect='equal')
     img = PatchCollection(patches, cmap='jet')
     img.set_array(fesom_mld[2,:])
     img.set_clim(vmin=0, vmax=max_bound_winter)
@@ -201,8 +243,15 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ylim([-nbdry1, nbdry1])
     ax.set_xticks([])
     ax.set_yticks([])
+    # Obs
+    ax = fig1.add_subplot(2, 3, 6, aspect='equal')
+    img = pcolor(obs_x, obs_y, obs_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
+    xlim([-nbdry1, nbdry1])
+    ylim([-nbdry1, nbdry1])
+    ax.set_xticks([])
+    ax.set_yticks([])
     # Add a colorbar for winter
-    cbaxes = fig1.add_axes([0.91, 0.15, 0.02, 0.3])
+    cbaxes = fig1.add_axes([0.93, 0.15, 0.02, 0.3])
     cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))
     cbar.ax.tick_params(labelsize=20)
     # Add the main title

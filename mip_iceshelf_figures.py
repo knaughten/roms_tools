@@ -19,6 +19,7 @@ from fesom_grid import *
 from fesom_sidegrid import *
 from unrotate_vector import *
 from unrotate_grid import *
+from in_triangle import *
 
 # This is the giant monster script to generate 8 multi-part figures showing
 # ice shelf processes in the 8 regions defined in the intercomparison paper.
@@ -85,17 +86,6 @@ def get_min_max (roms_data, fesom_data_lr, fesom_data_hr, x_min, x_max, y_min, y
                     var_max = fesom_data_hr[i]
             i += 1
     return var_min, var_max
-
-
-# Determine if the point (lon0, lat0) is within the triangular Element elm.
-# Returns a boolean.
-def in_triangle (elm, lon0, lat0):
-
-   alpha = ((elm.lat[1] - elm.lat[2])*(lon0 - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
-   beta = ((elm.lat[2] - elm.lat[0])*(lon0 - elm.lon[2]) + (elm.lon[0] - elm.lon[2])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
-   gamma = 1 - alpha - beta
-
-   return alpha >= 0 and beta >= 0 and gamma >= 0
 
 
 # Interpolate FESOM's bathymetry to a regular grid in the given region so that

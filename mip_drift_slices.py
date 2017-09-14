@@ -12,6 +12,7 @@ sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from fesom_grid import *
 from fesom_sidegrid import *
 from triangle_area import *
+from in_triangle import *
 
 # Make a 3x2 plot of temperature (left) and salinity (right) through 0E.
 # The top row is the initial conditions from ECCO2. The middle and bottom rows
@@ -306,15 +307,6 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     cbar.ax.tick_params(labelsize=16)
     fig.show()
     fig.savefig('ts_drift.png')
-
-
-def in_triangle (elm, lon0, lat0):
-
-   alpha = ((elm.lat[1] - elm.lat[2])*(lon0 - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
-   beta = ((elm.lat[2] - elm.lat[0])*(lon0 - elm.lon[2]) + (elm.lon[0] - elm.lon[2])*(lat0 - elm.lat[2]))/((elm.lat[1] - elm.lat[2])*(elm.lon[0] - elm.lon[2]) + (elm.lon[2] - elm.lon[1])*(elm.lat[0] - elm.lat[2]))
-   gamma = 1 - alpha - beta
-
-   return alpha >= 0 and beta >= 0 and gamma >= 0
 
 
 # Command-line interface
