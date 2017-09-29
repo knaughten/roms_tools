@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from matplotlib.colors import ListedColormap
 
 # Creates a circumpolar Antarctic plot of ice shelf draft.
 # Input:
@@ -10,7 +11,7 @@ def zice_circumpolar (grid_path, fig_name):
 
     deg2rad = pi/180
     # Northern boundary 63S for plot
-    nbdry = -63+90
+    nbdry = -60+90
     # Centre of missing circle in grid
     lon_c = 50
     lat_c = -83
@@ -43,28 +44,26 @@ def zice_circumpolar (grid_path, fig_name):
     land_circle = zeros(shape(x_reg))
     land_circle = ma.masked_where(sqrt((x_reg-x_c)**2 + (y_reg-y_c)**2) > radius, land_circle)
 
-    lev = linspace(0, amax(zice), num=50)
-
     # Plot
-    fig = figure(figsize=(16,12))
+    fig = figure(figsize=(128,96))
     ax = fig.add_subplot(1,1,1, aspect='equal')
     fig.patch.set_facecolor('white')
     # First shade land and zice in grey (include zice so there are no white
     # patches near the grounding line where contours meet)
-    contourf(x, y, land_zice, 1, colors=(('0.6', '0.6', '0.6')))
-    # Fill in the missing circle
-    contourf(x_reg, y_reg, land_circle, 1, colors=(('0.6', '0.6', '0.6')))
+    grey_cmap = ListedColormap([(0.6, 0.6, 0.6)])
+    pcolor(x, y, land_zice, cmap=grey_cmap)
+    pcolor(x_reg, y_reg, land_circle, cmap=grey_cmap)
     # Now shade zice
-    contourf(x, y, zice, lev)
-    cbar = colorbar(ticks=arange(0,amax(zice),250))
-    cbar.ax.tick_params(labelsize=20)
+    img = pcolor(x, y, zice, vmin=0, vmax=2300, cmap='jet')
+    cbar = colorbar(img, extend='max')
+    cbar.ax.tick_params(labelsize=160)
     xlim([-nbdry, nbdry])
     ylim([-nbdry, nbdry])
-    title('Ice shelf draft (m)', fontsize=30)
+    title('Ice shelf draft (m)', fontsize=240)
     axis('off')
 
-    show()
-    #fig.savefig(fig_name)
+    #show()
+    fig.savefig(fig_name)
 
 
 # Command-line interface

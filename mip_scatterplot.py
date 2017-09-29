@@ -5,7 +5,7 @@ def mip_scatterplot (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
 
     # Year simulations start
     year_start = 1992
-    # Years to avearge over
+    # Years to average over
     calc_start = 2002
     calc_end = 2016
     # Number of output steps per year in FESOM

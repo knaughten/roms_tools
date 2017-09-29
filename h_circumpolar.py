@@ -1,6 +1,7 @@
 from netCDF4 import Dataset
 from numpy import *
 from matplotlib.pyplot import *
+from matplotlib.colors import ListedColormap
 
 # Creates a circumpolar Antarctic plot of bathymetry.
 # Follows the same process as circumpolar_plot.py, but since h is not
@@ -11,6 +12,7 @@ from matplotlib.pyplot import *
 def h_circumpolar (grid_path, fig_name):
 
     deg2rad = pi/180
+    nbdry = -60 + 90
 
     # Read data
     id = Dataset(grid_path, 'r')
@@ -27,15 +29,15 @@ def h_circumpolar (grid_path, fig_name):
     x = -(lat+90)*cos(lon*deg2rad+pi/2)
     y = (lat+90)*sin(lon*deg2rad+pi/2)
 
-    lev = linspace(0,amax(data),num=50)
-
     # Plot
-    fig = figure(figsize=(16,12))
+    fig = figure(figsize=(128,96))
     fig.add_subplot(1,1,1, aspect='equal')
-    contourf(x, y, data, lev)
-    cbar = colorbar(ticks=arange(0,amax(data),1000))
-    cbar.ax.tick_params(labelsize=20)
-    title('Bathymetry (m)', fontsize=30)
+    img = pcolor(x, y, data, vmin=0, vmax=2800)
+    xlim([-nbdry, nbdry])
+    ylim([-nbdry, nbdry])
+    cbar = colorbar(img, extend='max')
+    cbar.ax.tick_params(labelsize=160)
+    title('Bathymetry (m)', fontsize=240)
     axis('off')
 
     #show()
