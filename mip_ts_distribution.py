@@ -16,10 +16,12 @@ from unesco import *
 # roms_grid = path to ROMS grid file
 # roms_file = path to time-averaged ROMS file containing temperature and
 #             salinity (I used 2002-2016 average)
-# fesom_mesh_path = path to FESOM mesh directory (I used high-res)
-# fesom_file = path to time-averaged FESOM file containing temperature and
-#              salinity, over the same period as roms_file
-def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
+# fesom_mesh_path_lr, fesom_mesh_path_hr = path to FESOM mesh directories for
+#                     low-res and high-res meshes
+# fesom_file_lr, fesom_file_hr = paths to time-averaged FESOM files containing
+#                temperature and salinity for the low-res and high-res
+#                simulations respectively, over the same period as roms_file
+def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path_lr, fesom_file_lr, fesom_mesh_path_hr, fesom_file_hr):
 
     # Northern boundary of water masses to consider
     nbdry = -65
@@ -32,7 +34,7 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     max_temp = 3.8
     # Bounds to actually plot
     min_salt_plot = 33.25
-    max_salt_plot = 35.0
+    max_salt_plot = 35.1
     min_temp_plot = -3
     max_temp_plot = 3.8
     # FESOM grid generation parameters
@@ -55,10 +57,12 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Set up 2D arrays of temperature bins x salinity bins to hold average
     # depth of water masses, weighted by volume
     ts_vals_roms = zeros([size(temp_centres), size(salt_centres)])
-    ts_vals_fesom = zeros([size(temp_centres), size(salt_centres)])
+    ts_vals_fesom_lr = zeros([size(temp_centres), size(salt_centres)])
+    ts_vals_fesom_hr = zeros([size(temp_centres), size(salt_centres)])
     # Also arrays to integrate volume
     volume_roms = zeros([size(temp_centres), size(salt_centres)])
-    volume_fesom = zeros([size(temp_centres), size(salt_centres)])
+    volume_fesom_lr = zeros([size(temp_centres), size(salt_centres)])
+    volume_fesom_hr = zeros([size(temp_centres), size(salt_centres)])
     # Calculate surface freezing point as a function of salinity as seen by
     # each sea ice model
     freezing_pt_roms = salt_centres/(-18.48 + 18.48/1e3*salt_centres)
@@ -112,16 +116,16 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Convert depths from integrals to volume-averages
     ts_vals_roms /= volume_roms
 
-    print 'Processing FESOM'
+    print 'Processing low-res FESOM'
     # Make FESOM grid elements
-    elements = fesom_grid(fesom_mesh_path, circumpolar, cross_180)
+    elements_lr = fesom_grid(fesom_mesh_path_lr, circumpolar, cross_180)
     # Read temperature and salinity at each 3D node
-    id = Dataset(fesom_file, 'r')
-    fesom_temp = id.variables['temp'][0,:]
-    fesom_salt = id.variables['salt'][0,:]
+    id = Dataset(fesom_file_lr, 'r')
+    fesom_temp_lr = id.variables['temp'][0,:]
+    fesom_salt_lr = id.variables['salt'][0,:]
     id.close()
     # Loop over elements
-    for elm in elements:
+    for elm in elements_lr:
         # See if we're in the region of interest
         if all(elm.lat < nbdry):
             # Get area of 2D triangle
@@ -140,11 +144,11 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
                 dz = []
                 for i in range(3):
                     # Average temperature over 6 nodes
-                    temp_vals.append(fesom_temp[nodes[i].id])
-                    temp_vals.append(fesom_temp[nodes[i].below.id])
+                    temp_vals.append(fesom_temp_lr[nodes[i].id])
+                    temp_vals.append(fesom_temp_lr[nodes[i].below.id])
                     # Average salinity over 6 nodes
-                    salt_vals.append(fesom_salt[nodes[i].id])
-                    salt_vals.append(fesom_salt[nodes[i].below.id])
+                    salt_vals.append(fesom_salt_lr[nodes[i].id])
+                    salt_vals.append(fesom_salt_lr[nodes[i].below.id])
                     # Average depth over 6 nodes
                     depth_vals.append(nodes[i].depth)
                     depth_vals.append(nodes[i].below.depth)
@@ -161,26 +165,64 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
                 temp_index = nonzero(temp_bins > temp_elm)[0][0] - 1
                 salt_index = nonzero(salt_bins > salt_elm)[0][0] - 1
                 # Integrate depth*volume in this bin
-                ts_vals_fesom[temp_index, salt_index] += depth_elm*volume
-                volume_fesom[temp_index, salt_index] += volume
+                ts_vals_fesom_lr[temp_index, salt_index] += depth_elm*volume
+                volume_fesom_lr[temp_index, salt_index] += volume
     # Mask bins with zero volume
-    ts_vals_fesom = ma.masked_where(volume_fesom==0, ts_vals_fesom)
-    volume_fesom = ma.masked_where(volume_fesom==0, volume_fesom)
+    ts_vals_fesom_lr = ma.masked_where(volume_fesom_lr==0, ts_vals_fesom_lr)
+    volume_fesom_lr = ma.masked_where(volume_fesom_lr==0, volume_fesom_lr)
     # Convert depths from integrals to volume-averages
-    ts_vals_fesom /= volume_fesom
+    ts_vals_fesom_lr /= volume_fesom_lr
+
+    print 'Processing high-res FESOM'
+    elements_hr = fesom_grid(fesom_mesh_path_hr, circumpolar, cross_180)
+    id = Dataset(fesom_file_hr, 'r')
+    fesom_temp_hr = id.variables['temp'][0,:]
+    fesom_salt_hr = id.variables['salt'][0,:]
+    id.close()
+    for elm in elements_hr:
+        if all(elm.lat < nbdry):
+            area = elm.area()
+            nodes = [elm.nodes[0], elm.nodes[1], elm.nodes[2]]
+            while True:
+                if nodes[0].below is None or nodes[1].below is None or nodes[2].below is None:
+                    break
+                temp_vals = []
+                salt_vals = []
+                depth_vals = []
+                dz = []
+                for i in range(3):
+                    temp_vals.append(fesom_temp_hr[nodes[i].id])
+                    temp_vals.append(fesom_temp_hr[nodes[i].below.id])
+                    salt_vals.append(fesom_salt_hr[nodes[i].id])
+                    salt_vals.append(fesom_salt_hr[nodes[i].below.id])
+                    depth_vals.append(nodes[i].depth)
+                    depth_vals.append(nodes[i].below.depth)
+                    dz.append(abs(nodes[i].depth - nodes[i].below.depth))
+                    nodes[i] = nodes[i].below
+                temp_elm = mean(array(temp_vals))
+                salt_elm = mean(array(salt_vals))
+                depth_elm = mean(array(depth_vals))
+                volume = area*mean(array(dz))
+                temp_index = nonzero(temp_bins > temp_elm)[0][0] - 1
+                salt_index = nonzero(salt_bins > salt_elm)[0][0] - 1
+                ts_vals_fesom_hr[temp_index, salt_index] += depth_elm*volume
+                volume_fesom_hr[temp_index, salt_index] += volume
+    ts_vals_fesom_hr = ma.masked_where(volume_fesom_hr==0, ts_vals_fesom_hr)
+    volume_fesom_hr = ma.masked_where(volume_fesom_hr==0, volume_fesom_hr)
+    ts_vals_fesom_hr /= volume_fesom_hr
 
     # Find the maximum depth for plotting
-    max_depth = max(amax(ts_vals_roms), amax(ts_vals_fesom))
+    max_depth = amax(array([amax(ts_vals_roms), amax(ts_vals_fesom_lr), amax(ts_vals_fesom_hr)]))
     # Make a nonlinear scale
     bounds = linspace(0, max_depth**(1.0/2.5), num=100)**2.5
     norm = BoundaryNorm(boundaries=bounds, ncolors=256)
     # Set labels for density contours
-    manual_locations = [(33.4, 3.0), (33.65, 3.0), (33.9, 3.0), (34.2, 3.0), (34.45, 3.5), (34.65, 3.25), (34.9, 3.0), (34.8, 0)]
+    manual_locations = [(33.4, 3.0), (33.65, 3.0), (33.9, 3.0), (34.2, 3.0), (34.45, 3.5), (34.65, 3.25), (34.9, 3.0), (35, 1.5)]
 
     print "Plotting"
-    fig = figure(figsize=(20,12))
+    fig = figure(figsize=(20,9))
     # ROMS
-    ax = fig.add_subplot(1, 2, 1)
+    ax = fig.add_subplot(1, 3, 1)
     pcolor(salt_centres, temp_centres, ts_vals_roms, norm=norm, vmin=0, vmax=max_depth, cmap='jet')
     # Add surface freezing point line
     plot(salt_centres, freezing_pt_roms, color='black', linestyle='dashed')
@@ -191,12 +233,12 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     ylim([min_temp_plot, max_temp_plot])
     ax.tick_params(axis='x', labelsize=16)
     ax.tick_params(axis='y', labelsize=16)
-    xlabel('Salinity (psu)', fontsize=22)
-    ylabel(r'Temperature ($^{\circ}$C)', fontsize=22)
-    title('MetROMS', fontsize=28)
-    # FESOM
-    ax = fig.add_subplot(1, 2, 2)
-    img = pcolor(salt_centres, temp_centres, ts_vals_fesom, norm=norm, vmin=0, vmax=max_depth, cmap='jet')
+    xlabel('Salinity (psu)', fontsize=20)
+    ylabel(r'Temperature ($^{\circ}$C)', fontsize=20)
+    title('MetROMS', fontsize=24)
+    # FESOM low-res
+    ax = fig.add_subplot(1, 3, 2)
+    img = pcolor(salt_centres, temp_centres, ts_vals_fesom_lr, norm=norm, vmin=0, vmax=max_depth, cmap='jet')
     plot(salt_centres, freezing_pt_fesom, color='black', linestyle='dashed')
     cs = contour(salt_centres, temp_centres, density, density_lev, colors=(0.6,0.6,0.6), linestyles='dotted')
     clabel(cs, inline=1, fontsize=14, color=(0.6,0.6,0.6), fmt='%1.1f', manual=manual_locations)
@@ -204,8 +246,20 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     ylim([min_temp_plot, max_temp_plot])
     ax.tick_params(axis='x', labelsize=16)
     ax.tick_params(axis='y', labelsize=16)
-    xlabel('Salinity (psu)', fontsize=22)
-    title('FESOM (high-res)', fontsize=28)
+    xlabel('Salinity (psu)', fontsize=20)
+    title('FESOM (low-res)', fontsize=24)
+    # FESOM high-res
+    ax = fig.add_subplot(1, 3, 3)
+    img = pcolor(salt_centres, temp_centres, ts_vals_fesom_hr, norm=norm, vmin=0, vmax=max_depth, cmap='jet')
+    plot(salt_centres, freezing_pt_fesom, color='black', linestyle='dashed')
+    cs = contour(salt_centres, temp_centres, density, density_lev, colors=(0.6,0.6,0.6), linestyles='dotted')
+    clabel(cs, inline=1, fontsize=14, color=(0.6,0.6,0.6), fmt='%1.1f', manual=manual_locations)
+    xlim([min_salt_plot, max_salt_plot])
+    ylim([min_temp_plot, max_temp_plot])
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
+    xlabel('Salinity (psu)', fontsize=20)
+    title('FESOM (high-res)', fontsize=24)
     # Add a colourbar on the right
     cbaxes = fig.add_axes([0.93, 0.2, 0.02, 0.6])
     cbar = colorbar(img, cax=cbaxes, ticks=[0,50,100,200,500,1000,2000,4000])
@@ -213,7 +267,7 @@ def mip_ts_distribution (roms_grid, roms_file, fesom_mesh_path, fesom_file):
     # Add the main title
     suptitle('Water masses south of 65$^{\circ}$S: depth (m), 2002-2016 average', fontsize=30)
     subplots_adjust(wspace=0.1)
-    #fig.show()
+    fig.show()
     fig.savefig('ts_distribution_orig.png')
 
 
@@ -222,9 +276,11 @@ if __name__ == "__main__":
 
     roms_grid = raw_input("Path to ROMS grid file: ")
     roms_file = raw_input("Path to time-averaged ROMS file containing temperature and salinity: ")
-    fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_file = raw_input("Path to time-averaged FESOM file containing temperature and salinity: ")
-    mip_ts_distribution(roms_grid, roms_file, fesom_mesh_path, fesom_file)
+    fesom_mesh_path_lr = raw_input("Path to FESOM low-res mesh directory: ")
+    fesom_file_lr = raw_input("Path to time-averaged FESOM low-res file containing temperature and salinity: ")
+    fesom_mesh_path_hr = raw_input("Path to FESOM high-res mesh directory: ")
+    fesom_file_hr = raw_input("Path to time-averaged FESOM high-res file containing temperature and salinity: ")
+    mip_ts_distribution(roms_grid, roms_file, fesom_mesh_path_lr, fesom_file_lr, fesom_mesh_path_hr, fesom_file_hr)
     
             
       

@@ -15,11 +15,14 @@ from unesco import *
 # roms_grid = path to ROMS grid file
 # roms_seasonal_file = path to seasonal climatology of ROMS 3D temperature and
 #                      salinity, precomputed using seasonal_climatology_roms.py
-# fesom_mesh_path = path to FESOM mesh directory
-# fesom_seasonal_file = path to seasonal climatology of FESOM 3D temperature and
-#                       salinity, precomputed using seasonal_climatology.py in
-#                       the "fesomtools" repository
-def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
+# fesom_mesh_path_lr, fesom_mesh_path_hr = path to FESOM mesh directories for
+#                     low-res and high-res meshes
+# fesom_seasonal_file_lr, fesom_seasonal_file_hr = paths to seasonal
+#                         climatologies of FESOM 3D temperature and salinity
+#                         for low-res and high-res respectively, precomputed
+#                         using seasonal_climatology.py in the "fesomtools"
+#                         repository
+def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path_lr, fesom_seasonal_file_lr, fesom_mesh_path_hr, fesom_seasonal_file_hr):
 
     # Path to Sallee's observations
     obs_file = '/short/m68/kaa561/Climatology_MLD003_v2017.nc'
@@ -106,29 +109,29 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
                             break
                         k -= 1
 
-    print 'Processing FESOM:'
+    print 'Processing low-res FESOM:'
     print 'Building mesh'
-    elements, patches = make_patches(fesom_mesh_path, circumpolar, mask_cavities)
+    elements_lr, patches_lr = make_patches(fesom_mesh_path_lr, circumpolar, mask_cavities)
     print 'Reading data'
-    id = Dataset(fesom_seasonal_file, 'r')
-    fesom_temp_nodes = id.variables['temp'][:,:]
-    fesom_salt_nodes = id.variables['salt'][:,:]
+    id = Dataset(fesom_seasonal_file_lr, 'r')
+    fesom_temp_nodes_lr = id.variables['temp'][:,:]
+    fesom_salt_nodes_lr = id.variables['salt'][:,:]
     id.close()
     print 'Calculating density'
-    fesom_density_nodes = unesco(fesom_temp_nodes, fesom_salt_nodes, zeros(shape(fesom_temp_nodes)))
+    fesom_density_nodes_lr = unesco(fesom_temp_nodes_lr, fesom_salt_nodes_lr, zeros(shape(fesom_temp_nodes_lr)))
     print 'Calculating mixed layer depth'
     # Set up array for mixed layer depth at each element, at each season
-    fesom_mld = zeros([4, len(elements)])
+    fesom_mld_lr = zeros([4, len(elements_lr)])
     # Loop over seasons and elements to fill these in
     for season in range(4):
         print '...' + season_names[season]
         mld_season = []
-        for elm in elements:
+        for elm in elements_lr:
             # Get mixed layer depth at each node
             mld_nodes = []
             for i in range(3):
                 node = elm.nodes[i]
-                density_sfc = fesom_density_nodes[season,node.id]
+                density_sfc = fesom_density_nodes_lr[season,node.id]
                 # Save surface depth (only nonzero in ice shelf cavities)
                 depth_sfc = node.depth
                 temp_depth = node.depth
@@ -138,7 +141,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
                         # Reached the bottom
                         mld_nodes.append(temp_depth-depth_sfc)
                         break
-                    if fesom_density_nodes[season,curr_node.id] >= density_sfc + density_anom:
+                    if fesom_density_nodes_lr[season,curr_node.id] >= density_sfc + density_anom:
                         # Reached the critical density anomaly
                         mld_nodes.append(curr_node.depth-depth_sfc)
                         break
@@ -146,7 +149,49 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
                     curr_node = curr_node.below
             # For this element, save the mean mixed layer depth
             mld_season.append(mean(array(mld_nodes)))
-        fesom_mld[season,:] = array(mld_season)
+        fesom_mld_lr[season,:] = array(mld_season)
+
+    print 'Processing high-res FESOM:'
+    print 'Building mesh'
+    elements_hr, patches_hr = make_patches(fesom_mesh_path_hr, circumpolar, mask_cavities)
+    print 'Reading data'
+    id = Dataset(fesom_seasonal_file_hr, 'r')
+    fesom_temp_nodes_hr = id.variables['temp'][:,:]
+    fesom_salt_nodes_hr = id.variables['salt'][:,:]
+    id.close()
+    print 'Calculating density'
+    fesom_density_nodes_hr = unesco(fesom_temp_nodes_hr, fesom_salt_nodes_hr, zeros(shape(fesom_temp_nodes_hr)))
+    print 'Calculating mixed layer depth'
+    # Set up array for mixed layer depth at each element, at each season
+    fesom_mld_hr = zeros([4, len(elements_hr)])
+    # Loop over seasons and elements to fill these in
+    for season in range(4):
+        print '...' + season_names[season]
+        mld_season = []
+        for elm in elements_hr:
+            # Get mixed layer depth at each node
+            mld_nodes = []
+            for i in range(3):
+                node = elm.nodes[i]
+                density_sfc = fesom_density_nodes_hr[season,node.id]
+                # Save surface depth (only nonzero in ice shelf cavities)
+                depth_sfc = node.depth
+                temp_depth = node.depth
+                curr_node = node.below
+                while True:
+                    if curr_node is None:
+                        # Reached the bottom
+                        mld_nodes.append(temp_depth-depth_sfc)
+                        break
+                    if fesom_density_nodes_hr[season,curr_node.id] >= density_sfc + density_anom:
+                        # Reached the critical density anomaly
+                        mld_nodes.append(curr_node.depth-depth_sfc)
+                        break
+                    temp_depth = curr_node.depth
+                    curr_node = curr_node.below
+            # For this element, save the mean mixed layer depth
+            mld_season.append(mean(array(mld_nodes)))
+        fesom_mld_hr[season,:] = array(mld_season)
 
     print 'Processing obs'
     # Read grid and monthly climatology
@@ -185,12 +230,12 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
 
     print 'Plotting'
     # ACC
-    fig1 = figure(figsize=(13,9))
+    fig1 = figure(figsize=(18,9))
     # Summer
     # MetROMS
-    ax = fig1.add_subplot(2, 3, 1, aspect='equal')
+    ax = fig1.add_subplot(2, 4, 1, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
-    text(-65, 0, season_names[0], fontsize=24, ha='right')
+    text(-67, 0, season_names[0], fontsize=24, ha='right')
     title('MetROMS', fontsize=24)
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
@@ -199,10 +244,22 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
         text(x_ticks[i], y_ticks[i], lon_labels[i], ha='center', rotation=lon_rot[i], fontsize=12)
     ax.set_xticks([])
     ax.set_yticks([])
-    # FESOM
-    ax = fig1.add_subplot(2, 3, 2, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[0,:])
+    # FESOM low-res
+    ax = fig1.add_subplot(2, 4, 2, aspect='equal')
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_mld_lr[0,:])
+    img.set_clim(vmin=0, vmax=max_bound_summer)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry1, nbdry1])
+    ylim([-nbdry1, nbdry1])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title('FESOM (low-res)', fontsize=24)
+    # FESOM high-res
+    ax = fig1.add_subplot(2, 4, 3, aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_mld_hr[0,:])
     img.set_clim(vmin=0, vmax=max_bound_summer)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -212,7 +269,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_yticks([])
     title('FESOM (high-res)', fontsize=24)
     # Obs
-    ax = fig1.add_subplot(2, 3, 3, aspect='equal')
+    ax = fig1.add_subplot(2, 4, 4, aspect='equal')
     img = pcolor(obs_x, obs_y, obs_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')    
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
@@ -225,17 +282,28 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     cbar.ax.tick_params(labelsize=20)
     # Winter
     # MetROMS
-    ax = fig1.add_subplot(2, 3, 4, aspect='equal')
+    ax = fig1.add_subplot(2, 4, 5, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
-    text(-65, 0, season_names[2], fontsize=24, ha='right')
+    text(-67, 0, season_names[2], fontsize=24, ha='right')
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
     ax.set_xticks([])
     ax.set_yticks([])
-    # FESOM
-    ax = fig1.add_subplot(2, 3, 5, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[2,:])
+    # FESOM low-res
+    ax = fig1.add_subplot(2, 4, 6, aspect='equal')
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_mld_lr[2,:])
+    img.set_clim(vmin=0, vmax=max_bound_winter)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry1, nbdry1])
+    ylim([-nbdry1, nbdry1])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM high-res
+    ax = fig1.add_subplot(2, 4, 7, aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_mld_hr[2,:])
     img.set_clim(vmin=0, vmax=max_bound_winter)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -244,7 +312,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_xticks([])
     ax.set_yticks([])
     # Obs
-    ax = fig1.add_subplot(2, 3, 6, aspect='equal')
+    ax = fig1.add_subplot(2, 4, 8, aspect='equal')
     img = pcolor(obs_x, obs_y, obs_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
     xlim([-nbdry1, nbdry1])
     ylim([-nbdry1, nbdry1])
@@ -262,10 +330,10 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     fig1.savefig('mld_acc.png')
 
     # Continental shelf
-    fig2 = figure(figsize=(9.5,9))
+    fig2 = figure(figsize=(13,9))
     # Summer
     # MetROMS
-    ax = fig2.add_subplot(2, 2, 1, aspect='equal')
+    ax = fig2.add_subplot(2, 3, 1, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[0,:,:], vmin=0, vmax=max_bound_summer, cmap='jet')
     text(-28, 0, season_names[0], fontsize=24, ha='right')
     title('MetROMS', fontsize=24)
@@ -273,10 +341,22 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ylim([-nbdry2, nbdry2])
     ax.set_xticks([])
     ax.set_yticks([])
-    # FESOM
-    ax = fig2.add_subplot(2, 2, 2, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[0,:])
+    # FESOM low-res
+    ax = fig2.add_subplot(2, 3, 2, aspect='equal')
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_mld_lr[0,:])
+    img.set_clim(vmin=0, vmax=max_bound_summer)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title('FESOM (low-res)', fontsize=24)
+    # FESOM high-res
+    ax = fig2.add_subplot(2, 3, 3, aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_mld_hr[0,:])
     img.set_clim(vmin=0, vmax=max_bound_summer)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -286,22 +366,33 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_yticks([])
     title('FESOM (high-res)', fontsize=24)
     # Add a colorbar for summer
-    cbaxes = fig2.add_axes([0.91, 0.55, 0.02, 0.3])
+    cbaxes = fig2.add_axes([0.93, 0.55, 0.02, 0.3])
     cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_summer+50, 50))
     cbar.ax.tick_params(labelsize=20)
     # Winter
     # MetROMS
-    ax = fig2.add_subplot(2, 2, 3, aspect='equal')
+    ax = fig2.add_subplot(2, 3, 4, aspect='equal')
     pcolor(roms_x, roms_y, roms_mld[2,:,:], vmin=0, vmax=max_bound_winter, cmap='jet')
     text(-28, 0, season_names[2], fontsize=24, ha='right')
     xlim([-nbdry2, nbdry2])
     ylim([-nbdry2, nbdry2])
     ax.set_xticks([])
     ax.set_yticks([])
-    # FESOM
-    ax = fig2.add_subplot(2, 2, 4, aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_mld[2,:])
+    # FESOM low-res
+    ax = fig2.add_subplot(2, 3, 5, aspect='equal')
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_mld_lr[2,:])
+    img.set_clim(vmin=0, vmax=max_bound_winter)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([-nbdry2, nbdry2])
+    ylim([-nbdry2, nbdry2])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM high-res
+    ax = fig2.add_subplot(2, 3, 6, aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_mld_hr[2,:])
     img.set_clim(vmin=0, vmax=max_bound_winter)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -310,7 +401,7 @@ def mip_mld (roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file
     ax.set_xticks([])
     ax.set_yticks([])
     # Add a colorbar for winter
-    cbaxes = fig2.add_axes([0.91, 0.15, 0.02, 0.3])
+    cbaxes = fig2.add_axes([0.93, 0.15, 0.02, 0.3])
     cbar = colorbar(img, cax=cbaxes, extend='max', ticks=arange(0, max_bound_winter+200, 200))
     cbar.ax.tick_params(labelsize=20)
     # Add the main title
@@ -326,9 +417,11 @@ if __name__ == "__main__":
 
     roms_grid = raw_input("Path to ROMS grid file: ")
     roms_seasonal_file = raw_input("Path to ROMS seasonal climatology file containing 3D temp and salt: ")
-    fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_seasonal_file = raw_input("Path to FESOM seasonal climatology file containing 3D temp and salt: ")
-    mip_mld(roms_grid, roms_seasonal_file, fesom_mesh_path, fesom_seasonal_file)
+    fesom_mesh_path_lr = raw_input("Path to FESOM low-res mesh directory: ")
+    fesom_seasonal_file_lr = raw_input("Path to FESOM low-res seasonal climatology file containing 3D temp and salt: ")
+    fesom_mesh_path_hr = raw_input("Path to FESOM high-res mesh directory: ")
+    fesom_seasonal_file_hr = raw_input("Path to FESOM high-res seasonal climatology file containing 3D temp and salt: ")
+    mip_mld(roms_grid, roms_seasonal_file, fesom_mesh_path_lr, fesom_seasonal_file_lr, fesom_mesh_path_hr, fesom_seasonal_file_hr)
 
     
                             

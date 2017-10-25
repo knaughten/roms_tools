@@ -11,7 +11,7 @@ from cartesian_grid_3d import *
 import sys
 sys.path.insert(0, '/short/y99/kaa561/fesomtools')
 from fesom_grid import *
-from patches import *
+from matplotlib.patches import Polygon
 from unrotate_vector import *
 from unrotate_grid import *
 
@@ -30,8 +30,8 @@ def mip_regions_1var ():
     # Path to ROMS time-averaged file
     roms_file = '/short/m68/kaa561/metroms_iceshelf/tmproms/run/intercomparison/2002_2016_avg.nc'
     # Path to FESOM mesh directories
-    fesom_mesh_path_lr = '/short/y99/kaa561/FESOM/mesh/low_res/'
-    fesom_mesh_path_hr = '/short/y99/kaa561/FESOM/mesh/high_res/'
+    fesom_mesh_path_lr = '/short/y99/kaa561/FESOM/mesh/meshA/'
+    fesom_mesh_path_hr = '/short/y99/kaa561/FESOM/mesh/meshB/'
     # Path to FESOM time-averaged ocean files (temp, salt, u, v)
     fesom_file_lr_o = '/short/y99/kaa561/FESOM/intercomparison_lowres/output/oce_2002_2016_avg.nc'
     fesom_file_hr_o = '/short/y99/kaa561/FESOM/intercomparison_highres/output/oce_2002_2016_avg.nc'
@@ -52,7 +52,7 @@ def mip_regions_1var ():
     # Size of each plot in the y direction
     ysize = [8, 6, 7, 9, 7, 9, 10, 7]
     # Variables to process
-    var_names = ['draft', 'melt', 'temp', 'salt', 'vel', 'bathy', 'wct']
+    var_names = ['vel'] #['bathy', 'draft', 'wct', 'melt', 'temp', 'salt', 'vel']
     # Constants
     sec_per_year = 365*24*3600
     deg2rad = pi/180.0
@@ -95,14 +95,31 @@ def mip_regions_1var ():
     land_circle = ma.masked_where(sqrt((x_reg_roms-x_c)**2 + (y_reg_roms-y_c)**2) > radius, land_circle)
 
     print 'Building FESOM low-res mesh'
-    # Mask open ocean
-    elements_lr, mask_patches_lr = make_patches(fesom_mesh_path_lr, circumpolar=True, mask_cavities=True)
-    # Unmask ice shelves
-    patches_lr = iceshelf_mask(elements_lr)
+    elements_lr = fesom_grid(fesom_mesh_path_lr, circumpolar=True)
+    # Make patches for all elements, ice shelf elements, and open ocean elements
+    patches_lr = []
+    patches_shelf_lr = []
+    patches_ocn_lr = []
+    for elm in elements_lr:
+        coord = transpose(vstack((elm.x, elm.y)))
+        patches_lr.append(Polygon(coord, True, linewidth=0.))
+        if elm.cavity:
+            patches_shelf_lr.append(Polygon(coord, True, linewidth=0.))
+        else:
+            patches_ocn_lr.append(Polygon(coord, True, linewidth=0.))
 
     print 'Building FESOM high-res mesh'
-    elements_hr, mask_patches_hr = make_patches(fesom_mesh_path_hr, circumpolar=True, mask_cavities=True)
-    patches_hr = iceshelf_mask(elements_hr)
+    elements_hr = fesom_grid(fesom_mesh_path_hr, circumpolar=True)
+    patches_hr = []
+    patches_shelf_hr = []
+    patches_ocn_hr = []
+    for elm in elements_hr:
+        coord = transpose(vstack((elm.x, elm.y)))
+        patches_hr.append(Polygon(coord, True, linewidth=0.))
+        if elm.cavity:
+            patches_shelf_hr.append(Polygon(coord, True, linewidth=0.))
+        else:
+            patches_ocn_hr.append(Polygon(coord, True, linewidth=0.))
 
     for var in var_names:
         print 'Processing variable ' + var
@@ -112,8 +129,8 @@ def mip_regions_1var ():
             # Swap sign on existing zice field; nothing more to read
             roms_data = -1*roms_zice
         elif var == 'bathy':
-            # Point to h field; nothing more to read
-            roms_data = roms_h
+            # Point to h field and mask out land mask; nothing more to read
+            roms_data = ma.masked_where(roms_mask==0, roms_h)
         elif var == 'wct':
             # Add h (positive) and zice (negative); nothing more to read
             roms_data = roms_h + roms_zice
@@ -170,7 +187,14 @@ def mip_regions_1var ():
                 v_rho = sum(v_3d*dz, axis=0)/sum(dz, axis=0)    
                 # Get speed
                 roms_data = sqrt(u_rho**2 + v_rho**2)
+                # Mask out land
+                u_rho = ma.masked_where(roms_mask==0, u_rho)
+                v_rho = ma.masked_where(roms_mask==0, v_rho)
+                roms_data = ma.masked_where(roms_mask==0, roms_data)
             id.close()
+        if var in ['draft', 'melt', 'wct']:
+            # Mask out open ocean
+            roms_data = ma.masked_where(roms_zice==0, roms_data)
 
         print 'Reading FESOM low-res fields'
         if var not in ['draft', 'bathy', 'wct']:
@@ -274,9 +298,9 @@ def mip_regions_1var ():
         # Calculate given field at each element
         fesom_data_lr = []
         for elm in elements_lr:
-            # For each element in an ice shelf cavity, append the mean value
-            # for the 3 component Nodes
-            if elm.cavity:
+            # For each element, append the mean value for the 3 component Nodes
+            # Restrict to ice shelf cavities for draft, melt, wct
+            if elm.cavity or var not in ['draft', 'melt', 'wct']:
                 if var == 'draft':
                     # Ice shelf draft is depth of surface layer
                     fesom_data_lr.append(mean([elm.nodes[0].depth, elm.nodes[1].depth, elm.nodes[2].depth]))
@@ -374,7 +398,7 @@ def mip_regions_1var ():
             id.close()
         fesom_data_hr = []
         for elm in elements_hr:
-            if elm.cavity:
+            if elm.cavity or var not in ['draft', 'melt', 'wct']:
                 if var == 'draft':
                     fesom_data_hr.append(mean([elm.nodes[0].depth, elm.nodes[1].depth, elm.nodes[2].depth]))
                 elif var == 'bathy':
@@ -401,7 +425,7 @@ def mip_regions_1var ():
             # Low-res
             i = 0
             for elm in elements_lr:
-                if elm.cavity:
+                if elm.cavity or var not in ['draft', 'melt', 'wct']:
                     if any(elm.x >= x_min[index]) and any(elm.x <= x_max[index]) and any(elm.y >= y_min[index]) and any(elm.y <= y_max[index]):
                         if fesom_data_lr[i] < var_min:
                             var_min = fesom_data_lr[i]
@@ -411,7 +435,7 @@ def mip_regions_1var ():
             # High-res
             i = 0
             for elm in elements_hr:
-                if elm.cavity:
+                if elm.cavity or var not in ['draft', 'melt', 'wct']:
                     if any(elm.x >= x_min[index]) and any(elm.x <= x_max[index]) and any(elm.y >= y_min[index]) and any(elm.y <= y_max[index]):
                         if fesom_data_hr[i] < var_min:
                             var_min = fesom_data_hr[i]
@@ -467,7 +491,7 @@ def mip_regions_1var ():
                 # Loop over all points (can't find a better way to do this)
                 for j in range(size(roms_data,0)):
                     for i in range(size(roms_data,1)):
-                        # Make sure data isn't masked (i.e. land or open ocean)
+                        # Make sure data isn't masked (i.e. land)
                         if u_circ_roms[j,i] is not ma.masked:
                             # Check if we're in the region of interest
                             if roms_x[j,i] > x_min[index] and roms_x[j,i] < x_max[index] and roms_y[j,i] > y_min[index] and roms_y[j,i] < y_max[index]:
@@ -496,13 +520,12 @@ def mip_regions_1var ():
                 v_circ_fesom_lr = node_data_lr*sin(theta_circ_fesom_lr)
                 # Loop over 2D nodes to fill in the velocity bins as before
                 for n in range(fesom_n2d_lr):
-                    if fesom_cavity_lr[n]:
-                        if fesom_x_lr[n] > x_min[index] and fesom_x_lr[n] < x_max[index] and fesom_y_lr[n] > y_min[index] and fesom_y_lr[n] < y_max[index]:
-                            x_index = nonzero(x_bins > fesom_x_lr[n])[0][0]-1
-                            y_index = nonzero(y_bins > fesom_y_lr[n])[0][0]-1
-                            fesom_u_lr[y_index, x_index] += u_circ_fesom_lr[n]
-                            fesom_v_lr[y_index, x_index] += v_circ_fesom_lr[n]
-                            fesom_num_pts_lr[y_index, x_index] += 1
+                    if fesom_x_lr[n] > x_min[index] and fesom_x_lr[n] < x_max[index] and fesom_y_lr[n] > y_min[index] and fesom_y_lr[n] < y_max[index]:
+                        x_index = nonzero(x_bins > fesom_x_lr[n])[0][0]-1
+                        y_index = nonzero(y_bins > fesom_y_lr[n])[0][0]-1
+                        fesom_u_lr[y_index, x_index] += u_circ_fesom_lr[n]
+                        fesom_v_lr[y_index, x_index] += v_circ_fesom_lr[n]
+                        fesom_num_pts_lr[y_index, x_index] += 1
                 fesom_u_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_u_lr)
                 fesom_v_lr = ma.masked_where(fesom_num_pts_lr==0, fesom_v_lr)
                 flag = fesom_num_pts_lr > 0
@@ -518,13 +541,12 @@ def mip_regions_1var ():
                 v_circ_fesom_hr = node_data_hr*sin(theta_circ_fesom_hr)
                 # Loop over 2D nodes to fill in the velocity bins as before
                 for n in range(fesom_n2d_hr):
-                    if fesom_cavity_hr[n]:
-                        if fesom_x_hr[n] > x_min[index] and fesom_x_hr[n] < x_max[index] and fesom_y_hr[n] > y_min[index] and fesom_y_hr[n] < y_max[index]:
-                            x_index = nonzero(x_bins > fesom_x_hr[n])[0][0]-1
-                            y_index = nonzero(y_bins > fesom_y_hr[n])[0][0]-1
-                            fesom_u_hr[y_index, x_index] += u_circ_fesom_hr[n]
-                            fesom_v_hr[y_index, x_index] += v_circ_fesom_hr[n]
-                            fesom_num_pts_hr[y_index, x_index] += 1
+                    if fesom_x_hr[n] > x_min[index] and fesom_x_hr[n] < x_max[index] and fesom_y_hr[n] > y_min[index] and fesom_y_hr[n] < y_max[index]:
+                        x_index = nonzero(x_bins > fesom_x_hr[n])[0][0]-1
+                        y_index = nonzero(y_bins > fesom_y_hr[n])[0][0]-1
+                        fesom_u_hr[y_index, x_index] += u_circ_fesom_hr[n]
+                        fesom_v_hr[y_index, x_index] += v_circ_fesom_hr[n]
+                        fesom_num_pts_hr[y_index, x_index] += 1
                 fesom_u_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_u_hr)
                 fesom_v_hr = ma.masked_where(fesom_num_pts_hr==0, fesom_v_hr)
                 flag = fesom_num_pts_hr > 0
@@ -552,16 +574,21 @@ def mip_regions_1var ():
             ax = fig.add_subplot(1,3,2, aspect='equal')
             # Start with land background
             contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-            # Add ice shelf elements
-            img = PatchCollection(patches_lr, cmap=colour_map)
+            # Add elements
+            if var in ['draft', 'melt', 'wct']:
+                # Ice shelf elements only
+                img = PatchCollection(patches_shelf_lr, cmap=colour_map)
+            else:
+                img = PatchCollection(patches_lr, cmap=colour_map)
             img.set_array(array(fesom_data_lr))
             img.set_edgecolor('face')
             img.set_clim(vmin=var_min, vmax=var_max)
             ax.add_collection(img)
-            # Mask out the open ocean in white
-            overlay = PatchCollection(mask_patches_lr, facecolor=(1,1,1))
-            overlay.set_edgecolor('face')
-            ax.add_collection(overlay)
+            if var in ['draft', 'melt', 'wct']:
+                # Mask out the open ocean in white
+                overlay = PatchCollection(patches_ocn_lr, facecolor=(1,1,1))
+                overlay.set_edgecolor('face')
+                ax.add_collection(overlay)
             if var == 'vel':
                 # Overlay vectors
                 quiver(x_centres, y_centres, fesom_u_lr, fesom_v_lr, scale=1.5, headwidth=6, headlength=7, color='black')
@@ -572,14 +599,19 @@ def mip_regions_1var ():
             # FESOM high-res
             ax = fig.add_subplot(1,3,3, aspect='equal')
             contourf(x_reg_fesom, y_reg_fesom, land_square, 1, colors=(('0.6', '0.6', '0.6')))
-            img = PatchCollection(patches_hr, cmap=colour_map)
+            if var in ['draft', 'melt', 'wct']:
+                # Ice shelf elements only
+                img = PatchCollection(patches_shelf_hr, cmap=colour_map)
+            else:
+                img = PatchCollection(patches_hr, cmap=colour_map)
             img.set_array(array(fesom_data_hr))
             img.set_edgecolor('face')
             img.set_clim(vmin=var_min, vmax=var_max)
             ax.add_collection(img)
-            overlay = PatchCollection(mask_patches_hr, facecolor=(1,1,1))
-            overlay.set_edgecolor('face')
-            ax.add_collection(overlay)
+            if var in ['draft', 'melt', 'wct']:
+                overlay = PatchCollection(patches_ocn_hr, facecolor=(1,1,1))
+                overlay.set_edgecolor('face')
+                ax.add_collection(overlay)
             if var == 'vel':
                 # Overlay vectors
                 quiver(x_centres, y_centres, fesom_u_hr, fesom_v_hr, scale=1.5, headwidth=6, headlength=7, color='black')

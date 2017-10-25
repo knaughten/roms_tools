@@ -12,11 +12,13 @@ from patches import *
 # Input:
 # cice_seasonal_file = path to seasonal climatology of CICE variables 'aice' and
 #                      'hi', pre-computed using seasonal_climatology_cice.py
-# fesom_mesh_path = path to FESOM mesh directories
-# fesom_seasonal_file = path to seasonal climatology of FESOM variable 'hice', 
-#                       pre-computed using seasonal_climatology.py in the
-#                       "fesomtools" repository
-def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
+# fesom_mesh_path_lr, fesom_mesh_path_hr = paths to FESOM mesh directories for
+#                     low-res and high-res mesh respectively
+# fesom_seasonal_file_lr, fesom_seasonal_file_hr = paths to seasonal
+#                         climatologies of FESOM variable 'hice', pre-computed
+#                         using seasonal_climatology.py in the "fesomtools"
+#                         repository, for low-res and high-res respectively
+def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path_lr, fesom_seasonal_file_lr, fesom_mesh_path_hr, fesom_seasonal_file_hr):
 
     # Boundaries on plot (under polar coordinate transformation)
     x_min = -36.25
@@ -61,33 +63,49 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
     cice_x = -(cice_lat+90)*cos(cice_lon*deg2rad+pi/2)
     cice_y = (cice_lat+90)*sin(cice_lon*deg2rad+pi/2)
 
-    print 'Processing FESOM'
+    print 'Processing low-res FESOM'
     # Build FESOM mesh
-    elements, patches = make_patches(fesom_mesh_path, circumpolar, mask_cavities)
+    elements_lr, patches_lr = make_patches(fesom_mesh_path_lr, circumpolar, mask_cavities)
     # Read data
-    id = Dataset(fesom_seasonal_file, 'r')
-    fesom_hi_nodes = id.variables['hice'][:,:]
+    id = Dataset(fesom_seasonal_file_lr, 'r')
+    fesom_hi_nodes_lr = id.variables['hice'][:,:]
     id.close()
     # Count the number of elements not in ice shelf cavities
-    num_elm = 0
-    for elm in elements:
+    num_elm_lr = 0
+    for elm in elements_lr:
         if not elm.cavity:
-            num_elm += 1
+            num_elm_lr += 1
     # Set up array for element-averages for each season
-    fesom_hi = zeros([4, num_elm])
+    fesom_hi_lr = zeros([4, num_elm_lr])
     # Loop over elements to fill this in
     i = 0
-    for elm in elements:
+    for elm in elements_lr:
         if not elm.cavity:
             # Average over 3 component nodes
-            fesom_hi[:,i] = (fesom_hi_nodes[:,elm.nodes[0].id] + fesom_hi_nodes[:,elm.nodes[1].id] + fesom_hi_nodes[:,elm.nodes[2].id])/3
+            fesom_hi_lr[:,i] = (fesom_hi_nodes_lr[:,elm.nodes[0].id] + fesom_hi_nodes_lr[:,elm.nodes[1].id] + fesom_hi_nodes_lr[:,elm.nodes[2].id])/3
+            i += 1
+
+    print 'Processing high-res FESOM'
+    elements_hr, patches_hr = make_patches(fesom_mesh_path_hr, circumpolar, mask_cavities)
+    id = Dataset(fesom_seasonal_file_hr, 'r')
+    fesom_hi_nodes_hr = id.variables['hice'][:,:]
+    id.close()
+    num_elm_hr = 0
+    for elm in elements_hr:
+        if not elm.cavity:
+            num_elm_hr += 1
+    fesom_hi_hr = zeros([4, num_elm_hr])
+    i = 0
+    for elm in elements_hr:
+        if not elm.cavity:
+            fesom_hi_hr[:,i] = (fesom_hi_nodes_hr[:,elm.nodes[0].id] + fesom_hi_nodes_hr[:,elm.nodes[1].id] + fesom_hi_nodes_hr[:,elm.nodes[2].id])/3
             i += 1
 
     print 'Plotting'
-    fig = figure(figsize=(19,9))
+    fig = figure(figsize=(19,14))
     for season in range(4):
         # MetROMS
-        ax = fig.add_subplot(2, 4, season+1, aspect='equal')
+        ax = fig.add_subplot(3, 4, season+1, aspect='equal')
         pcolor(cice_x, cice_y, cice_hi[season,:,:], vmin=bounds[0], vmax=bounds[1], cmap='jet')
         if season == 0:
             text(-43, 0, 'MetROMS', fontsize=24, ha='right')
@@ -96,10 +114,24 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
         ylim([y_min, y_max])
         ax.set_xticks([])
         ax.set_yticks([])
-        # FESOM
-        ax = fig.add_subplot(2, 4, season+5, aspect='equal')
-        img = PatchCollection(patches, cmap='jet')
-        img.set_array(fesom_hi[season,:])
+        # FESOM low-res
+        ax = fig.add_subplot(3, 4, season+5, aspect='equal')
+        img = PatchCollection(patches_lr, cmap='jet')
+        img.set_array(fesom_hi_lr[season,:])
+        img.set_clim(vmin=bounds[0], vmax=bounds[1])
+        img.set_edgecolor('face')
+        ax.add_collection(img)
+        xlim([x_min, x_max])
+        ylim([y_min, y_max])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        if season == 0:
+            text(-43, 0, 'FESOM', fontsize=24, ha='right')
+            text(-43, -10, '(low-res)', fontsize=24,ha='right')
+        # FESOM high-res
+        ax = fig.add_subplot(3, 4, season+9, aspect='equal')
+        img = PatchCollection(patches_hr, cmap='jet')
+        img.set_array(fesom_hi_hr[season,:])
         img.set_clim(vmin=bounds[0], vmax=bounds[1])
         img.set_edgecolor('face')
         ax.add_collection(img)
@@ -110,11 +142,12 @@ def mip_hi_seasonal (cice_seasonal_file, fesom_mesh_path, fesom_seasonal_file):
         if season == 0:
             text(-43, 0, 'FESOM', fontsize=24, ha='right')
             text(-43, -10, '(high-res)', fontsize=24,ha='right')
-    cbaxes = fig.add_axes([0.35, 0.04, 0.3, 0.02])
+    cbaxes = fig.add_axes([0.35, 0.03, 0.3, 0.02])
     cbar = colorbar(img, orientation='horizontal', ticks=arange(bounds[0],bounds[1]+0.5,0.5), cax=cbaxes, extend='max')
     cbar.ax.tick_params(labelsize=20)
     suptitle('Sea ice effective thickness (m), 1992-2016 average', fontsize=30)
     subplots_adjust(wspace=0.025,hspace=0.025)
+    fig.show()
     fig.savefig('hi_seasonal.png')
 
 

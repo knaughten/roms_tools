@@ -17,12 +17,15 @@ from monthly_avg import *
 # cice_file = path to CICE output file containing 5-day averages for the entire
 #             simulation
 # cice_log = path to CICE logfile from timeseries_seaice_extent.py
-# fesom_mesh_path = path to FESOM mesh directory
-# fesom_output_dir = path to FESOM output directory containing one ice.mean.nc
-#                    file for each year (5-day averages)
-# fesom_log = path to FESOM logfile from timeseries_seaice_extent.py in
-#             fesomtools
-def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_dir, fesom_log):
+# fesom_mesh_path_lr, fesom_mesh_path_hr = paths to FESOM mesh directories for
+#                     low-res and high-res mesh respectively
+# fesom_output_dir_lr, fesom_output_dir_hr = paths to FESOM output directories
+#                      containing one ice.mean.nc file for each year (5-day
+#                      averages), low-res and high-res respectively
+# fesom_log_lr, fesom_log_hr = paths to FESOM logfiles from
+#               timeseries_seaice_extent.py in fesomtools, low-res and high-res
+#               respectively
+def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path_lr, fesom_output_dir_lr, fesom_log_lr, fesom_mesh_path_hr, fesom_output_dir_hr, fesom_log_hr):
 
     # Range of years to process (exclude 2016 because no NSIDC data)
     start_year = 1992
@@ -247,60 +250,94 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
         cice_feb_extent.append(cice_extent[(year-start_year)*12+1])
         cice_sep_extent.append(cice_extent[(year-start_year)*12+8])
 
-    print 'Processing FESOM'
+    print 'Processing FESOM low-res'
 
     # First build the grid
-    elements, patches = make_patches(fesom_mesh_path, circumpolar, mask_cavities)
+    elements_lr, patches_lr = make_patches(fesom_mesh_path_lr, circumpolar, mask_cavities)
     # Get averages for February and September
     # Start with first year just to initialise the arrays with the right size
     print '...monthly average for ' + str(start_year)
-    fesom_feb_nodes = monthly_avg(fesom_output_dir + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 1)
-    fesom_sep_nodes = monthly_avg(fesom_output_dir + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 8)
+    fesom_feb_nodes_lr = monthly_avg(fesom_output_dir_lr + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 1)
+    fesom_sep_nodes_lr = monthly_avg(fesom_output_dir_lr + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 8)
     # Loop over the rest of the years
     for year in range(start_year+1, end_year+1):
         print '...monthly average for ' + str(year)
-        fesom_feb_nodes = fesom_feb_nodes + monthly_avg(fesom_output_dir + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 1)
-        fesom_sep_nodes = fesom_sep_nodes + monthly_avg(fesom_output_dir + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 8)
+        fesom_feb_nodes_lr = fesom_feb_nodes_lr + monthly_avg(fesom_output_dir_lr + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 1)
+        fesom_sep_nodes_lr = fesom_sep_nodes_lr + monthly_avg(fesom_output_dir_lr + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 8)
     # Convert from integrals to averages
-    fesom_feb_nodes = fesom_feb_nodes/num_years
-    fesom_sep_nodes = fesom_sep_nodes/num_years
+    fesom_feb_nodes_lr = fesom_feb_nodes_lr/num_years
+    fesom_sep_nodes_lr = fesom_sep_nodes_lr/num_years
     # Find element-averages
-    fesom_feb = []
-    fesom_sep = []
-    for elm in elements:
+    fesom_feb_lr = []
+    fesom_sep_lr = []
+    for elm in elements_lr:
         if not elm.cavity:
             # Average over 3 component nodes
-            fesom_feb.append(mean(array([fesom_feb_nodes[elm.nodes[0].id], fesom_feb_nodes[elm.nodes[1].id], fesom_feb_nodes[elm.nodes[2].id]])))
-            fesom_sep.append(mean(array([fesom_sep_nodes[elm.nodes[0].id], fesom_sep_nodes[elm.nodes[1].id], fesom_sep_nodes[elm.nodes[2].id]])))
-    fesom_feb = array(fesom_feb)
-    fesom_sep = array(fesom_sep)
+            fesom_feb_lr.append(mean(array([fesom_feb_nodes_lr[elm.nodes[0].id], fesom_feb_nodes_lr[elm.nodes[1].id], fesom_feb_nodes_lr[elm.nodes[2].id]])))
+            fesom_sep_lr.append(mean(array([fesom_sep_nodes_lr[elm.nodes[0].id], fesom_sep_nodes_lr[elm.nodes[1].id], fesom_sep_nodes_lr[elm.nodes[2].id]])))
+    fesom_feb_lr = array(fesom_feb_lr)
+    fesom_sep_lr = array(fesom_sep_lr)
 
     # Get extent timeseries
     # Read 5-day logfile
-    fesom_extent_5day = []
-    f = open(fesom_log, 'r')    
+    fesom_extent_5day_lr = []
+    f = open(fesom_log_lr, 'r')    
     f.readline()
     for line in f:
-        fesom_extent_5day.append(float(line))
+        fesom_extent_5day_lr.append(float(line))
     f.close()
     # Initialise monthly arrays
-    fesom_feb_extent = zeros(num_years)
-    fesom_sep_extent = zeros(num_years)
+    fesom_feb_extent_lr = zeros(num_years)
+    fesom_sep_extent_lr = zeros(num_years)
     for year in range(start_year, end_year+1):
         # First timestep of year in 5-day logfile
         t0 = (year-start_year)*73
         # Monthly averages are hard-coded and ugly
         # Feburary: 4/5 of index 7, indices 8-11, and 4/5 of index 12
-        fesom_feb_extent[year-start_year] = (fesom_extent_5day[t0+6]*4 + sum(fesom_extent_5day[t0+7:t0+11]*5) + fesom_extent_5day[t0+11]*4)/28.0
+        fesom_feb_extent_lr[year-start_year] = (fesom_extent_5day_lr[t0+6]*4 + sum(fesom_extent_5day_lr[t0+7:t0+11]*5) + fesom_extent_5day_lr[t0+11]*4)/28.0
         # September: 2/5 of index 49, indices 50-54, 3/5 of index 55
-        fesom_sep_extent[year-start_year] = (fesom_extent_5day[t0+48]*2 + sum(fesom_extent_5day[t0+49:t0+54]*5) + fesom_extent_5day[t0+54]*3)/30.0
+        fesom_sep_extent_lr[year-start_year] = (fesom_extent_5day_lr[t0+48]*2 + sum(fesom_extent_5day_lr[t0+49:t0+54]*5) + fesom_extent_5day_lr[t0+54]*3)/30.0
+
+    print 'Processing FESOM high-res'
+
+    elements_hr, patches_hr = make_patches(fesom_mesh_path_hr, circumpolar, mask_cavities)
+    print '...monthly average for ' + str(start_year)
+    fesom_feb_nodes_hr = monthly_avg(fesom_output_dir_hr + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 1)
+    fesom_sep_nodes_hr = monthly_avg(fesom_output_dir_hr + fesom_file_head + '.' + str(start_year) + '.ice.mean.nc', 'area', 8)
+    for year in range(start_year+1, end_year+1):
+        print '...monthly average for ' + str(year)
+        fesom_feb_nodes_hr = fesom_feb_nodes_hr + monthly_avg(fesom_output_dir_hr + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 1)
+        fesom_sep_nodes_hr = fesom_sep_nodes_hr + monthly_avg(fesom_output_dir_hr + fesom_file_head + '.' + str(year) + '.ice.mean.nc', 'area', 8)
+    fesom_feb_nodes_hr = fesom_feb_nodes_hr/num_years
+    fesom_sep_nodes_hr = fesom_sep_nodes_hr/num_years
+    fesom_feb_hr = []
+    fesom_sep_hr = []
+    for elm in elements_hr:
+        if not elm.cavity:
+            fesom_feb_hr.append(mean(array([fesom_feb_nodes_hr[elm.nodes[0].id], fesom_feb_nodes_hr[elm.nodes[1].id], fesom_feb_nodes_hr[elm.nodes[2].id]])))
+            fesom_sep_hr.append(mean(array([fesom_sep_nodes_hr[elm.nodes[0].id], fesom_sep_nodes_hr[elm.nodes[1].id], fesom_sep_nodes_hr[elm.nodes[2].id]])))
+    fesom_feb_hr = array(fesom_feb_hr)
+    fesom_sep_hr = array(fesom_sep_hr)
+
+    fesom_extent_5day_hr = []
+    f = open(fesom_log_hr, 'r')    
+    f.readline()
+    for line in f:
+        fesom_extent_5day_hr.append(float(line))
+    f.close()
+    fesom_feb_extent_hr = zeros(num_years)
+    fesom_sep_extent_hr = zeros(num_years)
+    for year in range(start_year, end_year+1):
+        t0 = (year-start_year)*73
+        fesom_feb_extent_hr[year-start_year] = (fesom_extent_5day_hr[t0+6]*4 + sum(fesom_extent_5day_hr[t0+7:t0+11]*5) + fesom_extent_5day_hr[t0+11]*4)/28.0
+        fesom_sep_extent_hr[year-start_year] = (fesom_extent_5day_hr[t0+48]*2 + sum(fesom_extent_5day_hr[t0+49:t0+54]*5) + fesom_extent_5day_hr[t0+54]*3)/30.0
 
     time_axis = arange(start_year, end_year+1)
 
     print 'Plotting'
-    fig = figure(figsize=(20,10))
-    gs1 = GridSpec(2, 3)
-    gs1.update(left=0.12, right=0.7, wspace=0.05, hspace=0.05)
+    fig = figure(figsize=(24,10))
+    gs1 = GridSpec(2, 4)
+    gs1.update(left=0.1, right=0.77, wspace=0.04, hspace=0.05)
     # NSIDC, February
     ax = subplot(gs1[0, 0], aspect='equal')
     img = pcolor(nsidc_x, nsidc_y, nsidc_feb, vmin=0, vmax=1, cmap='jet')
@@ -318,10 +355,22 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.set_xticks([])
     ax.set_yticks([])
     title('MetROMS', fontsize=24)
-    # FESOM, February
+    # FESOM low-res, February
     ax = subplot(gs1[0, 2], aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_feb)
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_feb_lr)
+    img.set_clim(vmin=0, vmax=1)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([bdry1, bdry2])
+    ylim([bdry3, bdry4])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    title('FESOM (low-res)', fontsize=24)
+    # FESOM high-res, February
+    ax = subplot(gs1[0, 3], aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_feb_hr)
     img.set_clim(vmin=0, vmax=1)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -347,10 +396,21 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ylim([bdry3, bdry4])
     ax.set_xticks([])
     ax.set_yticks([])    
-    # FESOM, September
+    # FESOM low-res, September
     ax = subplot(gs1[1, 2], aspect='equal')
-    img = PatchCollection(patches, cmap='jet')
-    img.set_array(fesom_sep)
+    img = PatchCollection(patches_lr, cmap='jet')
+    img.set_array(fesom_sep_lr)
+    img.set_clim(vmin=0, vmax=1)
+    img.set_edgecolor('face')
+    ax.add_collection(img)
+    xlim([bdry1, bdry2])
+    ylim([bdry3, bdry4])
+    ax.set_xticks([])
+    ax.set_yticks([])
+    # FESOM high-res, September
+    ax = subplot(gs1[1, 3], aspect='equal')
+    img = PatchCollection(patches_hr, cmap='jet')
+    img.set_array(fesom_sep_hr)
     img.set_clim(vmin=0, vmax=1)
     img.set_edgecolor('face')
     ax.add_collection(img)
@@ -359,17 +419,18 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax.set_xticks([])
     ax.set_yticks([])
     # Add a colourbar at the bottom
-    cbaxes = fig.add_axes([0.12, 0.04, 0.3, 0.04])
-    cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes, extend='min')
+    cbaxes = fig.add_axes([0.1, 0.04, 0.25, 0.04])
+    cbar = colorbar(img, orientation='horizontal', ticks=arange(0,1+0.25,0.25), cax=cbaxes)
     cbar.ax.tick_params(labelsize=20)
     # Add extent timeseries on rightmost column, with more space for labels
     gs2 = GridSpec(2, 1)
-    gs2.update(left=0.73, right=0.95, wspace=0.1, hspace=0.15)
+    gs2.update(left=0.79, right=0.95, hspace=0.15)
     # February
     ax = subplot(gs2[0, 0])
     ax.plot(time_axis, nsidc_feb_extent, color='black', linewidth=2, linestyle='dashed')
     ax.plot(time_axis, cice_feb_extent, color='blue', linewidth=1.5)
-    ax.plot(time_axis, fesom_feb_extent, color='green', linewidth=1.5)
+    ax.plot(time_axis, fesom_feb_extent_lr, color='green', linewidth=1.5)
+    ax.plot(time_axis, fesom_feb_extent_hr, color='magenta', linewidth=1.5)
     xlim([start_year, end_year])
     ax.set_yticks(arange(0,4+0.5,0.5))
     ax.set_yticklabels(['0', '', '1', '', '2', '', '3', '', '4'])
@@ -381,14 +442,15 @@ def mip_aice_minmax_nsidc (cice_file, cice_log, fesom_mesh_path, fesom_output_di
     ax = subplot(gs2[1, 0])
     ax.plot(time_axis, nsidc_sep_extent, color='black', label='NSIDC', linewidth=2, linestyle='dashed')
     ax.plot(time_axis, cice_sep_extent, color='blue', label='MetROMS', linewidth=1.5)
-    ax.plot(time_axis, fesom_sep_extent, color='green', label='FESOM (high-res)', linewidth=1.5)
+    ax.plot(time_axis, fesom_sep_extent_lr, color='green', label='FESOM (low-res)', linewidth=1.5)
+    ax.plot(time_axis, fesom_sep_extent_hr, color='magenta', label='FESOM (high-res)', linewidth=1.5)
     xlim([start_year, end_year])
     ax.set_yticks(arange(16,23+1,1))
     ax.set_yticklabels(['16', '', '18', '', '20', '', '22', ''])
     ax.tick_params(axis='x', labelsize=20)
     ax.tick_params(axis='y', labelsize=20)
     grid(True)
-    ax.legend(bbox_to_anchor=(1.04,-0.07), ncol=3, fontsize=20)
+    ax.legend(bbox_to_anchor=(1.04,-0.07), ncol=4, fontsize=20)
     fig.show()
     fig.savefig('aice_minmax_nsidc.png')
 
@@ -398,10 +460,13 @@ if __name__ == "__main__":
 
     cice_file = raw_input("Path to CICE output file containing data for the entire simulation: ")
     cice_log = raw_input("Path to CICE sea ice extent logfile: ")
-    fesom_mesh_path = raw_input("Path to FESOM mesh directory: ")
-    fesom_output_dir = raw_input("Path to FESOM output directory containing one ice.mean.nc file for each year: ")
-    fesom_log = raw_input("Path to FESOM sea ice extent logfile: ")
-    mip_aice_minmax_nsidc(cice_file, cice_log, fesom_mesh_path, fesom_output_dir, fesom_log)
+    fesom_mesh_path_lr = raw_input("Path to FESOM low-res mesh directory: ")
+    fesom_output_dir_lr = raw_input("Path to FESOM low-res output directory containing one ice.mean.nc file for each year: ")
+    fesom_log_lr = raw_input("Path to FESOM low-res sea ice extent logfile: ")
+    fesom_mesh_path_hr = raw_input("Path to FESOM high-res mesh directory: ")
+    fesom_output_dir_hr = raw_input("Path to FESOM high-res output directory containing one ice.mean.nc file for each year: ")
+    fesom_log_hr = raw_input("Path to FESOM high-res sea ice extent logfile: ")
+    mip_aice_minmax_nsidc(cice_file, cice_log, fesom_mesh_path_lr, fesom_output_dir_lr, fesom_log_lr, fesom_mesh_path_hr, fesom_output_dir_hr, fesom_log_hr)
     
          
     

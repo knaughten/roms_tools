@@ -5,24 +5,34 @@ from numpy import *
 # estimates for 2003-2008.
 # Input:
 # roms_logfile = path to ROMS logfile from timeseries_massloss.py
+# roms_logfile_bs = path to ROMS logfile from
+#                   timeseries_massloss_bellingshausen.py
 # fesom_logfile_lr, fesom_logfile_hr = paths to FESOM logfiles from
 #                   timeseries_massloss.py in the fesomtools repository, for
 #                   low-res and high-res respectively
-def mip_calc_massloss (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
+# fesom_logfile_bs_lr, fesom_logfile_bs_hr = paths to FESOM logfiles from
+#                      timeseries_massloss_bellingshausen.py in the fesomtools
+#                      repository, for low-res and high-res respectively
+def mip_calc_massloss (roms_logfile, roms_logfile_bs, fesom_logfile_lr, fesom_logfile_bs_lr, fesom_logfile_hr, fesom_logfile_bs_hr):
 
     # Year simulations start
     year_start = 1992
-    # Years to avearge over
+    # Years to average over
     calc_start = 2002
     calc_end = 2016
     # Number of output steps per year in FESOM
     peryear = 365/5
     # Name of each ice shelf
-    names = ['Total Mass Loss', 'Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
+    names = ['Total Mass Loss', 'Larsen D Ice Shelf', 'Larsen C Ice Shelf', 'Wilkins & George VI & Stange & Bach Ice Shelves', 'Ronne-Filchner Ice Shelf', 'Abbot Ice Shelf', 'Pine Island Glacier Ice Shelf', 'Thwaites Ice Shelf', 'Dotson Ice Shelf', 'Getz Ice Shelf', 'Nickerson Ice Shelf', 'Sulzberger Ice Shelf', 'Mertz Ice Shelf', 'Totten & Moscow University Ice Shelves', 'Shackleton Ice Shelf', 'West Ice Shelf', 'Amery Ice Shelf', 'Prince Harald Ice Shelf', 'Baudouin & Borchgrevink Ice Shelves', 'Lazarev Ice Shelf', 'Nivl Ice Shelf', 'Fimbul & Jelbart & Ekstrom Ice Shelves', 'Brunt & Riiser-Larsen Ice Shelves', 'Ross Ice Shelf']
     # Observed mass loss (Rignot 2013) and uncertainty for each ice shelf, in Gt/y
     obs_massloss = [1325, 1.4, 20.7, 135.4, 155.4, 51.8, 101.2, 97.5, 45.2, 144.9, 4.2, 18.2, 7.9, 90.6, 72.6, 27.2, 35.5, -2, 21.6, 6.3, 3.9, 26.8, 9.7, 47.7]
     obs_massloss_error = [235, 14, 67, 40, 45, 19, 8, 7, 4, 14, 2, 3, 3, 8, 15, 10, 23, 3, 18, 2, 2, 14, 16, 34]
     num_shelves = len(obs_massloss)
+    # Some Bellingshausen ice shelves were split up later
+    names_bs = ['Wilkins Ice Shelf', 'Stange Ice Shelf', 'George VI Ice Shelf']
+    obs_massloss_bs = [18.4, 28, 89]
+    obs_massloss_error_bs = [17, 6, 17]
+    num_shelves_bs = len(obs_massloss_bs)
 
     # Read ROMS logfile
     roms_time = []
@@ -60,6 +70,35 @@ def mip_calc_massloss (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
         t_end = nonzero(roms_time >= calc_end+1)[0][0]
     roms_massloss = mean(roms_massloss_ts[:,t_start:t_end], axis=1)
 
+    # Repeat for Bellingshausen
+    f = open(roms_logfile_bs, 'r')
+    f.readline()
+    # Skip the time values (should be the same)
+    for line in f:
+        try:
+            tmp = float(line)
+        except(ValueError):
+            # Reached the header for the next variable
+            break       
+    roms_massloss_bs_ts = empty([num_shelves_bs, len(roms_time)])
+    index = 0
+    while index < num_shelves_bs:
+        t = 0
+        for line in f:
+            try:
+                roms_massloss_bs_ts[index, t] = float(line)
+                t += 1
+            except(ValueError):
+                break
+        index +=1
+    f.close()
+    t_start = nonzero(roms_time >= calc_start)[0][0]
+    if calc_end == 2016:
+        t_end = size(roms_time)
+    else:
+        t_end = nonzero(roms_time >= calc_end+1)[0][0]
+    roms_massloss_bs = mean(roms_massloss_bs_ts[:,t_start:t_end], axis=1)
+
     # Read FESOM timeseries
     # Low-res
     tmp = []
@@ -94,6 +133,24 @@ def mip_calc_massloss (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
     f.close()
     # Average between given years
     fesom_massloss_lr = mean(fesom_massloss_ts_lr[:,peryear*(calc_start-year_start):peryear*(calc_end+1-year_start)], axis=1)
+
+    # Repeat for Bellingshausen
+    f = open(fesom_logfile_bs_lr, 'r')
+    f.readline()
+    fesom_massloss_bs_ts_lr = empty([num_shelves_bs, num_time])
+    index = 0
+    while index < num_shelves_bs:
+        t = 0
+        for line in f:
+            try:
+                fesom_massloss_bs_ts_lr[index,t] = float(line)
+                t += 1
+            except(ValueError):
+                break
+        index += 1
+    f.close()
+    fesom_massloss_bs_lr = mean(fesom_massloss_bs_ts_lr[:,peryear*(calc_start-year_start):peryear*(calc_end+1-year_start)], axis=1)
+
     # Repeat for high-res
     tmp = []
     f = open(fesom_logfile_hr, 'r')
@@ -120,6 +177,23 @@ def mip_calc_massloss (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
     f.close()
     fesom_massloss_hr = mean(fesom_massloss_ts_hr[:,peryear*(calc_start-year_start):peryear*(calc_end+1-year_start)], axis=1)
 
+    # High-res Bellingshausen
+    f = open(fesom_logfile_bs_hr, 'r')
+    f.readline()
+    fesom_massloss_bs_ts_hr = empty([num_shelves_bs, num_time])
+    index = 0
+    while index < num_shelves_bs:
+        t = 0
+        for line in f:
+            try:
+                fesom_massloss_bs_ts_hr[index,t] = float(line)
+                t += 1
+            except(ValueError):
+                break
+        index += 1
+    f.close()
+    fesom_massloss_bs_hr = mean(fesom_massloss_bs_ts_hr[:,peryear*(calc_start-year_start):peryear*(calc_end+1-year_start)], axis=1)
+
     # Loop over ice shelves
     for index in range(num_shelves):
         print names[index]
@@ -131,14 +205,28 @@ def mip_calc_massloss (roms_logfile, fesom_logfile_lr, fesom_logfile_hr):
         massloss_high = obs_massloss[index] + obs_massloss_error[index]
         print 'Rignot: ' + str(massloss_low) + '-' + str(massloss_high)
 
+    # Repeat for Bellingshausen ice shelves
+    for index in range(num_shelves_bs):
+        print names_bs[index]
+        print 'MetROMS: ' + str(roms_massloss_bs[index])
+        print 'FESOM low-res: ' + str(fesom_massloss_bs_lr[index])
+        print 'FESOM high-res: ' + str(fesom_massloss_bs_hr[index])
+        # Find the range of observations
+        massloss_low = obs_massloss_bs[index] - obs_massloss_error_bs[index]
+        massloss_high = obs_massloss_bs[index] + obs_massloss_error_bs[index]
+        print 'Rignot: ' + str(massloss_low) + '-' + str(massloss_high)
+
 
 # Command-line interface
 if __name__ == "__main__":
 
     roms_logfile = raw_input("Path to ROMS logfile from timeseries_massloss.py: ")
+    roms_logfile_bs = raw_input("Path to ROMS logfile from timeseries_massloss_bellingshausen.py: ")
     fesom_logfile_lr = raw_input("Path to FESOM low-res logfile from timeseries_massloss.py: ")
+    fesom_logfile_bs_lr = raw_input("Path to FESOM low-res logfile from timeseries_massloss_bellingshausen.py: ")
     fesom_logfile_hr = raw_input("Path to FESOM high-res logfile from timeseries_massloss.py: ")
-    mip_calc_massloss(roms_logfile, fesom_logfile_lr, fesom_logfile_hr)
+    fesom_logfile_bs_hr = raw_input("Path to FESOM high-res logfile from timeseries_massloss_bellingshausen.py: ")
+    mip_calc_massloss(roms_logfile, roms_logfile_bs, fesom_logfile_lr, fesom_logfile_bs_lr, fesom_logfile_hr, fesom_logfile_bs_hr)
 
 
 
