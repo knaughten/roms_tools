@@ -12,6 +12,7 @@ def find_isolated_points (cice_kmt_file):
     # j-indices that might have sea ice
     start_j = 50
     end_j = 250
+    num_pts_affected = 0
 
     # Read land mask
     id = Dataset(cice_kmt_file, 'r')
@@ -19,6 +20,7 @@ def find_isolated_points (cice_kmt_file):
     id.close()
 
     num_i = size(kmt,1)
+    num_j = size(kmt,0)
 
     # Double loop, can't find a cleaner way to do this
     for j in range(start_j, end_j):
@@ -34,6 +36,9 @@ def find_isolated_points (cice_kmt_file):
                 if sum(neighbours) < 2:
                     # Blocked on at least 3 sides
                     print "i=" + str(i+1) + ', j=' + str(j+1)
+                    num_pts_affected += 1
+
+    print 'Number of points affected: ' + str(num_pts_affected)
 
 
 # Command-line interface

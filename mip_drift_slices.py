@@ -3,7 +3,6 @@ from numpy import *
 from matplotlib.pyplot import *
 from matplotlib.patches import Polygon
 from matplotlib.collections import PatchCollection
-from matplotlib.mlab import griddata
 from calc_z import *
 from interp_lon_roms import *
 # Import FESOM scripts (have to modify path first)
@@ -55,8 +54,6 @@ def mip_drift_slices (roms_grid, roms_file, fesom_mesh_path_lr, fesom_file_lr, f
     # Parameters for FESOM regular grid interpolation (needed for contours)
     num_lat = 500
     num_depth = 250
-    r = 6.371e6
-    deg2rad = pi/180.0
 
     # Get longitude for the title
     if lon0 < 0:

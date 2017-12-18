@@ -40,7 +40,7 @@ def h_circumpolar (grid_path, fig_name):
     title('Bathymetry (m)', fontsize=240)
     axis('off')
 
-    #show()
+    show()
     savefig(fig_name)
 
 

@@ -47,7 +47,7 @@ def bugs_dpt_fig (dpt_log_laplacian, dpt_log_biharmonic):
     # Make new time array
     time_annual = arange(len(dpt_laplacian_avg)) + year_start
     # Plot
-    fig, ax = subplots(figsize=(10,6))
+    fig, ax = subplots(figsize=(8,6))
     ax.plot(time_annual, dpt_laplacian_avg, label='Laplacian', color='green', linewidth=2)
     ax.plot(time_annual, dpt_biharmonic_avg, label='Biharmonic', color='blue', linewidth=2)
     title('Drake Passage Transport (annually averaged)', fontsize=18)
@@ -55,11 +55,8 @@ def bugs_dpt_fig (dpt_log_laplacian, dpt_log_biharmonic):
     ylabel('Sv', fontsize=14)
     xlim([time_annual[0], time_annual[-1]])
     grid(True)
-    # Move plot over to make room for legend
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width*0.8, box.height])
     # Make legend
-    ax.legend(loc='center left', bbox_to_anchor=(1,0.5))
+    ax.legend(loc='center right')
     fig.show()
     fig.savefig('bugs_dpt.png')
 

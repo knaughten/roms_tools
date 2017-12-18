@@ -4,6 +4,9 @@ from matplotlib.pyplot import *
 from os.path import *
 from cartesian_grid_2d import *
 
+# WARNING: An earlier version of the script said the output sea ice volume
+# was in million km^3. This is not true, it's thousand km^3!
+
 # Calculate and plot timeseries of total sea ice area and volume during a
 # ROMS-CICE simulation.
 # Input:
@@ -70,7 +73,7 @@ def timeseries_seaice (file_path, log_path, add_years=0):
     for t in range(size(new_time)):
         # Integrate area and convert to million km^2
         total_area.append(sum(aice_nomask[t,:,:]*dA)*1e-12)
-        # Integrate volume and convert to million km^3
+        # Integrate volume and convert to thousand km^3
         total_volume.append(sum(aice_nomask[t,:,:]*hi_nomask[t,:,:]*dA)*1e-12)
 
     print 'Plotting total sea ice area'
@@ -85,7 +88,7 @@ def timeseries_seaice (file_path, log_path, add_years=0):
     clf()
     plot(time, total_volume)
     xlabel('Years')
-    ylabel(r'Total Sea Ice Volume (million km$^3$)')
+    ylabel(r'Total Sea Ice Volume (thousand km$^3$)')
     grid(True)
     savefig('seaice_volume.png')
 
@@ -97,7 +100,7 @@ def timeseries_seaice (file_path, log_path, add_years=0):
     f.write('Total Sea Ice Area (million km^2):\n')
     for elm in total_area:
         f.write(str(elm) + '\n')
-    f.write('Total Sea Ice Volume (million km^3):\n')
+    f.write('Total Sea Ice Volume (thousand km^3):\n')
     for elm in total_volume:
         f.write(str(elm) + '\n')
     f.close()
