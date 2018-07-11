@@ -264,51 +264,25 @@ def average_btw_depths (data_3d, z_3d, dz_3d, z_bounds):
                 # both depth bounds are too deep (i.e. in the seafloor)
                 data[j,i] = ma.masked
             else:
-                # Initialise integral and depth_range (vertical distance we're integrating over) to 0
-                integral = 0.0
-                depth_range = 0.0
+                # Find the first level above z_deep
                 if any(z_col < z_deep):
                     # There exist ocean cells below z_deep
-                    # Linearly interpolate to z_deep
-                    k_above_deep = nonzero(z_col > z_deep)[0][0]
-                    k_below_deep = k_above_deep - 1
-                    coeff1 = (z_col[k_below_deep] - z_deep)/(z_col[k_below_deep] - z_col[k_above_deep])
-                    coeff2 = 1 - coeff1
-                    data_deep = coeff1*data_col[k_above_deep] + coeff2*data_col[k_below_deep]
-                    # Now integrate between z_deep and z_col[k_above_deep]
-                    dz_curr = z_col[k_above_deep] - z_deep
-                    integral += 0.5*(data_deep + data_col[k_above_deep])*dz_curr # Trapezoidal rule
-                    depth_range += dz_curr
-                    # Save index of k_above_deep; we will start normal (non-interpolated) integration here
-                    k_start = k_above_deep
+                    k_start = nonzero(z_col > z_deep)[0][0]
                 else:
-                    # z_deep is deeper than the seafloor at this location
-                    # Start normal (non-interpolated) integration at the seafloor
-                    k_start = 0
+                    # z_deep is deeper than the seafloor at this location,
+                    # so start at the seafloor
+                    k_end = 0
+                # Find the first level above z_shallow                     
                 if any(z_col > z_shallow):
                     # There exist ocean cells above z_shallow
-                    # Linearly interpolate to z_shallow
-                    k_above_shallow = nonzero(z_col > z_shallow)[0][0]
-                    k_below_shallow = k_above_shallow - 1
-                    coeff1 = (z_col[k_below_shallow] - z_shallow)/(z_col[k_below_shallow] - z_col[k_above_shallow])
-                    coeff2 = 1 - coeff1
-                    data_shallow = coeff1*data_col[k_above_shallow] + coeff2*data_col[k_below_shallow]
-                    # Now integrate between z_col[k_below_shallow] and z_shallow
-                    dz_curr = z_shallow - z_col[k_below_shallow]
-                    integral += 0.5*(data_col[k_below_shallow] + data_shallow)*dz_curr # Trapezoidal rule
-                    depth_range += dz_curr
-                    # Save index of k_above_shallow; we will stop normal (non-interpolated) integration one level below it
-                    k_end = k_above_shallow
+                    k_end = nonzero(z_col > z_shallow)[0][0]
                 else:
-                    # z_shallow is shallower than the sea surface (or ice shelf draft) at this location
-                    # Continue normal (non-interpolated) integration all the way to the surface/ice shelf
+                    # z_shallow is shallower than the ice shelf draft at this location
+                    # Continue normal (non-interpolated) integration all the way to the ice draft
                     k_end = size(z_col)
                 # Now integrate between k_start and k_end
                 if k_start < k_end:
-                    integral += sum(data_col[k_start:k_end]*dz_col[k_start:k_end])
-                    depth_range += sum(dz_col[k_start:k_end])
-                # Divide integral by depth_range to get the vertical average
-                data[j,i] = integral/depth_range
+                    data[j,i] = sum(data_col[k_start:k_end]*dz_col[k_start:k_end])/sum(dz_col[k_start:k_end])
 
     return data    
 

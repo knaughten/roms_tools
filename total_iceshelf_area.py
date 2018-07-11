@@ -9,12 +9,12 @@ from fesom_grid import *
 
 def total_iceshelf_area (roms_grid_file, fesom_mesh_path_lr, fesom_mesh_path_hr):
 
-    id = Dataset(file_path, 'r')
+    id = Dataset(roms_grid_file, 'r')
     lon = id.variables['lon_rho'][:-15,1:-1]
     lat = id.variables['lat_rho'][:-15,1:-1]
     zice = id.variables['zice'][:-15,1:-1]
     id.close()
-    dx, dy = cartesian_grid(lon, lat)
+    dx, dy = cartesian_grid_2d(lon, lat)
     dA = ma.masked_where(zice==0, dx*dy)
     print 'MetROMS: ' + str(sum(dA)) + ' m^2'
 

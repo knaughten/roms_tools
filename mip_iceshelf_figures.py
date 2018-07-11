@@ -1544,7 +1544,7 @@ cbar_ticks = arange(500, 1500+500, 500)
 plot_draft(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_e, cbaxes_tmp, cbar_ticks, 'e')
 suptitle('Filchner-Ronne Ice Shelf', fontsize=30)
 fig.show()
-fig.savefig('filchner_ronne.png')
+fig.savefig('filchner_ronne.png', dpi=300)
 
 # Eastern Weddell
 x_min_tmp = -8
@@ -1586,7 +1586,7 @@ cbar_ticks2 = arange(34, 34.6+0.3, 0.3)
 plot_zonal_ts(-1, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs_c, gs_d, cbaxes_tmp1, cbaxes_tmp2, cbar_ticks1, cbar_ticks2, 'c', 'd', loc_string='Fimbul Ice Shelf')
 suptitle('Eastern Weddell Region', fontsize=30)
 fig.show()
-fig.savefig('eweddell.png')
+fig.savefig('eweddell.png', dpi=300)
 
 # Amery
 x_min_tmp = 15.25
@@ -1628,7 +1628,7 @@ cbar_ticks = arange(200, 2200+1000, 1000)
 plot_draft(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_e, cbaxes_tmp, cbar_ticks, 'e')
 suptitle('Amery Ice Shelf', fontsize=30)
 fig.show()
-fig.savefig('amery.png')
+fig.savefig('amery.png', dpi=300)
 
 # Australian sector
 x_min_tmp = 12
@@ -1671,7 +1671,7 @@ cbar_ticks = arange(0.01, 0.07+0.03, 0.03)
 plot_velavg(x_min_totten, x_max_totten, y_min_totten, y_max_totten, gs_d, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'd', loc_string='Totten Ice Shelf', arrow_scale=0.7, arrow_headwidth=8, arrow_headlength=9)
 suptitle('Australian Sector', fontsize=30)
 fig.show()
-fig.savefig('australian.png')
+fig.savefig('australian.png', dpi=300)
 
 # Ross
 x_min_tmp = -9.5
@@ -1713,7 +1713,7 @@ cbar_ticks2 = arange(34.4, 35+0.3, 0.3)
 plot_zonal_ts(180, lat_min, lat_max, lat_ticks, lat_labels, depth_min, depth_max, depth_ticks, depth_labels, gs_c, gs_d, cbaxes_tmp1, cbaxes_tmp2, cbar_ticks1, cbar_ticks2, 'c', 'd')
 suptitle('Ross Sea', fontsize=30)
 fig.show()
-fig.savefig('ross.png')
+fig.savefig('ross.png', dpi=300)
 
 # Amundsen Sea
 x_min_tmp = -17.5
@@ -1755,7 +1755,7 @@ cbar_ticks = arange(0.03, 0.09+0.03, 0.03)
 plot_velavg(x_min_pig, x_max_pig, y_min_pig, y_max_pig, gs_d, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'd', loc_string='Pine Island Glacier Ice Shelf', arrow_scale=0.5, arrow_headwidth=8, arrow_headlength=9)
 suptitle('Amundsen Sea', fontsize=30)
 fig.show()
-fig.savefig('amundsen.png')
+fig.savefig('amundsen.png', dpi=300)
 
 # Bellingshausen Sea
 x_min_tmp = -20.25
@@ -1797,7 +1797,7 @@ cbar_ticks = arange(0, 0.1+0.05, 0.05)
 plot_velavg(x_min_gvi, x_max_gvi, y_min_gvi, y_max_gvi, gs_d, cbaxes_tmp, cbar_ticks, x_centres, y_centres, roms_ubin, roms_vbin, fesom_ubin_lr, fesom_vbin_lr, fesom_ubin_hr, fesom_vbin_hr, 'd', loc_string='George VI Ice Shelf', arrow_scale=0.4, arrow_headwidth=8, arrow_headlength=9)
 suptitle('Bellingshausen Sea', fontsize=30)
 fig.show()
-fig.savefig('bellingshausen.png')
+fig.savefig('bellingshausen.png', dpi=300)
 
 # Larsen
 x_min_tmp = -22.5
@@ -1828,7 +1828,7 @@ cbar_ticks = arange(-1.8, 0+0.9, 0.9)
 plot_bwtemp(x_min_tmp, x_max_tmp, y_min_tmp, y_max_tmp, gs_c, cbaxes_tmp, cbar_ticks, 'c', bathy_contour=1500)
 suptitle('Larsen Ice Shelves', fontsize=30)
 fig.show()
-fig.savefig('larsen.png')
+fig.savefig('larsen.png', dpi=300)
 
 
     

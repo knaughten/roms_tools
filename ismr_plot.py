@@ -35,7 +35,7 @@ def ismr_plot (file_path, save=False, fig_name=None):
     zice = id.variables['zice'][:-15,:-1]
     # Read the last year of ice shelf melt rates (assume 5-day averages here),
     # average over time, and convert from m/s to m/y
-    ismr = mean(id.variables['m'][-73:,:-15,:-1], axis=0)*60*60*24*365.25
+    ismr = id.variables['m'][0,:-15,:-1]*60*60*24*365.25 #mean(id.variables['m'][-73:,:-15,:-1], axis=0)*60*60*24*365.25
     id.close()
     # Mask the open ocean and land out of the melt rates
     ismr = ma.masked_where(zice==0, ismr)
